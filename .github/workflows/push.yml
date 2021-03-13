@@ -18,7 +18,7 @@ jobs:
       # Install the dependent packages
       - name: Install packages
         run: |
-          sudo apt-get -y install libcunit1 libcunit1-doc libcunit1-dev libcurl-dev
+          sudo apt-get -y install libcunit1 libcunit1-doc libcunit1-dev libcurl4-openssl-dev
 
       # Run build of the application
       - name: Run build
