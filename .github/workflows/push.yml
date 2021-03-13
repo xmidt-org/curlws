@@ -23,7 +23,7 @@ jobs:
       - name: Make Build Directory
         run: mkdir build
 
-      - name: Get Sonarcloud binary
+      - name: Get Sonarcloud Binaries
         working-directory: build
         run: |
           curl -s -L -O https://sonarcloud.io/static/cpp/build-wrapper-linux-x86.zip
@@ -42,7 +42,6 @@ jobs:
           build-wrapper-linux-x86/build-wrapper-linux-x86-64 --out-dir bw-output make all test
 
       - name: Upload SonarCloud
-        working-directory: build
         run: |
           sonar-scanner-4.4.0.2170-linux/bin/sonar-scanner -Dproject.settings=.sonar-project.properties
 
