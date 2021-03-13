@@ -22,7 +22,7 @@
 #   https://opensource.org/licenses/MIT
 
 project(curlws)
-cmake_minimum_required(VERSION 2.8.7)
+cmake_minimum_required(VERSION 2.8.12)
 
 add_definitions(-std=c99)
 set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Werror -Wall")
