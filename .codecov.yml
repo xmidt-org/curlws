@@ -2,9 +2,3 @@ coverage:
   range: 50..80
   round: down
   precision: 2
-
-ignore:
-  - "*tests"
-
-fixes:
-  - "github.com/xmidt-org/curlws/::"
