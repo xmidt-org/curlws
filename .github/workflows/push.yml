@@ -43,7 +43,7 @@ jobs:
 
       - name: Upload SonarCloud
         run: |
-          sonar-scanner-4.4.0.2170-linux/bin/sonar-scanner -Dproject.settings=.sonar-project.properties
+          build/sonar-scanner-4.4.0.2170-linux/bin/sonar-scanner -Dproject.settings=.sonar-project.properties
 
       - name: Upload Codecov.io
         uses: codecov/codecov-action@v1
