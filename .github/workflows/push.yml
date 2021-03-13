@@ -31,7 +31,8 @@ jobs:
       - name: Upload Codecov.io
         uses: codecov/codecov-action@v1
         with:
-          files: ${{ runner.workspace }}/build/tests/CMakeFiles/*/src/*
+          #gcov_path_include: ${{ runner.workspace }}/build/tests/CMakeFiles/*/src/*
+          gcov_root_dir: ${{ runner.workspace }}/build/tests
           flags: unittests # optional
           fail_ci_if_error: true # optional (default = false)
           verbose: true # optional (default = false)
