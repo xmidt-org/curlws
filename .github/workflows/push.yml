@@ -26,15 +26,19 @@ jobs:
       - name: Get Sonarcloud binary
         working-directory: ${{runner.workspace}}/build
         run: |
-          curl -L -O https://sonarcloud.io/static/cpp/build-wrapper-linux-x86.zip
-          curl -L -O https://binaries.sonarsource.com/Distribution/sonar-scanner-cli/sonar-scanner-cli-4.4.0.2170-linux.zip
-          unzip -o build-wrapper-linux-x86.zip
-          unzip sonar-scanner-cli-4.4.0.2170-linux.zip
+          curl -s -L -O https://sonarcloud.io/static/cpp/build-wrapper-linux-x86.zip
+          curl -s -L -O https://binaries.sonarsource.com/Distribution/sonar-scanner-cli/sonar-scanner-cli-4.4.0.2170-linux.zip
+          unzip -q -o build-wrapper-linux-x86.zip
+          unzip -q sonar-scanner-cli-4.4.0.2170-linux.zip
           
-      - name: Build
+      - name: CMake
         working-directory: ${{runner.workspace}}/build
         run: |
           cmake .. -DDISABLE_VALGRIND:BOOL=false
+
+      - name: Build
+        working-directory: ${{runner.workspace}}/build
+        run: |
           build-wrapper-linux-x86/build-wrapper-linux-x86-64 --out-dir bw-output make all test
 
       - name: Upload SonarCloud
