@@ -21,16 +21,24 @@
 #
 #   https://opensource.org/licenses/MIT
 
-project(curlws)
-cmake_minimum_required(VERSION 2.8.12)
+if(NOT DISABLE_VALGRIND)
+set (MEMORY_CHECK valgrind --leak-check=full --show-reachable=yes  --error-exitcode=1 -v)
+endif ()
 
-add_definitions(-std=c99)
-set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Werror -Wall")
-set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Werror -Wall")
+add_test(NAME Simple COMMAND ${MEMORY_CHECK} ./simple)
 
-include(CTest)
+set (CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Wall -W -g -fprofile-arcs -ftest-coverage -O0")
+set (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall -W  -g -fprofile-arcs -ftest-coverage -O0")
+set (CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -fprofile-arcs -ftest-coverage -O0")
 
-add_subdirectory(src)
-if (BUILD_TESTING)
-  add_subdirectory(tests)
-endif (BUILD_TESTING)
+add_executable(simple simple.c ../src/curlws.c)
+
+if (${CMAKE_SYSTEM_NAME} MATCHES "Linux")
+target_link_libraries (simple gcov)
+endif()
+target_link_libraries (simple cunit)
+
+add_custom_target(coverage
+                  COMMAND lcov -q --capture --directory ${CMAKE_CURRENT_BINARY_DIR}/CMakeFiles/simple.dir/__/src --output-file coverage.info
+                  COMMAND genhtml coverage.info
+                  WORKING_DIRECTORY ${CMAKE_BINARY_DIR})
