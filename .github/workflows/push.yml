@@ -30,7 +30,7 @@ jobs:
 
       - name: Upload Codecov.io
         run: |
-          curl -s https://codecov.io/bash | bash -v -f "build/tests/CMakeFiles/*/__/src/*"
+          curl -s https://codecov.io/bash | bash -v -f "${{ runner.workspace }}/build/tests/CMakeFiles/*/__/src/*"
           echo "codecov done"
 
       # upload report as artifact
