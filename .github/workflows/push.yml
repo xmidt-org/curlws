@@ -29,9 +29,12 @@ jobs:
           run-test: true
 
       - name: Upload Codecov.io
-        run: |
-          curl -s https://codecov.io/bash | bash -v -f "${{ runner.workspace }}/build/tests/CMakeFiles/*/__/src/*"
-          echo "codecov done"
+        uses: codecov/codecov-action@v1
+        with:
+          files: ${{ runner.workspace }}/build/tests/CMakeFiles/*/src/*
+          flags: unittests # optional
+          fail_ci_if_error: true # optional (default = false)
+          verbose: true # optional (default = false)
 
       # upload report as artifact
       - name: Archive unit tests report
