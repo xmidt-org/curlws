@@ -4,8 +4,7 @@ coverage:
   precision: 2
 
 ignore:
-  - "*_test.go"
-  - "vendor"
+  - "*tests"
 
 fixes:
-  - "github.com/xmidt-org/__PROJECT__/::"
+  - "github.com/xmidt-org/curlws/::"
