@@ -20,59 +20,30 @@ jobs:
         run: |
           sudo apt-get -y install valgrind libcunit1 libcunit1-doc libcunit1-dev libcurl4-openssl-dev
 
-      # Run build of the application
-      - name: Run build
-        uses: ashutoshvarma/action-cmake-build@master
-        with:
-          build-dir: ${{ runner.workspace }}/build
-          build-type: Release
-          run-test: true
+      - name: Make Build Directory
+        run: mkdir ${{runner.workspace}}/build
+
+      - name: Get Sonarcloud binary
+        working_directory: ${{runner.workspace}}/build
+        run: |
+          curl -L -O https://sonarcloud.io/static/cpp/build-wrapper-linux-x86.zip
+          curl -L -O https://binaries.sonarsource.com/Distribution/sonar-scanner-cli/sonar-scanner-cli-4.4.0.2170-linux.zip
+          unzip -o build-wrapper-linux-x86.zip
+          unzip sonar-scanner-cli-4.4.0.2170-linux.zip
+          
+      - name: Build
+        working_directory: ${{runner.workspace}}/build
+        run: |
+          cmake .. -DDISABLE_VALGRIND:BOOL=false
+          build-wrapper-linux-x86/build-wrapper-linux-x86-64 --out-dir bw-output make all test
+
+      - name: Upload SonarCloud
+        working_directory: ${{runner.workspace}}/build
+        run: |
+          sonar-scanner-4.4.0.2170-linux/bin/sonar-scanner -Dproject.settings=.sonar-project.properties
 
       - name: Upload Codecov.io
         uses: codecov/codecov-action@v1
         with:
           directory: ${{ runner.workspace }}/build/tests
-          #gcov_path_include: ${{ runner.workspace }}/build/tests/CMakeFiles/*/src/*
-          #gcov_root_dir: ${{ runner.workspace }}/build/tests
-          #flags: unittests # optional
-          fail_ci_if_error: true
-          #verbose: true
-
-      # upload report as artifact
-      - name: Archive unit tests report
-        uses: actions/upload-artifact@v2
-        with:
-          name: report
-          path: report.json
-
-      # upload coverage as artifact
-      - name: Archive code coverage results
-        uses: actions/upload-artifact@v2
-        with:
-          name: coverage
-          path: coverage.txt
-
-  sonarcloud:
-    needs: test
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v2
-        with:
-          # Disabling shallow clone is recommended for improving relevancy of reporting
-          fetch-depth: 0
-      - name: Download unit tests report
-        uses: actions/download-artifact@v2
-        with:
-          name: report
-      - name: Download code coverage results
-        uses: actions/download-artifact@v2
-        with:
-          name: coverage
-      - name: SonarCloud Scan
-        uses: sonarsource/sonarcloud-github-action@master
-        with:
-          args: >
-            -Dproject.settings=./.sonar-project.properties
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+          fail_ci_if_error: false
