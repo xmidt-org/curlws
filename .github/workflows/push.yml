@@ -13,7 +13,6 @@ jobs:
     runs-on: [ ubuntu-latest ]
     steps:
       # Checks-out your repository under $GITHUB_WORKSPACE, so your job can access it
-      - name: Checkout
       - uses: actions/checkout@v2
 
       # Install the dependent packages
