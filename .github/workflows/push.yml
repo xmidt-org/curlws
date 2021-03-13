@@ -21,10 +21,10 @@ jobs:
           sudo apt-get -y install valgrind libcunit1 libcunit1-doc libcunit1-dev libcurl4-openssl-dev
 
       - name: Make Build Directory
-        run: mkdir ${{runner.workspace}}/build
+        run: mkdir build
 
       - name: Get Sonarcloud binary
-        working-directory: ${{runner.workspace}}/build
+        working-directory: build
         run: |
           curl -s -L -O https://sonarcloud.io/static/cpp/build-wrapper-linux-x86.zip
           curl -s -L -O https://binaries.sonarsource.com/Distribution/sonar-scanner-cli/sonar-scanner-cli-4.4.0.2170-linux.zip
@@ -32,22 +32,22 @@ jobs:
           unzip -q sonar-scanner-cli-4.4.0.2170-linux.zip
           
       - name: CMake
-        working-directory: ${{runner.workspace}}/build
+        working-directory: build
         run: |
           cmake .. -DDISABLE_VALGRIND:BOOL=false
 
       - name: Build
-        working-directory: ${{runner.workspace}}/build
+        working-directory: build
         run: |
           build-wrapper-linux-x86/build-wrapper-linux-x86-64 --out-dir bw-output make all test
 
       - name: Upload SonarCloud
-        working-directory: ${{runner.workspace}}/build
+        working-directory: build
         run: |
           sonar-scanner-4.4.0.2170-linux/bin/sonar-scanner -Dproject.settings=.sonar-project.properties
 
       - name: Upload Codecov.io
         uses: codecov/codecov-action@v1
         with:
-          directory: ${{ runner.workspace }}/build/tests
+          directory: build/tests
           fail_ci_if_error: false
