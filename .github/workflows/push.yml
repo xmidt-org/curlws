@@ -31,11 +31,12 @@ jobs:
       - name: Upload Codecov.io
         uses: codecov/codecov-action@v1
         with:
+          directory: ${{ runner.workspace }}/build/tests
           #gcov_path_include: ${{ runner.workspace }}/build/tests/CMakeFiles/*/src/*
-          gcov_root_dir: ${{ runner.workspace }}/build/tests
+          #gcov_root_dir: ${{ runner.workspace }}/build/tests
           #flags: unittests # optional
           fail_ci_if_error: true
-          verbose: true
+          #verbose: true
 
       # upload report as artifact
       - name: Archive unit tests report
