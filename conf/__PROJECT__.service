@@ -1,0 +1,17 @@
+[Unit]
+Description=__PROJECT__ description here
+After=network.target remote-fs.target nss-lookup.target
+
+[Service]
+Type=simple
+PIDFile=/run/__PROJECT__.pid
+ExecStartPre=/usr/bin/rm -f /run/__PROJECT__.pid
+ExecStart=/usr/bin/__PROJECT__
+ExecReload=/bin/kill -s HUP $MAINPID
+TimeoutStopSec=10
+KillMode=process
+PrivateTmp=true
+Restart=always
+
+[Install]
+WantedBy=multi-user.target
