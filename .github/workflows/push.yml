@@ -32,10 +32,10 @@ jobs:
         uses: codecov/codecov-action@v1
         with:
           #gcov_path_include: ${{ runner.workspace }}/build/tests/CMakeFiles/*/src/*
-          #gcov_root_dir: ${{ runner.workspace }}/build/tests
+          gcov_root_dir: ${{ runner.workspace }}/build/tests
           #flags: unittests # optional
-          #fail_ci_if_error: true # optional (default = false)
-          verbose: true # optional (default = false)
+          fail_ci_if_error: true
+          verbose: true
 
       # upload report as artifact
       - name: Archive unit tests report
