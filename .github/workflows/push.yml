@@ -13,7 +13,12 @@ jobs:
     runs-on: [ ubuntu-latest ]
     steps:
       # Checks-out your repository under $GITHUB_WORKSPACE, so your job can access it
+      - name: Checkout
       - uses: actions/checkout@v2
+
+      - name: Install packages
+        run: |
+          sudo apt-get -y install libcunit1 libcunit1-doc libcunit1-dev libcurl-devel
 
       # Run build of the application
       - name: Run build
