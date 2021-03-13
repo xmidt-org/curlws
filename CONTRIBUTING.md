@@ -20,8 +20,6 @@ If you plan to do something more involved, that involves a new feature or
 changing functionality, please first create an [issue](#issues) so a discussion of 
 your idea can happen, avoiding unnecessary work and clarifying implementation.
 
-A relevant coding style guideline is the [Go Code Review Comments](https://code.google.com/p/go-wiki/wiki/CodeReviewComments).
-
 Documentation
 -------------
 
@@ -36,8 +34,7 @@ changes.
 Testing
 -------
 
-Tests are written using golang's standard testing tools, and are run prior to 
-the PR being accepted.
+Tests are written using cunit, and are run prior to the PR being accepted.
 
 Issues
 ------
@@ -63,4 +60,4 @@ Pull Requests
 * when possible, address no more than one issue
 * should be reviewable in the GitHub code review tool
 * should be linked to any issues it relates to (i.e. issue number after (#) in commit messages or pull request message)
-* should conform to idiomatic golang code formatting
+* should conform to existing code style

@@ -13,11 +13,11 @@
 coverage*
 report.json
 
-# Ignore the vendor structure
-*vendor/
-
 # Ignore the various build artifacts
 .ignore
 
 # Vim
 *.swp
+
+# Build directory
+build
