@@ -17,11 +17,12 @@ jobs:
 
       # Run build of the application
       - name: Run build
-        uses: nicledomaS/cmake_build_action@v1.3
+        uses: ashutoshvarma/action-cmake-build@master
         with:
-          submodule_update: ON
-          run_tests: ON
-          unit_test_build: -Dtest=ON
+          build-dir: ${{ runner.workspace }}/build
+          build-type: Release
+          run-test: true
+
       - name: Upload Codecov.io
         run: |
           curl -s https://codecov.io/bash | bash
