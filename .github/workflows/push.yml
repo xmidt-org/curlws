@@ -23,6 +23,7 @@ jobs:
       - name: Install packages
         run: |
           sudo apt-get -y install valgrind libcunit1 libcunit1-doc libcunit1-dev libcurl4-openssl-dev
+          pip install codecov
 
       - name: Make Build Directory
         run: mkdir build
@@ -54,5 +55,5 @@ jobs:
       - name: Upload Codecov.io
         uses: codecov/codecov-action@v1
         with:
-          directory: build/tests
-          fail_ci_if_error: false
+          directory: .
+          fail_ci_if_error: true
