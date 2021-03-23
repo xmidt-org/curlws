@@ -15,6 +15,10 @@ jobs:
       # Checks-out your repository under $GITHUB_WORKSPACE, so your job can access it
       - uses: actions/checkout@v2
 
+      - name: Start Autobahn Docker
+        run: |
+          docker run --rm -v "$GITHUB_WORKSPACE/tests:/config" -v "reports:/reports" -p 9001:9001 --name fuzzingserver crossbario/autobahn-testsuite &
+
       # Install the dependent packages
       - name: Install packages
         run: |
@@ -30,7 +34,7 @@ jobs:
           curl -s -L -O https://binaries.sonarsource.com/Distribution/sonar-scanner-cli/sonar-scanner-cli-4.6.0.2311-linux.zip
           unzip -q -o build-wrapper-linux-x86.zip
           unzip -q sonar-scanner-cli-4.6.0.2311-linux.zip
-          
+
       - name: CMake
         working-directory: build
         run: |
