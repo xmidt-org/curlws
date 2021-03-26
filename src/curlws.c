@@ -1313,13 +1313,16 @@ static bool _cws_calculate_websocket_key(CWS *priv)
 {
     const char guid[] = "258EAFA5-E914-47DA-95CA-C5AB0DC85B11";
     const char header[] = "Sec-WebSocket-Key: ";
+    size_t header_len = sizeof(header) - 1;
 
     uint8_t sha1_value[20];
     uint8_t random_value[16];
     char b64_key[25];               /* b64(16 bytes) = 24 bytes + 1 for '\0' */
     char expected[29];              /* b64(20 bytes) = 28 bytes + 1 for '\0' */
-    char combined[sizeof(b64_key) + sizeof(guid)];
-    char send[sizeof(header) + sizeof(b64_key)];
+ 
+    /* For the next two values: -1 because only 1 trailing '\0' is needed */
+    char combined[sizeof(b64_key) + sizeof(guid) - 1];
+    char send[sizeof(header) + sizeof(b64_key) - 1];
 
     if (!priv->expected_key_header) {
         struct curl_slist *tmp;
@@ -1327,14 +1330,15 @@ static bool _cws_calculate_websocket_key(CWS *priv)
         (priv->get_random_fn)(priv->user, priv, random_value, sizeof(random_value));
         cws_encode_base64(random_value, sizeof(random_value), b64_key);
 
-        strcpy(send, header);
-        strcat(send, b64_key);
+        memcpy(send, header, header_len);
+        memcpy(&send[header_len], b64_key, sizeof(b64_key)); // sizeof includes the '\0'
+
         tmp = curl_slist_append(priv->headers, send);
         if (tmp) {
             priv->headers = tmp;
 
-            strcpy(combined, b64_key);
-            strcat(combined, guid);
+            memcpy(combined, b64_key, sizeof(b64_key));
+            memcpy(&combined[sizeof(b64_key)-1], guid, sizeof(guid));
 
             cws_sha1(combined, strlen(combined), sha1_value);
             cws_encode_base64(sha1_value, sizeof(sha1_value), expected);
@@ -1351,34 +1355,30 @@ static bool _cws_calculate_websocket_key(CWS *priv)
 
 static bool _cws_add_websocket_protocols(CWS *priv, const char *websocket_protocols)
 {
-    if (websocket_protocols) {
-        const char header[] = "Sec-WebSocket-Protocol: ";
-        size_t len;
-        char *buf;
+    char *buf;
+    struct curl_slist *p;
 
-        len = strlen(websocket_protocols);
+    if (!websocket_protocols) {
+        return true;
+    }
 
-        buf = malloc(sizeof(header) + len + 1);
-        if (buf) {
-            struct curl_slist *p;
-
-            strcpy(buf, header);
-            strcat(buf, websocket_protocols);
-
-            p = curl_slist_append(priv->headers, buf);
-            free(buf);
-            if (p) {
-                priv->headers = p;
-                priv->websocket_protocols.requested = cws_strdup(websocket_protocols);
-                if (priv->websocket_protocols.requested) {
-                    return true;
-                }
-            }
-        }
+    buf = cws_strmerge("Sec-WebSocket-Protocol: ", websocket_protocols);
+    if (!buf) {
         return false;
     }
 
-    return true;
+    p = curl_slist_append(priv->headers, buf);
+    free(buf);
+
+    if (p) {
+        priv->headers = p;
+        priv->websocket_protocols.requested = cws_strdup(websocket_protocols);
+        if (priv->websocket_protocols.requested) {
+            return true;
+        }
+    }
+
+    return false;
 }
 
 static bool _cws_add_extra_headers(CWS *priv, const struct cws_config *config)

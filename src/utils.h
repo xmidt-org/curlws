@@ -123,6 +123,16 @@ int cws_strncasecmp(const char *s1, const char *s2, size_t n);
 
 
 /**
+ * cws_strmerge() takes two strings and safely contatinates them into
+ * one that is returned.
+ *
+ * @note The returned buffer must be free()ed.
+ *
+ * @return string = s1 + s2
+ */
+char* cws_strmerge(const char *s1, const char *s2);
+
+/**
  * Change the byte ordering from the host to network (big) endian.
  *
  * @param mem   the buffer to reorder

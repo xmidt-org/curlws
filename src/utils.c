@@ -241,6 +241,22 @@ int cws_strncasecmp(const char *s1, const char *s2, size_t n)
 }
 
 
+char* cws_strmerge(const char *s1, const char *s2)
+{
+    size_t l1 = strlen(s1);
+    size_t l2 = strlen(s2);
+    char *p;
+
+    p = (char*) malloc( l1 + l2 + 1 );
+    if (p) {
+        memcpy(p, s1, l1);
+        memcpy(&p[l1], s2, l2);
+        p[l1 + l2 + 1] = '\0';
+    }
+
+    return p;
+}
+
 void cws_hton(void *mem, uint8_t len)
 {
 #if __BYTE_ORDER__ != __BIG_ENDIAN
