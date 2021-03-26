@@ -75,7 +75,7 @@ void cws_sha1(const void *in, size_t len, void *out)
 void cws_encode_base64(const void *in, const size_t len, char *out)
 {
     static const char base64_map[65] = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/=";
-    uint8_t *input = (uint8_t*) in;
+    const uint8_t *input = (const uint8_t*) in;
     size_t i, o;
     uint8_t c;
 
