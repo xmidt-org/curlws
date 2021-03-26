@@ -56,7 +56,7 @@ typedef struct {
     bool init;
 } mock_curl_t;
 
-static struct curl_version_info_data __curl_info;
+static curl_version_info_data __curl_info;
 curl_version_info_data* curl_version_info(CURLversion v)
 {
     IGNORE_UNUSED(v);
