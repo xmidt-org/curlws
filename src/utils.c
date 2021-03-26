@@ -250,8 +250,7 @@ char* cws_strmerge(const char *s1, const char *s2)
     p = (char*) malloc( l1 + l2 + 1 );
     if (p) {
         memcpy(p, s1, l1);
-        memcpy(&p[l1], s2, l2);
-        p[l1 + l2 + 1] = '\0';
+        memcpy(&p[l1], s2, l2 + 1);
     }
 
     return p;
