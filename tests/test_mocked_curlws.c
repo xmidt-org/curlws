@@ -29,6 +29,7 @@
 #include <CUnit/Basic.h>
 #include <stdbool.h>
 #include <inttypes.h>
+#include <curl/curl.h>
 
 #define __INCLUDE_TEST_DECODER__
 #include "../src/curlws.h"
