@@ -167,13 +167,11 @@ char* cws_rewrite_url(const char *url)
         rv[0] = '\0';
 
         if (strncmp(url, "ws://", ws_len) == 0) {
-            strcat(rv, "http://");
-            strcat(rv, &url[ws_len]);
+            snprintf(rv, (url_len+3), "http://%s", &url[ws_len]);
         } else if (strncmp(url, "wss://", wss_len) == 0) {
-            strcat(rv, "https://");
-            strcat(rv, &url[wss_len]);
+            snprintf(rv, (url_len+3), "https://%s", &url[wss_len]);
         } else {
-            strcat(rv, url);
+            memcpy(rv, url, url_len + 1);
         }
     }
 
@@ -183,7 +181,7 @@ char* cws_rewrite_url(const char *url)
 
 char* cws_strdup(const char *s)
 {
-    char *rv = NULL;;
+    char *rv = NULL;
 
     if (s) {
         size_t len;
@@ -201,7 +199,7 @@ char* cws_strdup(const char *s)
 
 char* cws_strndup(const char *s, size_t n)
 {
-    char *rv = NULL;;
+    char *rv = NULL;
 
     if (s) {
         size_t len;
@@ -243,9 +241,11 @@ int cws_strncasecmp(const char *s1, const char *s2, size_t n)
 
 char* cws_strmerge(const char *s1, const char *s2)
 {
-    size_t l1 = strlen(s1);
-    size_t l2 = strlen(s2);
+    size_t l1, l2;
     char *p;
+
+    l1 = strlen(s1);
+    l2 = strlen(s2);
 
     p = (char*) malloc( l1 + l2 + 1 );
     if (p) {
