@@ -1,4 +1,4 @@
-/**
+/*
  * Copyright (C) 2016 Gustavo Sverzut Barbieri
  * Copyright (c) 2021 Comcast Cable Communications Management, LLC
  *

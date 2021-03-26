@@ -21,6 +21,8 @@
  * ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN
  * CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
+ *
+ * https://opensource.org/licenses/MIT
  */
 /* c-mode: linux-4 */
 #include "../src/curlws.h"
