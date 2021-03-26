@@ -242,6 +242,11 @@ CWS *cws_create(const struct cws_config *config)
 
     priv->user = config->data;
 
+    /* Place things here that are "ok" for a user to overwrite. */
+
+    /* Force a reasonably modern version of TLS */
+    curl_easy_setopt(priv->easy, CURLOPT_SSLVERSION, CURL_SSLVERSION_TLSv1_2);
+
     priv->configure_fn(priv->user, priv, priv->easy);
 
     curl_easy_setopt(priv->easy, CURLOPT_PRIVATE, priv);
