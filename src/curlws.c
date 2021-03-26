@@ -1313,7 +1313,6 @@ static bool _cws_calculate_websocket_key(CWS *priv)
 {
     const char guid[] = "258EAFA5-E914-47DA-95CA-C5AB0DC85B11";
     const char header[] = "Sec-WebSocket-Key: ";
-    size_t header_len = sizeof(header) - 1;
 
     uint8_t sha1_value[20];
     uint8_t random_value[16];
@@ -1330,15 +1329,13 @@ static bool _cws_calculate_websocket_key(CWS *priv)
         (priv->get_random_fn)(priv->user, priv, random_value, sizeof(random_value));
         cws_encode_base64(random_value, sizeof(random_value), b64_key);
 
-        memcpy(send, header, header_len);
-        memcpy(&send[header_len], b64_key, sizeof(b64_key)); // sizeof includes the '\0'
+        snprintf(send, sizeof(send), "%s%s", header, b64_key);
 
         tmp = curl_slist_append(priv->headers, send);
         if (tmp) {
             priv->headers = tmp;
 
-            memcpy(combined, b64_key, sizeof(b64_key));
-            memcpy(&combined[sizeof(b64_key)-1], guid, sizeof(guid));
+            snprintf(combined, sizeof(combined), "%s%s", b64_key, guid);
 
             cws_sha1(combined, strlen(combined), sha1_value);
             cws_encode_base64(sha1_value, sizeof(sha1_value), expected);
