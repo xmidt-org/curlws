@@ -1153,14 +1153,9 @@ static CWScode _cws_write_masked(CWS *priv, const uint8_t *mask, const void *buf
 static CWScode _cws_send(CWS *priv, enum cws_opcode opcode, const void *msg, size_t msglen)
 {
     CWScode rv = CWSE_OK;
-    struct cws_frame_header fh = {
-        .fin = 1, /* TODO review if should fragment over some boundary */
-        .opcode = opcode,
-        .mask = 1,
-        .payload_len = ((msglen > UINT16_MAX) ? 127 :
-                        (msglen > 125) ? 126 : msglen),
-    };
-    uint8_t mask[4];
+    uint8_t buffer[14]; /* 2 (base) + 8 (uint64_t) + 4 (mask) */
+    uint8_t *mask;
+    size_t header_len;
 
     if (priv->closed) {
         (priv->debug_fn)(priv->user, priv,
@@ -1169,36 +1164,52 @@ static CWScode _cws_send(CWS *priv, enum cws_opcode opcode, const void *msg, siz
         return CWSE_CLOSED_CONNECTION;
     }
 
-    priv->get_random_fn(priv->user, priv, mask, sizeof(mask));
+    memset(buffer, 0, sizeof(buffer));
 
-    rv = _cws_write(priv, &fh, sizeof(fh));
-    if (CWSE_OK != rv) {
-        return rv;
+    buffer[0] = 0x80 | (0x0f & opcode);
+
+    header_len = 2;
+    if (msglen <= 125) {
+        buffer[1] = 0x80 | (uint8_t) (0x7f & msglen);
+        mask = &buffer[2];
+    } else if (msglen <= UINT16_MAX) {
+        buffer[1] = 0x80 | 126;
+        buffer[2] = (uint8_t) (0x00ff & (msglen >> 8));
+        buffer[3] = (uint8_t) (0x00ff & msglen);
+        mask = &buffer[4];
+        header_len = 4;
+    } else {
+        buffer[1] = 0x80 | 127;
+        if (8 == sizeof(size_t)) {
+            buffer[2] = (uint8_t) (0x00ff & (msglen >> 56));
+            buffer[3] = (uint8_t) (0x00ff & (msglen >> 48));
+            buffer[4] = (uint8_t) (0x00ff & (msglen >> 40));
+            buffer[5] = (uint8_t) (0x00ff & (msglen >> 32));
+        }
+
+        if (2 < sizeof(size_t)) {
+            buffer[6] = (uint8_t) (0x00ff & (msglen >> 24));
+            buffer[7] = (uint8_t) (0x00ff & (msglen >> 16));
+        }
+
+        buffer[8] = (uint8_t) (0x00ff & (msglen >>  8));
+        buffer[9] = (uint8_t) (0x00ff & msglen);
+        mask = &buffer[10];
+        header_len = 10;
     }
 
-    if (fh.payload_len == 127) {
-        uint64_t payload_len = msglen;
-        cws_hton(&payload_len, sizeof(payload_len));
-        rv = _cws_write(priv, &payload_len, sizeof(payload_len));
-        if (CWSE_OK != rv) {
-            return rv;
-        }
-    } else if (fh.payload_len == 126) {
-        uint16_t payload_len = msglen;
-        cws_hton(&payload_len, sizeof(payload_len));
-        rv = _cws_write(priv, &payload_len, sizeof(payload_len));
-        if (CWSE_OK != rv) {
-            return rv;
-        }
-    }
 
-    rv = _cws_write(priv, mask, sizeof(mask));
+    priv->get_random_fn(priv->user, priv, mask, 4);
+    header_len += 4;
+
+    rv = _cws_write(priv, buffer, header_len);
     if (CWSE_OK != rv) {
         return rv;
     }
 
     return _cws_write_masked(priv, mask, msg, msglen);
 }
+
 
 static void _cws_cleanup(CWS *priv)
 {
