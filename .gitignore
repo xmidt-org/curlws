@@ -19,5 +19,6 @@ report.json
 # Vim
 *.swp
 
-# Build directory
+# Build directory & artifacts
 build
+Makefile
