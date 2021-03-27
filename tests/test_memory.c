@@ -116,6 +116,7 @@ void test_lots()
     }
 
     mem_free(c[4]);
+    mem_free(d[3]);
 
     mem_cleanup_pool(pool);
 }
