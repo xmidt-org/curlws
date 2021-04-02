@@ -167,7 +167,7 @@ size_t frame_encode(const struct cws_frame *f, void *buf, size_t len)
     mask[3] = 0x00ff & (f->masking_key);
     
     p += header_len;
-    payload = (uint8_t*) f->payload;
+    payload = (const uint8_t*) f->payload;
 
     /* Mask the payload and write it to the buf */
     for (size_t i = 0; i < f->payload_len; i++) {
