@@ -47,7 +47,7 @@
 /*----------------------------------------------------------------------------*/
 /*                             Function Prototypes                            */
 /*----------------------------------------------------------------------------*/
-/* none */
+static int _frame_decode(struct cws_frame*, const void*, size_t, ssize_t*);
 
 /*----------------------------------------------------------------------------*/
 /*                             External Functions                             */
@@ -96,135 +96,23 @@ int frame_validate(const struct cws_frame *f, frame_dir dir)
     return 0;
 }
 
+
 int frame_decode(struct cws_frame *in, const void *buffer, size_t len, ssize_t *delta)
 {
-    struct cws_frame f;
-    const uint8_t *buf = (const uint8_t*) buffer;
-
-    if (delta) {
-        *delta = 0;
+    if (NULL == delta) {
+        ssize_t tmp;
+        return _frame_decode(in, buffer, len, &tmp);
     }
-
-    memset(&f, 0, sizeof(struct cws_frame));
-    memset(in, 0, sizeof(struct cws_frame));
-
-    if (len < 2) {
-        if (delta) {
-            *delta = len - 2;
-        }
-        return 0;
-    }
-
-    f.fin = 0;
-    if (0x80 & (*buf)) {
-        f.fin = 1;
-    }
-
-    if (0x70 & (*buf)) {
-        return -1;
-    }
-
-    f.opcode = 0x0f & (*buf);
-    switch (f.opcode) {
-        case WS_OPCODE_CONTINUATION:
-        case WS_OPCODE_TEXT:
-        case WS_OPCODE_BINARY:
-            f.is_control = 0;
-            break;
-        case WS_OPCODE_CLOSE:
-        case WS_OPCODE_PING:
-        case WS_OPCODE_PONG:
-            f.is_control = 1;
-            break;
-        default:
-            return -2;
-    }
-        
-    buf++;
-    len--;
-
-    f.mask = 0;
-    if (0x80 & (*buf)) {
-        f.mask = 1;
-    }
-
-    f.payload_len = 0x7f & (*buf);
-
-    buf++;
-    len--;
-
-    /* Deal with possible longer lengths */
-    if (126 == f.payload_len) {
-        if (len < 2) {
-            if (delta) {
-                *delta = len - 2;
-            }
-            return 0;
-        }
-        f.payload_len = (0xff & buf[0]) << 8 | (0xff & buf[1]);
-        buf += 2;
-        len -= 2;
-
-        /* Length must be in the smallest size possible. */
-        if (f.payload_len < 126) {
-            return -3;
-        }
-    } else if (127 == f.payload_len) {
-        if (len < 8) {
-            if (delta) {
-                *delta = len - 8;
-            }
-            return 0;
-        }
-        if (0x80 & buf[0]) {
-            return -4;
-        }
-        f.payload_len = ((uint64_t) (0x7f & buf[0])) << 56 |
-                        ((uint64_t) (0xff & buf[1])) << 48 |
-                        ((uint64_t) (0xff & buf[2])) << 40 |
-                        ((uint64_t) (0xff & buf[3])) << 32 |
-                        ((uint64_t) (0xff & buf[4])) << 24 |
-                        ((uint64_t) (0xff & buf[5])) << 16 |
-                        ((uint64_t) (0xff & buf[6])) <<  8 |
-                        ((uint64_t) (0xff & buf[7]));
-        buf += 8;
-        len -= 8;
-        if (f.payload_len <= UINT16_MAX) {
-            return -5;
-        }
-    }
-
-    f.masking_key = 0;
-    if (f.mask) {
-        if (len < 4) {
-            if (delta) {
-                *delta = len - 4;
-            }
-            return 0;
-        }
-        f.masking_key = (0xff & buf[0]) << 24 |
-                        (0xff & buf[1]) << 16 |
-                        (0xff & buf[2]) <<  8 |
-                        (0xff & buf[3]);
-        buf += 4;
-        len -= 4;
-    }
-
-    if (delta) {
-        *delta = ((const void*) buf) - buffer;
-    }
-
-    /* Only when we're 100% complete and correct will we copy over the values */
-    memcpy(in, &f, sizeof(struct cws_frame));
-    return 0;
+    return _frame_decode(in, buffer, len, delta);
 }
 
 
 size_t frame_encode(const struct cws_frame *f, void *buf, size_t len)
 {
     size_t header_len;
-    uint8_t *mask, *p, *payload;
-    size_t i;
+    uint8_t *mask = NULL;
+    uint8_t *p = NULL;
+    const uint8_t *payload = NULL;
 
     /* Do a simple check to make sure we don't overwrite the buffer.  This
      * doesn't need to be super accurate since we only need to account for
@@ -282,7 +170,7 @@ size_t frame_encode(const struct cws_frame *f, void *buf, size_t len)
     payload = (uint8_t*) f->payload;
 
     /* Mask the payload and write it to the buf */
-    for (i = 0; i < f->payload_len; i++) {
+    for (size_t i = 0; i < f->payload_len; i++) {
         p[i] = payload[i] ^ mask[0x3 & i];
     }
     return header_len + f->payload_len;
@@ -291,4 +179,110 @@ size_t frame_encode(const struct cws_frame *f, void *buf, size_t len)
 /*----------------------------------------------------------------------------*/
 /*                             Internal functions                             */
 /*----------------------------------------------------------------------------*/
-/* none */
+static int _frame_decode(struct cws_frame *in, const void *buffer, size_t len, ssize_t *delta)
+{
+    struct cws_frame f;
+    const uint8_t *buf = (const uint8_t*) buffer;
+
+    memset(&f, 0, sizeof(struct cws_frame));
+    memset(in, 0, sizeof(struct cws_frame));
+
+    *delta = 0;
+
+    if (len < 2) {
+        *delta = len - 2;
+        return 0;
+    }
+
+    f.fin = (0x80 & (*buf)) ? 1 : 0;
+
+    if (0x70 & (*buf)) {
+        return -1;
+    }
+
+    f.opcode = 0x0f & (*buf);
+    switch (f.opcode) {
+        case WS_OPCODE_CONTINUATION:
+        case WS_OPCODE_TEXT:
+        case WS_OPCODE_BINARY:
+            f.is_control = 0;
+            break;
+        case WS_OPCODE_CLOSE:
+        case WS_OPCODE_PING:
+        case WS_OPCODE_PONG:
+            f.is_control = 1;
+            break;
+        default:
+            return -2;
+    }
+        
+    buf++;
+    len--;
+
+    f.mask = 0;
+    f.mask = (0x80 & (*buf)) ? 1 : 0;
+
+    f.payload_len = 0x7f & (*buf);
+
+    buf++;
+    len--;
+
+    /* Deal with possible longer lengths */
+    if (126 == f.payload_len) {
+        if (len < 2) {
+            *delta = len - 2;
+            return 0;
+        }
+        f.payload_len = (0xff & buf[0]) << 8 | (0xff & buf[1]);
+        buf += 2;
+        len -= 2;
+
+        /* Length must be in the smallest size possible. */
+        if (f.payload_len < 126) {
+            return -3;
+        }
+    } else if (127 == f.payload_len) {
+        if (len < 8) {
+            *delta = len - 8;
+            return 0;
+        }
+        if (0x80 & buf[0]) {
+            return -4;
+        }
+        f.payload_len = ((uint64_t) (0x7f & buf[0])) << 56 |
+                        ((uint64_t) (0xff & buf[1])) << 48 |
+                        ((uint64_t) (0xff & buf[2])) << 40 |
+                        ((uint64_t) (0xff & buf[3])) << 32 |
+                        ((uint64_t) (0xff & buf[4])) << 24 |
+                        ((uint64_t) (0xff & buf[5])) << 16 |
+                        ((uint64_t) (0xff & buf[6])) <<  8 |
+                        ((uint64_t) (0xff & buf[7]));
+        buf += 8;
+        len -= 8;
+        if (f.payload_len <= UINT16_MAX) {
+            return -5;
+        }
+    }
+
+    f.masking_key = 0;
+    if (f.mask) {
+        if (len < 4) {
+            *delta = len - 4;
+            return 0;
+        }
+        f.masking_key = (0xff & buf[0]) << 24 |
+                        (0xff & buf[1]) << 16 |
+                        (0xff & buf[2]) <<  8 |
+                        (0xff & buf[3]);
+        buf += 4;
+    }
+
+    *delta = ((const void*) buf) - buffer;
+
+    /* Only when we're 100% complete and correct will we copy over the values */
+    memcpy(in, &f, sizeof(struct cws_frame));
+    return 0;
+}
+
+
+

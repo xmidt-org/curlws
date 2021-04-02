@@ -73,6 +73,7 @@ struct cws_frame {
  */
 int frame_validate(const struct cws_frame *f, frame_dir dir);
 
+
 /**
  * Processes a byte stream into a frame structure in a portable way.
  *
@@ -93,6 +94,7 @@ int frame_validate(const struct cws_frame *f, frame_dir dir);
  *         -5 length field was too small (<65536) for the length field size
  */
 int frame_decode(struct cws_frame *f, const void *buf, size_t len, ssize_t *delta);
+
 
 /**
  * Takes a frame, payload and buffer (that MUST be larger than the frame plus
