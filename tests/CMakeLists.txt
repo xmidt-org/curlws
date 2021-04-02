@@ -107,6 +107,19 @@ target_link_libraries (test_frame ${OPENSSL_LIBRARIES} ${CURL_LIBRARIES})
 # ---------------------------------------------------------------------------- #
 
 
+# ---------------------------------------------------------------------------- #
+add_test(NAME Test_Handlers COMMAND ${MEMORY_CHECK} ./test_handlers)
+
+add_executable(test_handlers test_handlers.c)
+
+if (${CMAKE_SYSTEM_NAME} MATCHES "Linux")
+target_link_libraries (test_handlers gcov)
+endif()
+target_link_libraries (test_handlers cunit)
+target_link_libraries (test_handlers ${OPENSSL_LIBRARIES} ${CURL_LIBRARIES})
+# ---------------------------------------------------------------------------- #
+
+
 add_custom_target(coverage
                   COMMAND lcov -q --capture
                           --directory ${CMAKE_CURRENT_BINARY_DIR}/CMakeFiles/
