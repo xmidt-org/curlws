@@ -202,8 +202,8 @@ static void _populate_callbacks(CWS*, const struct cws_config *src);
 static void _default_on_connect(void*, CWS*, const char*);
 static void _default_on_text(void*, CWS*, const char*, size_t);
 static void _default_on_binary(void*, CWS*, const void*, size_t);
-static void _default_on_ping(void*, CWS*, const char*, size_t);
-static void _default_on_pong(void*, CWS*, const char*, size_t);
+static void _default_on_ping(void*, CWS*, const void*, size_t);
+static void _default_on_pong(void*, CWS*, const void*, size_t);
 static void _default_on_close(void*, CWS*, int, const char*, size_t);
 static void _default_get_random(void*, CWS*, void*, size_t);
 static void _default_configure(void*, CWS*, CURL*);
@@ -1484,7 +1484,7 @@ static void _default_on_binary(void *data, CWS *priv, const void *mem, size_t le
 }
 
 
-static void _default_on_ping(void *data, CWS *priv, const char *reason, size_t len)
+static void _default_on_ping(void *data, CWS *priv, const void *reason, size_t len)
 {
     IGNORE_UNUSED(data);
 
@@ -1492,7 +1492,7 @@ static void _default_on_ping(void *data, CWS *priv, const char *reason, size_t l
 }
 
 
-static void _default_on_pong(void *data, CWS *priv, const char *reason, size_t len)
+static void _default_on_pong(void *data, CWS *priv, const void *reason, size_t len)
 {
     IGNORE_UNUSED(data);
     IGNORE_UNUSED(priv);

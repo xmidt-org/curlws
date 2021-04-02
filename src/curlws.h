@@ -51,6 +51,12 @@ extern "C" {
 #define CWS_CLOSE_REASON_SERVER_ERROR           1011
 #define CWS_CLOSE_REASON_TLS_HANDSHAKE_ERROR    1015
 
+/* Used to define the location in the stream this frame is by (*on_stream) */
+#define CWS_BINARY      0x0001
+#define CWS_TEXT        0x0002
+#define CWS_FIRST_FRAME 0x0004
+#define CWS_LAST_FRAME  0x0008
+
 /* All possible error codes from all the curlws functions. Future versions
  * may return other values.
  *
@@ -144,6 +150,12 @@ struct cws_config {
      */
     int explicit_expect;
 
+    /* The largest amount of payload data sent as one websocket frame.  This
+     * only impacts how many smaller fragments larger data is split and sent
+     * as.  If set to 0 the library default of 4096 will be used.
+     */
+    size_t max_payload_data;
+
     /**
      * Called upon connection, websocket_protocols contains what
      * server reported as 'Sec-WebSocket-Protocol:'.
@@ -155,16 +167,61 @@ struct cws_config {
     /**
      * Reports UTF-8 text messages.
      *
-     * @note it's guaranteed to be NULL (\0) terminated, but the UTF-8 is
-     * not validated. If it's invalid, consider closing the connection
-     * with #CWS_CLOSE_REASON_INCONSISTENT_DATA.
+     * @note The text field is guaranteed to be NULL (\0) terminated, but the
+     *       UTF-8 is not validated. If it's invalid, consider closing the
+     *       connection with #CWS_CLOSE_REASON_INCONSISTENT_DATA.
+     *
+     * @param data   the user data specified in this configuration
+     * @param handle handle for this websocket
+     * @param text   the text string being returned
+     * @param len    the length of the text string (include trailing '\0')
      */
     void (*on_text)(void *data, CWS *handle, const char *text, size_t len);
 
     /**
      * Reports binary data.
+     *
+     * @param data   the user data specified in this configuration
+     * @param handle handle for this websocket
+     * @param mem    the data being returned
+     * @param len    the length of the data
      */
     void (*on_binary)(void *data, CWS *handle, const void *mem, size_t len);
+
+    /**
+     * Reports data in a steaming style of interface for the non-control
+     * messages.
+     *
+     * @note Control messages may be interleved with the data messages as this
+     *       is part of the websocket specification.
+     *       https://tools.ietf.org/html/rfc6455#section-5.4
+     *
+     * @note No control message data will be reported using this function call.
+     *
+     * @note The info parameter describes where this frame is in the stream,
+     *       and the type of the frame (Binary/Text).  For a stream with a
+     *       single frame, both CWS_FIRST_FRAME and CWS_LAST_FRAME will be set.
+     *       It is reasonable for a frame to not be either the first or last
+     *       frame
+     *
+     * @note If this callback is set to a non-NULL value, then the callbacks
+     *       (*on_text) and (*on_binary) are disabled.
+     *
+     * @param data   the user data specified in this configuration
+     * @param handle handle for this websocket
+     * @param info   information about the frame of date presented
+     *                  Either CWS_BINARY or CWS_TEXT will be set indicating
+     *                  the type of the payload.
+     *                  CWS_FIRST_FRAME will be set if this is the first frame
+     *                  in a sequence.
+     *                  CWS_LAST_FRAME will be set if this is the last frame in
+     *                  a sequence.
+     * @param mem    the data being returned
+     * @param len    the length of the data
+     *
+     * with #CWS_CLOSE_REASON_INCONSISTENT_DATA.
+     */
+    void (*on_stream)(void *data, CWS *handle, int info, const void *mem, size_t len);
 
     /**
      * Reports PING.
@@ -172,12 +229,12 @@ struct cws_config {
      * @note if provided you should reply with cws_pong(). If not
      * provided, pong is sent with the same message payload.
      */
-    void (*on_ping)(void *data, CWS *handle, const char *reason, size_t len);
+    void (*on_ping)(void *data, CWS *handle, const void *mem, size_t len);
 
     /**
      * Reports PONG.
      */
-    void (*on_pong)(void *data, CWS *handle, const char *reason, size_t len);
+    void (*on_pong)(void *data, CWS *handle, const void *mem, size_t len);
 
     /**
      * Reports server closed the connection with the given reason.
