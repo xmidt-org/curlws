@@ -294,14 +294,14 @@ static void on_binary(void *data, CWS *ws, const void *mem, size_t len) {
     (void)data;
 }
 
-static void on_ping(void *data, CWS *ws, const char *reason, size_t len) {
-    INF("PING %zd bytes='%s'", len, reason);
+static void on_ping(void *data, CWS *ws, const void *reason, size_t len) {
+    INF("PING %zd bytes='%.*s'", len, (int) len, (const char*) reason);
     cws_pong(ws, reason, len);
     (void)data;
 }
 
-static void on_pong(void *data, CWS *ws, const char *reason, size_t len) {
-    INF("PONG %zd bytes='%s'", len, reason);
+static void on_pong(void *data, CWS *ws, const void *reason, size_t len) {
+    INF("PONG %zd bytes='%.*s'", len, (int) len, (const char*) reason);
     (void)data;
     (void)ws;
 }
