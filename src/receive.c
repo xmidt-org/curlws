@@ -222,7 +222,7 @@ static void _handle_control_frame(CWS *priv)
         (priv->on_pong_fn)(priv->user, priv, priv->recv.control.buf, priv->recv.control.used);
         priv->dispatching--;
     } else if (WS_OPCODE_CLOSE == priv->recv.frame.opcode) {
-        uint16_t status = 1005;
+        int status = 1005;
         const char *s = "";
         size_t len = priv->recv.frame.payload_len;
 
