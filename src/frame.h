@@ -46,7 +46,7 @@ struct cws_frame {
     uint8_t is_control : 1; /* 1 if the opcode is control, 0 otherwise */
     uint8_t opcode     : 4; /* 0-15 opcode from rfc6455, page 29 */
 
-    uint32_t masking_key;   /* The 32 bit masking key to use on upstream msgs */
+    uint8_t masking_key[4]; /* The 4 byte masking key to use on upstream msgs */
 
     uint64_t payload_len;   /* The payload length pointed to by payload */
     const void *payload;    /* The payload (may be NULL) */

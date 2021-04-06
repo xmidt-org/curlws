@@ -26,6 +26,7 @@
  */
 #include "frame.h"
 
+#include <stdbool.h>
 #include <stddef.h>
 #include <string.h>
 
@@ -54,12 +55,17 @@ static int _frame_decode(struct cws_frame*, const void*, size_t, ssize_t*);
 /*----------------------------------------------------------------------------*/
 int frame_validate(const struct cws_frame *f, frame_dir dir)
 {
+    bool is_mask_zero = ((0 == f->masking_key[0]) &&
+                         (0 == f->masking_key[1]) &&
+                         (0 == f->masking_key[2]) &&
+                         (0 == f->masking_key[3]));
+
     if (FRAME_DIR_C2S == dir) {
-        if ((1 != f->mask) || (0 == f->masking_key)) {
+        if ((1 != f->mask) || (true == is_mask_zero)) {
             return -1;
         }
     } else {
-        if ((0 != f->mask) || (0 != f->masking_key)) {
+        if ((0 != f->mask) || (false == is_mask_zero)) {
             return -1;
         }
     }
@@ -161,10 +167,7 @@ size_t frame_encode(const struct cws_frame *f, void *buf, size_t len)
         return 0;
     }
 
-    mask[0] = 0x00ff & (f->masking_key >> 24);
-    mask[1] = 0x00ff & (f->masking_key >> 16);
-    mask[2] = 0x00ff & (f->masking_key >> 8);
-    mask[3] = 0x00ff & (f->masking_key);
+    memcpy(mask, f->masking_key, 4);
     
     p += header_len;
     payload = (const uint8_t*) f->payload;
@@ -264,16 +267,13 @@ static int _frame_decode(struct cws_frame *in, const void *buffer, size_t len, s
         }
     }
 
-    f.masking_key = 0;
+    memset(f.masking_key, 0, 4);
     if (f.mask) {
         if (len < 4) {
             *delta = len - 4;
             return 0;
         }
-        f.masking_key = (0xff & buf[0]) << 24 |
-                        (0xff & buf[1]) << 16 |
-                        (0xff & buf[2]) <<  8 |
-                        (0xff & buf[3]);
+        memcpy(f.masking_key, buf, 4);
         buf += 4;
     }
 

@@ -132,21 +132,5 @@ int cws_strncasecmp(const char *s1, const char *s2, size_t n);
  */
 char* cws_strmerge(const char *s1, const char *s2);
 
-/**
- * Change the byte ordering from the host to network (big) endian.
- *
- * @param mem   the buffer to reorder
- * @param len   the size of the buffer to reorder
- */
-void cws_hton(void *mem, uint8_t len);
-
-
-/**
- * Change the byte ordering from the network (big) to host endian.
- *
- * @param mem   the buffer to reorder
- * @param len   the size of the buffer to reorder
- */
-void cws_ntoh(void *mem, uint8_t len);
 
 #endif

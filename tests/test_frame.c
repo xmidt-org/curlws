@@ -42,7 +42,7 @@ void test_validate()
           .f.opcode = WS_OPCODE_CONTINUATION,
           .f.is_control = 0,
           .f.mask = 1,
-          .f.masking_key = 123,
+          .f.masking_key = {0, 0, 0, 123},
           .f.payload_len = 1200,
           .dir = FRAME_DIR_C2S,
           .rv = 0 },
@@ -51,7 +51,7 @@ void test_validate()
           .f.opcode = WS_OPCODE_TEXT,
           .f.is_control = 0,
           .f.mask = 0,
-          .f.masking_key = 0,
+          .f.masking_key = {0, 0, 0, 0},
           .f.payload_len = 1200,
           .dir = FRAME_DIR_S2C,
           .rv = 0 },
@@ -60,7 +60,7 @@ void test_validate()
           .f.opcode = WS_OPCODE_PING,
           .f.is_control = 1,
           .f.mask = 0,
-          .f.masking_key = 0,
+          .f.masking_key = {0, 0, 0, 0},
           .f.payload_len = 0,
           .dir = FRAME_DIR_S2C,
           .rv = 0 },
@@ -69,7 +69,7 @@ void test_validate()
           .f.opcode = WS_OPCODE_PONG,
           .f.is_control = 1,
           .f.mask = 1,
-          .f.masking_key = 1234,
+          .f.masking_key = {0, 0, 4, 0xd2},
           .f.payload_len = 0,
           .dir = FRAME_DIR_C2S,
           .rv = 0 },
@@ -79,7 +79,7 @@ void test_validate()
           .f.opcode = WS_OPCODE_PING,
           .f.is_control = 1,
           .f.mask = 1,
-          .f.masking_key = 0,
+          .f.masking_key = {0, 0, 0, 0},
           .f.payload_len = 0,
           .dir = FRAME_DIR_S2C,
           .rv = -1 },
@@ -88,7 +88,7 @@ void test_validate()
           .f.opcode = WS_OPCODE_PING,
           .f.is_control = 1,
           .f.mask = 0,
-          .f.masking_key = 1234,
+          .f.masking_key = {0, 0, 4, 0xd2},
           .f.payload_len = 0,
           .dir = FRAME_DIR_S2C,
           .rv = -1 },
@@ -97,7 +97,7 @@ void test_validate()
           .f.opcode = WS_OPCODE_PING,
           .f.is_control = 1,
           .f.mask = 1,
-          .f.masking_key = 1234,
+          .f.masking_key = {0, 0, 4, 0xd2},
           .f.payload_len = 0,
           .dir = FRAME_DIR_S2C,
           .rv = -1 },
@@ -107,7 +107,7 @@ void test_validate()
           .f.opcode = WS_OPCODE_PONG,
           .f.is_control = 1,
           .f.mask = 1,
-          .f.masking_key = 0,
+          .f.masking_key = {0, 0, 0, 0},
           .f.payload_len = 0,
           .dir = FRAME_DIR_S2C,
           .rv = -1 },
@@ -116,7 +116,7 @@ void test_validate()
           .f.opcode = WS_OPCODE_PONG,
           .f.is_control = 1,
           .f.mask = 0,
-          .f.masking_key = 1234,
+          .f.masking_key = {0, 0, 4, 0xd2},
           .f.payload_len = 0,
           .dir = FRAME_DIR_C2S,
           .rv = -1 },
@@ -125,7 +125,7 @@ void test_validate()
           .f.opcode = WS_OPCODE_PONG,
           .f.is_control = 1,
           .f.mask = 0,
-          .f.masking_key = 0,
+          .f.masking_key = {0, 0, 0, 0},
           .f.payload_len = 0,
           .dir = FRAME_DIR_C2S,
           .rv = -1 },
@@ -135,7 +135,7 @@ void test_validate()
           .f.opcode = WS_OPCODE_PING,
           .f.is_control = 0,
           .f.mask = 0,
-          .f.masking_key = 0,
+          .f.masking_key = {0, 0, 0, 0},
           .f.payload_len = 0,
           .dir = FRAME_DIR_S2C,
           .rv = -2 },
@@ -144,7 +144,7 @@ void test_validate()
           .f.opcode = WS_OPCODE_TEXT,
           .f.is_control = 1,
           .f.mask = 1,
-          .f.masking_key = 1234,
+          .f.masking_key = {0, 0, 4, 0xd2},
           .f.payload_len = 0,
           .dir = FRAME_DIR_C2S,
           .rv = -2 },
@@ -154,7 +154,7 @@ void test_validate()
           .f.opcode = WS_OPCODE_PING,
           .f.is_control = 1,
           .f.mask = 0,
-          .f.masking_key = 0,
+          .f.masking_key = {0, 0, 0, 0},
           .f.payload_len = 130,
           .dir = FRAME_DIR_S2C,
           .rv = -3 },
@@ -163,7 +163,7 @@ void test_validate()
           .f.opcode = WS_OPCODE_TEXT,
           .f.is_control = 0,
           .f.mask = 1,
-          .f.masking_key = 1234,
+          .f.masking_key = {0, 0, 4, 0xd2},
           .f.payload_len = UINT64_MAX,
           .dir = FRAME_DIR_C2S,
           .rv = -3 },
@@ -173,7 +173,7 @@ void test_validate()
           .f.opcode = WS_OPCODE_PING,
           .f.is_control = 1,
           .f.mask = 0,
-          .f.masking_key = 0,
+          .f.masking_key = {0, 0, 0, 0},
           .f.payload_len = 10,
           .dir = FRAME_DIR_S2C,
           .rv = -4 },
@@ -183,7 +183,7 @@ void test_validate()
           .f.opcode = 5,
           .f.is_control = 1,
           .f.mask = 0,
-          .f.masking_key = 0,
+          .f.masking_key = {0, 0, 0, 0},
           .f.payload_len = 10,
           .dir = FRAME_DIR_S2C,
           .rv = -5 },
@@ -214,7 +214,7 @@ void test_decode()
           .f.fin         = 1,
           .f.opcode      = 0xa,
           .f.mask        = 1,
-          .f.masking_key = 0x01020304,
+          .f.masking_key = { 1, 2, 3, 4 },
           .f.payload_len = 4,
           .f.payload     = NULL },
         /* Basic tiny */
@@ -225,7 +225,7 @@ void test_decode()
           .f.fin         = 1,
           .f.opcode      = 0x9,
           .f.mask        = 0,
-          .f.masking_key = 0,
+          .f.masking_key = { 0, 0, 0, 0},
           .f.payload_len = 4,
           .f.payload     = NULL },
         /* Basic +2 bytes for length */
@@ -236,7 +236,7 @@ void test_decode()
           .f.fin         = 0,
           .f.opcode      = 0,
           .f.mask        = 0,
-          .f.masking_key = 0,
+          .f.masking_key = { 0, 0, 0, 0},
           .f.payload_len = 200,
           .f.payload     = NULL },
         /* Basic +8 bytes for length */
@@ -247,7 +247,7 @@ void test_decode()
           .f.fin         = 0,
           .f.opcode      = 1,
           .f.mask        = 0,
-          .f.masking_key = 0,
+          .f.masking_key = { 0, 0, 0, 0},
           .f.payload_len = 0x50000,
           .f.payload     = NULL },
         /* Invalid reserved bits */
@@ -258,7 +258,7 @@ void test_decode()
           .f.fin         = 0,
           .f.opcode      = 0,
           .f.mask        = 0,
-          .f.masking_key = 0,
+          .f.masking_key = { 0, 0, 0, 0},
           .f.payload_len = 0,
           .f.payload     = NULL },
         /* Invalid opcode */
@@ -269,7 +269,7 @@ void test_decode()
           .f.fin         = 0,
           .f.opcode      = 0,
           .f.mask        = 0,
-          .f.masking_key = 0,
+          .f.masking_key = { 0, 0, 0, 0},
           .f.payload_len = 0,
           .f.payload     = NULL },
         /* Invalid length ... too short for the size used. */
@@ -280,7 +280,7 @@ void test_decode()
           .f.fin         = 0,
           .f.opcode      = 0,
           .f.mask        = 0,
-          .f.masking_key = 0,
+          .f.masking_key = { 0, 0, 0, 0},
           .f.payload_len = 0,
           .f.payload     = NULL },
         /* Invalid length ... MSB set when it should always be 0. */
@@ -291,7 +291,7 @@ void test_decode()
           .f.fin         = 0,
           .f.opcode      = 0,
           .f.mask        = 0,
-          .f.masking_key = 0,
+          .f.masking_key = { 0, 0, 0, 0},
           .f.payload_len = 0,
           .f.payload     = NULL },        /* Invalid length ... too short for the size used. */
         { .len = 10,
@@ -301,7 +301,7 @@ void test_decode()
           .f.fin         = 0,
           .f.opcode      = 0,
           .f.mask        = 0,
-          .f.masking_key = 0,
+          .f.masking_key = { 0, 0, 0, 0},
           .f.payload_len = 0,
           .f.payload     = NULL },
         { .len = 0 }
@@ -332,7 +332,10 @@ void test_decode()
         CU_ASSERT(tests[j].f.fin         == f.fin);
         CU_ASSERT(tests[j].f.opcode      == f.opcode);
         CU_ASSERT(tests[j].f.mask        == f.mask);
-        CU_ASSERT(tests[j].f.masking_key == f.masking_key);
+        CU_ASSERT(tests[j].f.masking_key[0] == f.masking_key[0]);
+        CU_ASSERT(tests[j].f.masking_key[1] == f.masking_key[1]);
+        CU_ASSERT(tests[j].f.masking_key[2] == f.masking_key[2]);
+        CU_ASSERT(tests[j].f.masking_key[3] == f.masking_key[3]);
         CU_ASSERT(tests[j].f.payload_len == f.payload_len);
         CU_ASSERT(tests[j].f.payload     == f.payload);
     }
@@ -343,21 +346,21 @@ void test_encode()
     uint8_t buffer[256];
     const uint8_t expect[] = { 0x89, 0x84, 0x01, 0x02, 0x03, 0x04, 0x51, 0x4b, 0x4d, 0x43 };
 
-    struct cws_frame f;
-    size_t rv, i;
-
-    f.fin = 1;
-    f.mask = 1;
-    f.is_control = 1;
-    f.opcode = WS_OPCODE_PING;
-    f.masking_key = 0x01020304;
-    f.payload_len = 4;
-    f.payload = "PING";
+    struct cws_frame f = {
+        .fin = 1,
+        .mask = 1,
+        .is_control = 1,
+        .opcode = WS_OPCODE_PING,
+        .masking_key = {1, 2, 3, 4},
+        .payload_len = 4,
+        .payload = "PING"
+    };
+    size_t rv;
 
     rv = frame_encode(&f, buffer, 256);
     CU_ASSERT(sizeof(expect) == rv);
 
-    for (i = 0; i < sizeof(expect); i++) {
+    for (size_t i = 0; i < sizeof(expect); i++) {
         if (expect[i] != buffer[i]) {
             printf("%zd 0x%02x =?= 0x%02x\n", i, expect[i], buffer[i] );
         }
@@ -370,16 +373,16 @@ void test_encode_too_short()
 {
     uint8_t buffer[256];
 
-    struct cws_frame f;
+    struct cws_frame f = {
+        .fin = 1,
+        .mask = 1,
+        .is_control = 1,
+        .opcode = WS_OPCODE_BINARY,
+        .masking_key = {0, 0, 0, 0},
+        .payload_len = 0x10000,
+        .payload = "PING"
+    };
     size_t rv;
-
-    f.fin = 1;
-    f.mask = 1;
-    f.is_control = 1;
-    f.opcode = WS_OPCODE_BINARY;
-    f.masking_key = 0;
-    f.payload_len = 0x10000;
-    f.payload = "PING";
 
     rv = frame_encode(&f, buffer, 1);
     CU_ASSERT(0 == rv);
@@ -406,7 +409,15 @@ void test_encode_long()
     uint8_t *expect1;
     uint8_t *expect2;
 
-    struct cws_frame f;
+    struct cws_frame f = {
+        .fin = 1,
+        .mask = 1,
+        .is_control = 0,
+        .opcode = WS_OPCODE_BINARY,
+        .masking_key = {0, 0, 0, 0},
+        .payload_len = 0x10000,
+    };
+
     size_t rv, i;
 
     payload = (uint8_t*) malloc(0x10000);
@@ -431,12 +442,7 @@ void test_encode_long()
     buffer1[0x10000+14] = 0xa5;
     buffer2[0x01000+8] = 0xa5;
 
-    f.fin = 1;
-    f.mask = 1;
-    f.is_control = 0;
-    f.opcode = WS_OPCODE_BINARY;
-    f.masking_key = 0;
-    f.payload_len = 0x10000;
+
     f.payload = payload;
 
     rv = frame_encode(&f, buffer1, 0x10000 + 14);

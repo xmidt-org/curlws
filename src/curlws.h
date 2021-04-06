@@ -52,10 +52,11 @@ extern "C" {
 #define CWS_CLOSE_REASON_TLS_HANDSHAKE_ERROR    1015
 
 /* Used to define the location in the stream this frame is by (*on_stream) */
-#define CWS_BINARY      0x0001
-#define CWS_TEXT        0x0002
-#define CWS_FIRST_FRAME 0x0004
-#define CWS_LAST_FRAME  0x0008
+#define CWS_CONT        0x000100
+#define CWS_BINARY      0x000200
+#define CWS_TEXT        0x000400
+#define CWS_FIRST_FRAME 0x010000
+#define CWS_LAST_FRAME  0x020000
 
 /* All possible error codes from all the curlws functions. Future versions
  * may return other values.
@@ -70,6 +71,10 @@ typedef enum {
     CWSE_INVALID_CLOSE_REASON_CODE,     /* 3 */
     CWSE_APP_DATA_LENGTH_TOO_LONG,      /* 4 */
     CWSE_UNSUPPORTED_INTEGER_SIZE,      /* 5 */
+    CWSE_INTERNAL_ERROR,                /* 6 */
+    CWSE_INVALID_OPCODE,                /* 7 */
+    CWSE_STREAM_CONTINUITY_ISSUE,       /* 8 */
+    CWSE_INVALID_OPTIONS,               /* 9 */
 
     CWSE_LAST /* never use! */
 } CWScode;
@@ -150,11 +155,10 @@ struct cws_config {
      */
     int explicit_expect;
 
-    /* The largest amount of payload data sent as one websocket frame.  This
-     * only impacts how many smaller fragments larger data is split and sent
-     * as.  If set to 0 the library default of 4096 will be used.
+    /* The largest amount of payload data sent as one websocket frame.
+     * If set to 0 the library default of 1024 will be used.
      */
-    size_t max_payload_data;
+    size_t max_payload_size;
 
     /**
      * Called upon connection, websocket_protocols contains what
@@ -296,6 +300,11 @@ struct cws_config {
 };
 
 
+/*----------------------------------------------------------------------------*/
+/*                               Lifecycle APIs                               */
+/*----------------------------------------------------------------------------*/
+
+
 /**
  * Create a new CURL-based WebSocket handle.
  *
@@ -322,6 +331,30 @@ CWS *cws_create(const struct cws_config *config);
 
 
 /**
+ * Provides a way to add the WebSocket easy handle to a multi session without
+ * exposing the easy handle.
+ *
+ * @param cws_handle   the websocket handle to associate with the multi handle
+ * @param multi_handle the multi handle to control the websocket
+ *
+ * @return the response from libcurl
+ */
+CURLMcode cws_multi_add_handle(CWS *cws_handle, CURLM *multi_handle);
+
+
+/**
+ * Provides a way to remove the WebSocket easy handle from a multi session
+ * without exposing the easy handle.
+ *
+ * @param cws_handle   the websocket handle to associate with the multi handle
+ * @param multi_handle the multi handle to control the websocket
+ *
+ * @return the response from libcurl
+ */
+CURLMcode cws_multi_remove_handle(CWS *cws_handle, CURLM *multi_handle);
+
+
+/**
  * Frees a handle and all resources created with cws_create()
  *
  * @param handle the websocket handle to destroy
@@ -329,37 +362,9 @@ CWS *cws_create(const struct cws_config *config);
 void cws_destroy(CWS *handle);
 
 
-/**
- * Send a binary (opcode 0x2) message of a given size.
- *
- * @param handle the websocket handle to interact with
- * @param data   the buffer to send
- * @param len    the number of bytes in the buffer
- *
- * @returnval CWSE_OK
- * @returnval CWSE_OUT_OF_MEMORY
- * @returnval CWSE_CLOSED_CONNECTION
- */
-CWScode cws_send_binary(CWS *handle, const void *data, size_t len);
-
-
-/**
- * Send a text (opcode 0x1) message of a given size.
- *
- * @note If the len is specified as something other than SIZE_MAX then no
- *       terminating '\0' is needed.  If SIZE_MAX is used then strlen() is
- *       used to determine the string length and a terminating '\0' is required.
- *
- * @param handle the websocket handle to interact with
- * @param s      the text (UTF-8) to send.  If len = SIZE_MAX then strlen(s) is
- *               used to determine the length of the string.
- * @param len    the number of bytes in the buffer
- *
- * @returnval CWSE_OK
- * @returnval CWSE_OUT_OF_MEMORY
- * @returnval CWSE_CLOSED_CONNECTION
- */
-CWScode cws_send_text(CWS *handle, const char *s, size_t len);
+/*----------------------------------------------------------------------------*/
+/*                                 Control APIs                               */
+/*----------------------------------------------------------------------------*/
 
 
 /**
@@ -372,10 +377,10 @@ CWScode cws_send_text(CWS *handle, const char *s, size_t len);
  * @param data   Application data to send back.  Limited to 125 or less.
  * @param len    the length of data in bytes
  *
- * @returnval CWSE_OK
- * @returnval CWSE_OUT_OF_MEMORY
- * @returnval CWSE_CLOSED_CONNECTION
- * @returnval CWSE_APP_DATA_LENGTH_TOO_LONG
+ * @retval CWSE_OK
+ * @retval CWSE_OUT_OF_MEMORY
+ * @retval CWSE_CLOSED_CONNECTION
+ * @retval CWSE_APP_DATA_LENGTH_TOO_LONG
  */
 CWScode cws_ping(CWS *handle, const void *data, size_t len);
 
@@ -396,10 +401,10 @@ CWScode cws_ping(CWS *handle, const void *data, size_t len);
  * @param data   Application data to send back.  Limited to 125 or less.
  * @param len    the length of data in bytes
  *
- * @returnval CWSE_OK
- * @returnval CWSE_OUT_OF_MEMORY
- * @returnval CWSE_CLOSED_CONNECTION
- * @returnval CWSE_APP_DATA_LENGTH_TOO_LONG
+ * @retval CWSE_OK
+ * @retval CWSE_OUT_OF_MEMORY
+ * @retval CWSE_CLOSED_CONNECTION
+ * @retval CWSE_APP_DATA_LENGTH_TOO_LONG
  */
 CWScode cws_pong(CWS *handle, const void *data, size_t len);
 
@@ -424,37 +429,101 @@ CWScode cws_pong(CWS *handle, const void *data, size_t len);
  *               strlen() is used on reason (if not NULL).  Limited to 123 or
  *               less.
  *
- * @returnval CWSE_OK
- * @returnval CWSE_OUT_OF_MEMORY
- * @returnval CWSE_CLOSED_CONNECTION
- * @returnval CWSE_INVALID_CLOSE_REASON_CODE
- * @returnval CWSE_APP_DATA_LENGTH_TOO_LONG
+ * @retval CWSE_OK
+ * @retval CWSE_OUT_OF_MEMORY
+ * @retval CWSE_CLOSED_CONNECTION
+ * @retval CWSE_INVALID_CLOSE_REASON_CODE
+ * @retval CWSE_APP_DATA_LENGTH_TOO_LONG
  */
 CWScode cws_close(CWS *handle, int code, const char *reason, size_t len);
 
 
-/**
- * Provides a way to add the WebSocket easy handle to a multi session without
- * exposing the easy handle.
- *
- * @param cws_handle   the websocket handle to associate with the multi handle
- * @param multi_handle the multi handle to control the websocket
- *
- * @return the response from libcurl
- */
-CURLMcode cws_multi_add_handle(CWS *cws_handle, CURLM *multi_handle);
+/*----------------------------------------------------------------------------*/
+/*                              Block Based APIs                              */
+/*----------------------------------------------------------------------------*/
 
 
 /**
- * Provides a way to remove the WebSocket easy handle from a multi session
- * without exposing the easy handle.
+ * Send a binary (opcode 0x2) message of a given size.
  *
- * @param cws_handle   the websocket handle to associate with the multi handle
- * @param multi_handle the multi handle to control the websocket
+ * @param handle the websocket handle to interact with
+ * @param data   the buffer to send
+ * @param len    the number of bytes in the buffer
  *
- * @return the response from libcurl
+ * @retval CWSE_OK
+ * @retval CWSE_OUT_OF_MEMORY
+ * @retval CWSE_CLOSED_CONNECTION
  */
-CURLMcode cws_multi_remove_handle(CWS *cws_handle, CURLM *multi_handle);
+CWScode cws_send_blk_binary(CWS *handle, const void *data, size_t len);
+
+
+/**
+ * Send a text (opcode 0x1) message of a given size.
+ *
+ * @note If the len is specified as something other than SIZE_MAX then no
+ *       terminating '\0' is needed.  If SIZE_MAX is used then strlen() is
+ *       used to determine the string length and a terminating '\0' is required.
+ *
+ * @param handle the websocket handle to interact with
+ * @param s      the text (UTF-8) to send.  If len = SIZE_MAX then strlen(s) is
+ *               used to determine the length of the string.
+ * @param len    the number of bytes in the buffer
+ *
+ * @retval CWSE_OK
+ * @retval CWSE_OUT_OF_MEMORY
+ * @retval CWSE_CLOSED_CONNECTION
+ */
+CWScode cws_send_blk_text(CWS *handle, const char *s, size_t len);
+
+
+/*----------------------------------------------------------------------------*/
+/*                              Stream Based APIs                             */
+/*----------------------------------------------------------------------------*/
+
+
+/**
+ * Send a binary (opcode 0x2) message of a given size.
+ *
+ * 
+ * @param handle the websocket handle to interact with
+ * @param info   information about the frame of date presented.  The type
+ *               information is ignored.  Set the CWS_FIRST_FRAME and/or
+ *               CWS_LAST_FRAME to indicate if the frame is the first or last
+ *               in a sequence.
+ * @param data   the buffer to send
+ * @param len    the number of bytes in the buffer
+ *
+ * @retval CWSE_OK
+ * @retval CWSE_OUT_OF_MEMORY
+ * @retval CWSE_CLOSED_CONNECTION
+ * @retval CWSE_STREAM_CONTINUITY_ISSUE
+ */
+CWScode cws_send_strm_binary(CWS *handle, int info, const void *data, size_t len);
+
+
+/**
+ * Send a text (opcode 0x1) message of a given size.
+ *
+ * @note If the len is specified as something other than SIZE_MAX then no
+ *       terminating '\0' is needed.  If SIZE_MAX is used then strlen() is
+ *       used to determine the string length and a terminating '\0' is required.
+ *
+ * @param handle the websocket handle to interact with
+ * @param info   information about the frame of date presented.  The type
+ *               information is ignored.  Set the CWS_FIRST_FRAME and/or
+ *               CWS_LAST_FRAME to indicate if the frame is the first or last
+ *               in a sequence.
+ * @param s      the text (UTF-8) to send.  If len = SIZE_MAX then strlen(s) is
+ *               used to determine the length of the string.
+ * @param len    the number of bytes in the buffer
+ *
+ * @retval CWSE_OK
+ * @retval CWSE_OUT_OF_MEMORY
+ * @retval CWSE_CLOSED_CONNECTION
+ * @retval CWSE_STREAM_CONTINUITY_ISSUE
+ */
+CWScode cws_send_strm_text(CWS *handle, int info, const char *s, size_t len);
+
 
 #ifdef __cplusplus
 }

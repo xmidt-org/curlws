@@ -25,6 +25,7 @@
  */
 #include <stddef.h>
 #include <stdlib.h>
+#include <stdint.h>
 
 #include "memory.h"
 
@@ -42,7 +43,7 @@ struct mem_block {
     struct mem_block_pool *parent;
     struct mem_block *prev;
     struct mem_block *next;
-    unsigned char data[];
+    uint8_t data[];
 };
 
 struct mem_block_pool {

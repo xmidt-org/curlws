@@ -38,21 +38,11 @@
 /*----------------------------------------------------------------------------*/
 /*                                   Macros                                   */
 /*----------------------------------------------------------------------------*/
-#define CWS_MASK_TMPBUF_SIZE 4096
-
 #define IGNORE_UNUSED(x) (void) x;
 
 /*----------------------------------------------------------------------------*/
 /*                               Data Structures                              */
 /*----------------------------------------------------------------------------*/
-
-struct cws_buf_queue {
-    struct cws_buf_queue *prev;
-    struct cws_buf_queue *next;
-    size_t len;
-    size_t remaining;
-    uint8_t buffer[];
-};
 
 struct cws_object {
     /* The initial URL to connect to. */
@@ -60,6 +50,9 @@ struct cws_object {
 
     /* The curl object that represents the connection. */
     CURL *easy;
+
+    /* The headers curl needs us to store. */
+    struct curl_slist *headers;
 
     /* The websocket extensions */
     struct {
@@ -89,6 +82,12 @@ struct cws_object {
     /* The memory configuration & pool. */
     struct mem_pool_config mem_cfg;
     pool_t *mem;
+
+    /* The details about the last data frame queued to send. */
+    int last_sent_data_frame_info;
+
+    /* The maximum payload size */
+    size_t max_payload_size;
 
     /* The outgoing queue of bytes to send. */
     struct cws_buf_queue *send;
@@ -121,6 +120,7 @@ struct cws_object {
     /* Connection State flags */
     uint8_t dispatching;
     uint8_t pause_flags;
+    bool redirection;
     bool accepted;
     bool upgraded;
     bool connection_websocket;
@@ -128,5 +128,13 @@ struct cws_object {
     bool deleted;
 };
 
+/*----------------------------------------------------------------------------*/
+/*                             Function Prototypes                            */
+/*----------------------------------------------------------------------------*/
+
+/**
+ * Internal only cleanup function.
+ */
+void _cws_cleanup(CWS *priv);
 #endif
 

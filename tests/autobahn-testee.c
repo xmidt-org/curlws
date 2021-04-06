@@ -122,9 +122,12 @@ static void a_main_loop(struct myapp_ctx *ctx) {
             break;
         }
 
+        printf( "rc: %d, still_running: %d, select timeout: %ld, %ld\n", rc, still_running, timeout.tv_sec, timeout.tv_usec);
+
         /* See how the transfers went */
         while ((msg = curl_multi_info_read(multi, &msgs_left))) {
             if (msg->msg == CURLMSG_DONE) {
+                curl_multi_remove_handle(multi, msg->easy_handle);
                 INF("HTTP completed with status %d '%s'",
                     msg->data.result, curl_easy_strerror(msg->data.result));
             }
@@ -270,7 +273,7 @@ static void on_text(void *data, CWS *ws, const char *text, size_t len) {
     }
 
     INF("TEXT %zd bytes={\n%s\n}", len, text);
-    cws_send_text(ws, text, len);
+    cws_send_blk_text(ws, text, len);
     (void)data;
 }
 
@@ -290,7 +293,7 @@ static void on_binary(void *data, CWS *ws, const void *mem, size_t len) {
         fprintf(stderr, "\n}\n");
     }
 
-    cws_send_binary(ws, mem, len);
+    cws_send_blk_binary(ws, mem, len);
     (void)data;
 }
 
@@ -400,7 +403,7 @@ int main(int argc, char *argv[]) {
         cfg.on_pong = on_pong;
         cfg.on_close = on_close;
         cfg.data = p;
-        cfg.verbose = false;
+        cfg.verbose = 3;
 
         //fprintf(stderr, "TEST: %u\n", current_test);
 

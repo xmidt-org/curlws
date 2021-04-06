@@ -63,14 +63,10 @@ void test_cws_strndup()
     free(tmp);
 
     tmp = cws_strndup( &empty[1], 0 );
-    CU_ASSERT(NULL != tmp);
-    CU_ASSERT('\0' == *tmp);
-    free(tmp);
+    CU_ASSERT(NULL == tmp);
 
     tmp = cws_strndup( "foo", 0 );
-    CU_ASSERT(NULL != tmp);
-    CU_ASSERT('\0' == *tmp);
-    free(tmp);
+    CU_ASSERT(NULL == tmp);
 
     tmp = cws_strndup( "asdf", 12 );
     CU_ASSERT(NULL != tmp);
@@ -98,6 +94,8 @@ void test_cws_strncasecmp()
     CU_ASSERT(0 <  cws_strncasecmp("c", "bOO", 4));
     CU_ASSERT(0 >  cws_strncasecmp("foo", "FOOd", 4));
     CU_ASSERT(0 == cws_strncasecmp("foo", "FOOd", 3));
+    CU_ASSERT(0 != cws_strncasecmp("foo", "food", 4));
+    CU_ASSERT(0 != cws_strncasecmp("websocket", "websocket dog", 13));
 }
 
 

@@ -57,44 +57,6 @@ target_link_libraries (test_utils ${OPENSSL_LIBRARIES})
 
 
 # ---------------------------------------------------------------------------- #
-add_test(NAME Test_Curlws COMMAND ${MEMORY_CHECK} ./test_curlws)
-
-add_executable(test_curlws test_curlws.c ../src/utils.c)
-
-if (${CMAKE_SYSTEM_NAME} MATCHES "Linux")
-target_link_libraries (test_curlws gcov)
-endif()
-target_link_libraries (test_curlws cunit)
-target_link_libraries (test_curlws ${OPENSSL_LIBRARIES} ${CURL_LIBRARIES})
-# ---------------------------------------------------------------------------- #
-
-
-# ---------------------------------------------------------------------------- #
-add_test(NAME Test_MockedCurlws COMMAND ${MEMORY_CHECK} ./test_mocked_curlws)
-
-add_executable(test_mocked_curlws test_mocked_curlws.c ../src/utils.c)
-
-if (${CMAKE_SYSTEM_NAME} MATCHES "Linux")
-target_link_libraries (test_mocked_curlws gcov)
-endif()
-target_link_libraries (test_mocked_curlws cunit)
-target_link_libraries (test_mocked_curlws ${OPENSSL_LIBRARIES})
-# ---------------------------------------------------------------------------- #
-
-
-# ---------------------------------------------------------------------------- #
-add_test(NAME Test_Autobahn COMMAND ${MEMORY_CHECK} ./test_autobahn ws://localhost:9001 1 40)
-
-add_executable(test_autobahn autobahn-testee.c ../src/utils.c ../src/curlws.c)
-
-if (${CMAKE_SYSTEM_NAME} MATCHES "Linux")
-target_link_libraries (test_autobahn gcov)
-endif()
-target_link_libraries (test_autobahn ${OPENSSL_LIBRARIES} ${CURL_LIBRARIES})
-# ---------------------------------------------------------------------------- #
-
-
-# ---------------------------------------------------------------------------- #
 add_test(NAME Test_Frame COMMAND ${MEMORY_CHECK} ./test_frame)
 
 add_executable(test_frame test_frame.c ../src/frame.c)
@@ -103,7 +65,30 @@ if (${CMAKE_SYSTEM_NAME} MATCHES "Linux")
 target_link_libraries (test_frame gcov)
 endif()
 target_link_libraries (test_frame cunit)
-target_link_libraries (test_frame ${OPENSSL_LIBRARIES} ${CURL_LIBRARIES})
+# ---------------------------------------------------------------------------- #
+
+
+# ---------------------------------------------------------------------------- #
+add_test(NAME Test_Frame_Senders COMMAND ${MEMORY_CHECK} ./test_frame_senders)
+
+add_executable(test_frame_senders test_frame_senders.c ../src/frame_senders.c)
+
+if (${CMAKE_SYSTEM_NAME} MATCHES "Linux")
+target_link_libraries (test_frame_senders gcov)
+endif()
+target_link_libraries (test_frame_senders cunit)
+# ---------------------------------------------------------------------------- #
+
+
+# ---------------------------------------------------------------------------- #
+add_test(NAME Test_Data_Block_Sender COMMAND ${MEMORY_CHECK} ./test_data_block_sender)
+
+add_executable(test_data_block_sender test_data_block_sender.c ../src/data_block_sender.c)
+
+if (${CMAKE_SYSTEM_NAME} MATCHES "Linux")
+target_link_libraries (test_data_block_sender gcov)
+endif()
+target_link_libraries (test_data_block_sender cunit)
 # ---------------------------------------------------------------------------- #
 
 
@@ -119,6 +104,104 @@ target_link_libraries (test_handlers cunit)
 target_link_libraries (test_handlers ${OPENSSL_LIBRARIES} ${CURL_LIBRARIES})
 # ---------------------------------------------------------------------------- #
 
+
+# ---------------------------------------------------------------------------- #
+add_test(NAME Test_Receive COMMAND ${MEMORY_CHECK} ./test_receive)
+
+add_executable(test_receive test_receive.c
+                           ../src/frame.c)
+
+if (${CMAKE_SYSTEM_NAME} MATCHES "Linux")
+target_link_libraries (test_receive gcov)
+endif()
+target_link_libraries (test_receive cunit)
+target_link_libraries (test_receive)
+# ---------------------------------------------------------------------------- #
+
+
+# ---------------------------------------------------------------------------- #
+add_test(NAME Test_Send COMMAND ${MEMORY_CHECK} ./test_send)
+
+add_executable(test_send test_send.c ../src/frame.c)
+
+if (${CMAKE_SYSTEM_NAME} MATCHES "Linux")
+target_link_libraries (test_send gcov)
+endif()
+target_link_libraries (test_send cunit)
+target_link_libraries (test_send)
+# ---------------------------------------------------------------------------- #
+
+
+# ---------------------------------------------------------------------------- #
+add_test(NAME Test_Header COMMAND ${MEMORY_CHECK} ./test_header)
+
+add_executable(test_header test_header.c ../src/utils.c)
+
+if (${CMAKE_SYSTEM_NAME} MATCHES "Linux")
+target_link_libraries (test_header gcov)
+endif()
+target_link_libraries (test_header cunit)
+target_link_libraries (test_header ${OPENSSL_LIBRARIES})
+# ---------------------------------------------------------------------------- #
+
+
+# ---------------------------------------------------------------------------- #
+add_test(NAME Test_Curlws COMMAND ${MEMORY_CHECK} ./test_curlws)
+
+add_executable(test_curlws test_curlws.c
+                           ../src/data_block_sender.c
+                           ../src/frame_senders.c
+                           ../src/frame.c
+                           ../src/handlers.c
+                           ../src/header.c
+                           ../src/memory.c
+                           ../src/receive.c
+                           ../src/send.c
+                           ../src/utils.c)
+
+if (${CMAKE_SYSTEM_NAME} MATCHES "Linux")
+target_link_libraries (test_curlws gcov)
+endif()
+target_link_libraries (test_curlws cunit)
+target_link_libraries (test_curlws ${OPENSSL_LIBRARIES} ${CURL_LIBRARIES})
+# ---------------------------------------------------------------------------- #
+
+
+# ---------------------------------------------------------------------------- #
+#add_test(NAME Test_MockedCurlws COMMAND ${MEMORY_CHECK} ./test_mocked_curlws)
+#
+#add_executable(test_mocked_curlws test_mocked_curlws.c ../src/utils.c ../src/memory.c)
+#
+#if (${CMAKE_SYSTEM_NAME} MATCHES "Linux")
+#target_link_libraries (test_mocked_curlws gcov)
+#endif()
+#target_link_libraries (test_mocked_curlws cunit)
+#target_link_libraries (test_mocked_curlws ${OPENSSL_LIBRARIES})
+# ---------------------------------------------------------------------------- #
+
+
+# ---------------------------------------------------------------------------- #
+#add_test(NAME Test_Autobahn COMMAND ${MEMORY_CHECK} ./test_autobahn ws://localhost:9001 1 260)
+
+add_executable(test_autobahn autobahn-testee.c
+                             ../src/xxd.c
+                             ../src/curlws.c
+                             ../src/data_block_sender.c
+                             ../src/frame_senders.c
+                             ../src/frame.c
+                             ../src/handlers.c
+                             ../src/header.c
+                             ../src/memory.c
+                             ../src/receive.c
+                             ../src/send.c
+                             ../src/utils.c)
+
+
+if (${CMAKE_SYSTEM_NAME} MATCHES "Linux")
+target_link_libraries (test_autobahn gcov)
+endif()
+target_link_libraries (test_autobahn ${OPENSSL_LIBRARIES} ${CURL_LIBRARIES})
+# ---------------------------------------------------------------------------- #
 
 add_custom_target(coverage
                   COMMAND lcov -q --capture
