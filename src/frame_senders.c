@@ -119,7 +119,7 @@ CWScode frame_sender_data(CWS *priv, int options, const void *data, size_t len)
             if (CWS_FIRST_FRAME & options) {
                 return CWSE_INVALID_OPTIONS;
             }
-            if ((!lastinfo) || (CWS_LAST_FRAME & lastinfo)) {
+            if ((0 == lastinfo) || (CWS_LAST_FRAME & lastinfo)) {
                 return CWSE_STREAM_CONTINUITY_ISSUE;
             }
             f.opcode = WS_OPCODE_CONTINUATION;
@@ -130,7 +130,7 @@ CWScode frame_sender_data(CWS *priv, int options, const void *data, size_t len)
             if (!(CWS_FIRST_FRAME & options)) {
                 return CWSE_INVALID_OPTIONS;
             }
-            if ((lastinfo) && !(CWS_LAST_FRAME & lastinfo)) {
+            if ((0 != lastinfo) && !(CWS_LAST_FRAME & lastinfo)) {
                 return CWSE_STREAM_CONTINUITY_ISSUE;
             }
 
