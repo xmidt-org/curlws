@@ -119,7 +119,7 @@ struct cws_config {
      * Follows these rules if not NULL:
      *      https://curl.se/libcurl/c/CURLOPT_INTERFACE.html
      */
-    const char *network_interface;
+    const char *interface;
 
     /* Set the verbosity level.  You hardly ever want this set in production
      * use, you will almost always want this when you debug/report problems.
@@ -164,16 +164,26 @@ struct cws_config {
      * Called upon connection, websocket_protocols contains what
      * server reported as 'Sec-WebSocket-Protocol:'.
      *
+     * TODO Review and test.
+     *
      * @note It is not validated if matches the proposed protocols.
+     *
+     * @param data   the user data specified in this configuration
+     * @param handle handle for this websocket
+     * @param text   the text string being returned
      */
     void (*on_connect)(void *data, CWS *handle, const char *websocket_protocols);
 
     /**
      * Reports UTF-8 text messages.
      *
+     * TODO Review and test.
+     *
      * @note The text field is guaranteed to be NULL (\0) terminated, but the
      *       UTF-8 is not validated. If it's invalid, consider closing the
      *       connection with #CWS_CLOSE_REASON_INCONSISTENT_DATA.
+     *
+     * @note If (*on_stream) is set, this callback behavior is disabled.
      *
      * @param data   the user data specified in this configuration
      * @param handle handle for this websocket
@@ -185,12 +195,16 @@ struct cws_config {
     /**
      * Reports binary data.
      *
+     * TODO Review and test.
+     *
+     * @note If (*on_stream) is set, this callback behavior is disabled.
+     *
      * @param data   the user data specified in this configuration
      * @param handle handle for this websocket
-     * @param mem    the data being returned
+     * @param buffer the data being returned
      * @param len    the length of the data
      */
-    void (*on_binary)(void *data, CWS *handle, const void *mem, size_t len);
+    void (*on_binary)(void *data, CWS *handle, const void *buffer, size_t len);
 
     /**
      * Reports data in a steaming style of interface for the non-control
@@ -220,25 +234,33 @@ struct cws_config {
      *                  in a sequence.
      *                  CWS_LAST_FRAME will be set if this is the last frame in
      *                  a sequence.
-     * @param mem    the data being returned
+     * @param buffer the data being returned
      * @param len    the length of the data
-     *
-     * with #CWS_CLOSE_REASON_INCONSISTENT_DATA.
      */
-    void (*on_stream)(void *data, CWS *handle, int info, const void *mem, size_t len);
+    void (*on_stream)(void *data, CWS *handle, int info, const void *buffer, size_t len);
 
     /**
      * Reports PING.
      *
-     * @note if provided you should reply with cws_pong(). If not
-     * provided, pong is sent with the same message payload.
+     * @note If provided you MUST reply with cws_pong(). The default behavior
+     *       automatically sends a PONG message.
+     *
+     * @param data   the user data specified in this configuration
+     * @param handle handle for this websocket
+     * @param buffer the data provided in the ping message
+     * @param len    the length of the data
      */
-    void (*on_ping)(void *data, CWS *handle, const void *mem, size_t len);
+    void (*on_ping)(void *data, CWS *handle, const void *buffer, size_t len);
 
     /**
      * Reports PONG.
+     *
+     * @param data   the user data specified in this configuration
+     * @param handle handle for this websocket
+     * @param buffer the data provided in the pong message
+     * @param len    the length of the data
      */
-    void (*on_pong)(void *data, CWS *handle, const void *mem, size_t len);
+    void (*on_pong)(void *data, CWS *handle, const void *buffer, size_t len);
 
     /**
      * Reports server closed the connection with the given reason.
@@ -251,6 +273,9 @@ struct cws_config {
     /**
      * Provides a way to specifiy a custom random generator instead of the
      * default provided one.
+     * 
+     * TODO I'm not clear if this is the way to go, or if this should just
+     *      be better modularized at link time...
      *
      * Fill the 'buffer' of length 'len' bytes with random data & return.
      */
@@ -259,7 +284,16 @@ struct cws_config {
     /**
      * Provides a way to specifiy a custom debug handler.
      *
-     * WTS TODO XXX.. usure if I need or want this.
+     * @note If provided, it overwites the default (quiet) or the verbose
+     *       printf that comes built in.
+     *
+     * @note Be careful that you can handle the vararg and format correctly,
+     *       lots of bugs can be created with code that uses this function
+     *       signature.
+     *
+     * @param data   the user data specified in this configuration
+     * @param handle handle for this websocket
+     * @param format the start of a standard printf() style function signature
      */
     void (*debug)(void *data, CWS *handle, const char *format, ...);
 

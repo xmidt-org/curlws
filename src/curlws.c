@@ -130,6 +130,16 @@ CWS *cws_create(const struct cws_config *config)
     /* Force a reasonably modern version of TLS */
     curl_easy_setopt(priv->easy, CURLOPT_SSLVERSION, CURL_SSLVERSION_TLSv1_2);
 
+    /* Setup redirect limits. */
+    if (0 != config->max_redirects) {
+        curl_easy_setopt(priv->easy, CURLOPT_FOLLOWLOCATION, 1L);
+        curl_easy_setopt(priv->easy, CURLOPT_MAXREDIRS, config->max_redirects);
+    }
+
+    if (NULL != config->interface) {
+        curl_easy_setopt(priv->easy, CURLOPT_INTERFACE, config->interface);
+    }
+
     priv->configure_fn(priv->user, priv, priv->easy);
 
     curl_easy_setopt(priv->easy, CURLOPT_PRIVATE, priv);
