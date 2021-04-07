@@ -51,6 +51,7 @@
 struct cws_buf_queue {
     struct cws_buf_queue *prev;
     struct cws_buf_queue *next;
+    bool is_close_frame;
     size_t len;
     size_t written;
     size_t sent;
@@ -100,6 +101,11 @@ CWScode send_frame(CWS *priv, const struct cws_frame *f)
 
     buf->written = frame_encode(f, buf->buffer, buffer_size);
 
+    /* We need to handle closes specially, so mark the packet. */
+    if (WS_OPCODE_CLOSE == f->opcode) {
+        buf->is_close_frame = true;
+    }
+
     /* Queue the buffer and start sending if not already. */
     if (NULL == priv->send) {
         priv->send = buf;
@@ -115,8 +121,11 @@ CWScode send_frame(CWS *priv, const struct cws_frame *f)
 
     /* Start the sending process from curl */
     if (priv->pause_flags & CURLPAUSE_SEND) {
+
         priv->pause_flags &= ~CURLPAUSE_SEND;
         curl_easy_pause(priv->easy, priv->pause_flags);
+
+        printf( "\n\ncurl_easy_pause( easy, 0x%08x )\n\n", (uint32_t) priv->pause_flags);
     }
     return CWSE_OK;
 }
@@ -143,12 +152,19 @@ static size_t _readfunction_cb(char *buffer, size_t count, size_t n, void *data)
     size_t data_to_send;
 
     printf( "_readfunction_cb()\n");
+
     if (priv->redirection) {
         printf( "_readfunction_cb() exit: %ld\n", space_left);
         return space_left;
     }
 
     if (NULL == priv->send) {
+        /* When the connection is closed, we should return 0 to tell curl to
+         * shut down the connection. */
+        if (priv->closed) {
+            return 0;
+        }
+
         priv->pause_flags |= CURLPAUSE_SEND;
         printf( "_readfunction_cb() exit: PAUSE\n");
         return CURL_READFUNC_PAUSE;
@@ -176,6 +192,7 @@ static size_t _readfunction_cb(char *buffer, size_t count, size_t n, void *data)
         /* If we've sent a buffer, recycle it. */
         if (priv->send->sent == priv->send->written) {
             struct cws_buf_queue *tmp = priv->send;
+            bool is_close = tmp->is_close_frame;
 
             priv->send = priv->send->next;
             if (priv->send) {
@@ -183,6 +200,16 @@ static size_t _readfunction_cb(char *buffer, size_t count, size_t n, void *data)
                 data_to_send += priv->send->written;
             }
             mem_free(tmp);
+
+            /* Don't send any more data after we send a close frame. */
+            if (is_close) {
+                data_to_send = 0;
+                while (priv->send) {
+                    tmp = priv->send->next;
+                    mem_free(priv->send);
+                    priv->send = tmp;
+                }
+            }
         }
     }
 
