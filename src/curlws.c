@@ -254,15 +254,17 @@ CWScode cws_close(CWS *priv, int code, const char *reason, size_t len)
 {
     CWScode ret;
     uint8_t buf[WS_CTL_PAYLOAD_MAX];    /* Limited by RFC6455 Section 5.5 */
-    const uint8_t opcode = 8;
+    uint8_t *p;
 
     if ((0 == code) && (NULL == reason) && (0 == len)) {
-        ret = frame_sender_control(priv, opcode, NULL, 0);
+        ret = frame_sender_control(priv, WS_OPCODE_CLOSE, NULL, 0);
         priv->closed = true;
         return ret;
     }
 
     if (0 != _is_valid_close_to_server(code)) {
+        ret = frame_sender_control(priv, WS_OPCODE_CLOSE, NULL, 0);
+        priv->closed = true;
         return CWSE_INVALID_CLOSE_REASON_CODE;
     }
 
@@ -279,17 +281,18 @@ CWScode cws_close(CWS *priv, int code, const char *reason, size_t len)
         return CWSE_APP_DATA_LENGTH_TOO_LONG;
     }
 
-    buf[0] = (uint8_t) (0x00ff & (code >> 8));
-    buf[1] = (uint8_t) (0x00ff & code);
+    p = buf;
+    *p++ = (uint8_t) (0x00ff & (code >> 8));
+    *p++ = (uint8_t) (0x00ff & code);
     
     if (len) {
-        memcpy(&buf[2], reason, len);
-        buf[len + 2] = '\0';
+        memcpy(p, reason, len);
+        p[len] = '\0';
         len++;
     }
     len += 2;
 
-    ret = frame_sender_control(priv, opcode, buf, len);
+    ret = frame_sender_control(priv, WS_OPCODE_CLOSE, buf, len);
     priv->closed = true;
     return ret;
 }
