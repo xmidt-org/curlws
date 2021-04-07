@@ -172,6 +172,13 @@ CWS *cws_create(const struct cws_config *config)
      * Then we manually override the string sent to be "GET".
      */
     curl_easy_setopt(priv->easy, CURLOPT_CUSTOMREQUEST, "GET");
+
+    /* We need to close connections and not allow reuse. */
+    curl_easy_setopt(priv->easy, CURLOPT_FORBID_REUSE, 1L);
+
+    /* We need to freshly connect each time. */
+    curl_easy_setopt(priv->easy, CURLOPT_FRESH_CONNECT, 1L);
+
     /*
      * CURLOPT_UPLOAD=1 with HTTP/1.1 implies:
      *     Expect: 100-continue
@@ -194,9 +201,6 @@ CWS *cws_create(const struct cws_config *config)
     headers = tmp;
 
     /* END: work around CURL to get WebSocket. */
-
-    /* We need to close connections vs. allow them to be reused. */
-    curl_easy_setopt(priv->easy, CURLOPT_FORBID_REUSE, 1L);
 
     /* Calculate the unique key pair. */
     tmp = _cws_calculate_websocket_key(priv, headers);
@@ -267,13 +271,13 @@ CWScode cws_close(CWS *priv, int code, const char *reason, size_t len)
     uint8_t *p;
 
     if ((0 == code) && (NULL == reason) && (0 == len)) {
-        ret = frame_sender_control(priv, WS_OPCODE_CLOSE, NULL, 0);
+        ret = frame_sender_control(priv, CWS_CLOSE, NULL, 0);
         priv->closed = true;
         return ret;
     }
 
     if (0 != _is_valid_close_to_server(code)) {
-        ret = frame_sender_control(priv, WS_OPCODE_CLOSE, NULL, 0);
+        ret = frame_sender_control(priv, CWS_CLOSE, NULL, 0);
         priv->closed = true;
         return CWSE_INVALID_CLOSE_REASON_CODE;
     }
@@ -302,7 +306,7 @@ CWScode cws_close(CWS *priv, int code, const char *reason, size_t len)
     }
     len += 2;
 
-    ret = frame_sender_control(priv, WS_OPCODE_CLOSE, buf, len);
+    ret = frame_sender_control(priv, CWS_CLOSE, buf, len);
     priv->closed = true;
     return ret;
 }
