@@ -181,7 +181,7 @@ target_link_libraries (test_curlws ${OPENSSL_LIBRARIES} ${CURL_LIBRARIES})
 
 
 # ---------------------------------------------------------------------------- #
-#add_test(NAME Test_Autobahn COMMAND ${MEMORY_CHECK} ./test_autobahn ws://localhost:9001 1 260)
+add_test(NAME Test_Autobahn COMMAND ${MEMORY_CHECK} ./test_autobahn ws://localhost:9001 1 260)
 
 add_executable(test_autobahn autobahn-testee.c
                              ../src/curlws.c
