@@ -133,8 +133,13 @@ static size_t _cws_process_frame(CWS *priv, const char *buffer, size_t len)
         if (delta < 0) {
             /* Delta is the number of bytes need * -1 */
             priv->recv.header.needed = 0 - delta;
-            return used;
+            if (0 == len) {
+                return used;
+            }
         }
+        
+        /* Done processing the buffer because we have all the data we need. */
+        priv->recv.header.used = 0;
     }
 
     /* There is a complete header */
