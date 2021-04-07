@@ -319,6 +319,7 @@ static void on_close(void *data, CWS *ws, int reason, const char *reason_text, s
         cws_close(ws, CWS_CLOSE_REASON_INCONSISTENT_DATA, "invalid UTF-8", SIZE_MAX);
         return;
     }
+    cws_close(ws, 0, NULL, 0);
 }
 
 int main(int argc, char *argv[]) {
