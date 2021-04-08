@@ -75,7 +75,6 @@ struct cws_object {
     void (*on_ping_fn)(void*, CWS*, const void*, size_t);
     void (*on_pong_fn)(void*, CWS*, const void*, size_t);
     void (*on_close_fn)(void*, CWS*, int, const char*, size_t);
-    void (*get_random_fn)(void*, CWS*, void*, size_t);
     void (*debug_fn)(void*, CWS*, const char*, ...);
     void (*configure_fn)(void*, CWS*, CURL*);
 

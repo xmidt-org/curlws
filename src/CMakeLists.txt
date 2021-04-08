@@ -29,8 +29,10 @@ add_library(curlws SHARED curlws.c
                           handlers.c
                           header.c
                           memory.c
+                          random.c
                           receive.c
                           send.c
+                          sha1_openssl.c
                           utils.c)
 
 install (FILES

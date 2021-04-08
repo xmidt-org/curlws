@@ -36,21 +36,6 @@
 extern "C" {
 #endif
 
-/* WTS: I wonder if we should be silent on the reason codes... */
-/* see https://tools.ietf.org/html/rfc6455#section-7.4.1 */
-#define CWS_CLOSE_REASON_NORMAL                 1000
-#define CWS_CLOSE_REASON_GOING_AWAY             1001
-#define CWS_CLOSE_REASON_PROTOCOL_ERROR         1002
-#define CWS_CLOSE_REASON_UNEXPECTED_DATA        1003
-#define CWS_CLOSE_REASON_NO_REASON              1005
-#define CWS_CLOSE_REASON_ABNORMALLY             1006
-#define CWS_CLOSE_REASON_INCONSISTENT_DATA      1007
-#define CWS_CLOSE_REASON_POLICY_VIOLATION       1008
-#define CWS_CLOSE_REASON_TOO_BIG                1009
-#define CWS_CLOSE_REASON_MISSING_EXTENSION      1010
-#define CWS_CLOSE_REASON_SERVER_ERROR           1011
-#define CWS_CLOSE_REASON_TLS_HANDSHAKE_ERROR    1015
-
 /* Used to define the location in the stream this frame is by (*on_stream) */
 #define CWS_CONT        0x000100
 #define CWS_BINARY      0x000200
@@ -168,11 +153,11 @@ struct cws_config {
      *
      * @note It is not validated if matches the proposed protocols.
      *
-     * @param data   the user data specified in this configuration
+     * @param user   the user data specified in this configuration
      * @param handle handle for this websocket
      * @param text   the text string being returned
      */
-    void (*on_connect)(void *data, CWS *handle, const char *websocket_protocols);
+    void (*on_connect)(void *user, CWS *handle, const char *websocket_protocols);
 
     /**
      * Reports UTF-8 text messages.
@@ -181,16 +166,16 @@ struct cws_config {
      *
      * @note The text field is guaranteed to be NULL (\0) terminated, but the
      *       UTF-8 is not validated. If it's invalid, consider closing the
-     *       connection with #CWS_CLOSE_REASON_INCONSISTENT_DATA.
+     *       connection with code = 1007.
      *
      * @note If (*on_stream) is set, this callback behavior is disabled.
      *
-     * @param data   the user data specified in this configuration
+     * @param user   the user data specified in this configuration
      * @param handle handle for this websocket
      * @param text   the text string being returned
      * @param len    the length of the text string (include trailing '\0')
      */
-    void (*on_text)(void *data, CWS *handle, const char *text, size_t len);
+    void (*on_text)(void *user, CWS *handle, const char *text, size_t len);
 
     /**
      * Reports binary data.
@@ -199,12 +184,12 @@ struct cws_config {
      *
      * @note If (*on_stream) is set, this callback behavior is disabled.
      *
-     * @param data   the user data specified in this configuration
+     * @param user   the user data specified in this configuration
      * @param handle handle for this websocket
      * @param buffer the data being returned
      * @param len    the length of the data
      */
-    void (*on_binary)(void *data, CWS *handle, const void *buffer, size_t len);
+    void (*on_binary)(void *user, CWS *handle, const void *buffer, size_t len);
 
     /**
      * Reports data in a steaming style of interface for the non-control
@@ -225,7 +210,7 @@ struct cws_config {
      * @note If this callback is set to a non-NULL value, then the callbacks
      *       (*on_text) and (*on_binary) are disabled.
      *
-     * @param data   the user data specified in this configuration
+     * @param user   the user data specified in this configuration
      * @param handle handle for this websocket
      * @param info   information about the frame of date presented
      *                  Either CWS_BINARY or CWS_TEXT will be set indicating
@@ -237,7 +222,7 @@ struct cws_config {
      * @param buffer the data being returned
      * @param len    the length of the data
      */
-    void (*on_stream)(void *data, CWS *handle, int info, const void *buffer, size_t len);
+    void (*on_stream)(void *user, CWS *handle, int info, const void *buffer, size_t len);
 
     /**
      * Reports PING.
@@ -245,57 +230,37 @@ struct cws_config {
      * @note If provided you MUST reply with cws_pong(). The default behavior
      *       automatically sends a PONG message.
      *
-     * @param data   the user data specified in this configuration
+     * @param user   the user data specified in this configuration
      * @param handle handle for this websocket
      * @param buffer the data provided in the ping message
      * @param len    the length of the data
      */
-    void (*on_ping)(void *data, CWS *handle, const void *buffer, size_t len);
+    void (*on_ping)(void *user, CWS *handle, const void *buffer, size_t len);
 
     /**
      * Reports PONG.
      *
-     * @param data   the user data specified in this configuration
+     * @param user   the user data specified in this configuration
      * @param handle handle for this websocket
      * @param buffer the data provided in the pong message
      * @param len    the length of the data
      */
-    void (*on_pong)(void *data, CWS *handle, const void *buffer, size_t len);
+    void (*on_pong)(void *user, CWS *handle, const void *buffer, size_t len);
 
     /**
      * Reports server closed the connection with the given reason.
      *
-     * Clients should not transmit any more data after the server is
-     * closed, just call cws_free().
-     */
-    void (*on_close)(void *data, CWS *handle, int code, const char *reason, size_t len);
-
-    /**
-     * Provides a way to specifiy a custom random generator instead of the
-     * default provided one.
-     * 
-     * TODO I'm not clear if this is the way to go, or if this should just
-     *      be better modularized at link time...
+     * @note Clients should not transmit any more data after the server is
+     *       closed.
      *
-     * Fill the 'buffer' of length 'len' bytes with random data & return.
-     */
-    void (*get_random)(void *data, CWS *handle, void *buffer, size_t len);
-
-    /**
-     * Provides a way to specifiy a custom debug handler.
-     *
-     * @note If provided, it overwites the default (quiet) or the verbose
-     *       printf that comes built in.
-     *
-     * @note Be careful that you can handle the vararg and format correctly,
-     *       lots of bugs can be created with code that uses this function
-     *       signature.
-     *
-     * @param data   the user data specified in this configuration
+     * @param user   the user data specified in this configuration
      * @param handle handle for this websocket
-     * @param format the start of a standard printf() style function signature
+     * @param code   the websocket close code.  See for details:
+     *               https://tools.ietf.org/html/rfc6455#section-7.4.1
+     * @param reason the optional reason text (could be NULL)
+     * @param len    the length of the optional reason (could be 0)
      */
-    void (*debug)(void *data, CWS *handle, const char *format, ...);
+    void (*on_close)(void *user, CWS *handle, int code, const char *reason, size_t len);
 
     /**
      * ----------------------------------------------------------------------
@@ -327,10 +292,10 @@ struct cws_config {
      * specified via this interface!  You have been warned!
      * ----------------------------------------------------------------------
      */
-    void (*configure)(void *data, CWS *handle, CURL *easy);
+    void (*configure)(void *user, CWS *handle, CURL *easy);
 
     /* User provided data that is passed into the callbacks via the data arg. */
-    void *data;
+    void *user;
 };
 
 
@@ -456,8 +421,12 @@ CWScode cws_pong(CWS *handle, const void *data, size_t len);
  *       See https://tools.ietf.org/html/rfc6455#section-5.5 for details.
  *       See https://tools.ietf.org/html/rfc6455#section-5.5.1 for details.
  *
+ * @note This call appends the close frame to whatever existing transactions
+ *       are queued and closes the connection after the close frame is sent.
+ *
  * @param handle the websocket handle to interact with
- * @param code   the reason code why it was closed, see the well-known numbers.
+ * @param code   the reason code why it was closed, see the well-known numbers
+ *               at: https://tools.ietf.org/html/rfc6455#section-7.4.1
  * @param reason #NULL or some UTF-8 string null ('\0') terminated.
  * @param len    the length of reason in bytes. If SIZE_MAX is used,
  *               strlen() is used on reason (if not NULL).  Limited to 123 or
@@ -470,6 +439,26 @@ CWScode cws_pong(CWS *handle, const void *data, size_t len);
  * @retval CWSE_APP_DATA_LENGTH_TOO_LONG
  */
 CWScode cws_close(CWS *handle, int code, const char *reason, size_t len);
+
+
+/**
+ * Similar to cws_close() except that all queued transactions are cancelled.
+ *
+ * @param handle the websocket handle to interact with
+ * @param code   the reason code why it was closed, see the well-known numbers
+ *               at: https://tools.ietf.org/html/rfc6455#section-7.4.1
+ * @param reason #NULL or some UTF-8 string null ('\0') terminated.
+ * @param len    the length of reason in bytes. If SIZE_MAX is used,
+ *               strlen() is used on reason (if not NULL).  Limited to 123 or
+ *               less.
+ *
+ * @retval CWSE_OK
+ * @retval CWSE_OUT_OF_MEMORY
+ * @retval CWSE_CLOSED_CONNECTION
+ * @retval CWSE_INVALID_CLOSE_REASON_CODE
+ * @retval CWSE_APP_DATA_LENGTH_TOO_LONG
+ */
+CWScode cws_close_urgent(CWS *handle, int code, const char *reason, size_t len);
 
 
 /*----------------------------------------------------------------------------*/

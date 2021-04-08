@@ -38,8 +38,10 @@
 #include "header.h"
 #include "internal.h"
 #include "memory.h"
+#include "random.h"
 #include "receive.h"
 #include "send.h"
+#include "sha1.h"
 #include "utils.h"
 #include "ws.h"
 
@@ -63,6 +65,7 @@
 /*                             Function Prototypes                            */
 /*----------------------------------------------------------------------------*/
 static int _is_valid_close_to_server(int);
+static CWScode _close(CWS*, int, int, const char*, size_t);
 
 static bool _validate_config(const struct cws_config*);
 static struct curl_slist* _cws_calculate_websocket_key(CWS*, struct curl_slist*);
@@ -123,7 +126,7 @@ CWS *cws_create(const struct cws_config *config)
     priv->easy = curl_easy_init();
     if (!priv->easy) { goto error; }
 
-    priv->user = config->data;
+    priv->user = config->user;
 
     /* Place things here that are "ok" for a user to overwrite. */
 
@@ -266,49 +269,12 @@ CWScode cws_pong(CWS *priv, const void *data, size_t len)
 
 CWScode cws_close(CWS *priv, int code, const char *reason, size_t len)
 {
-    CWScode ret;
-    uint8_t buf[WS_CTL_PAYLOAD_MAX];    /* Limited by RFC6455 Section 5.5 */
-    uint8_t *p;
+    return _close(priv, CWS_CLOSE, code, reason, len);
+}
 
-    if ((0 == code) && (NULL == reason) && (0 == len)) {
-        ret = frame_sender_control(priv, CWS_CLOSE, NULL, 0);
-        priv->closed = true;
-        return ret;
-    }
-
-    if (0 != _is_valid_close_to_server(code)) {
-        ret = frame_sender_control(priv, CWS_CLOSE, NULL, 0);
-        priv->closed = true;
-        return CWSE_INVALID_CLOSE_REASON_CODE;
-    }
-
-    if (reason) {
-        if (len == SIZE_MAX) {
-            len = strlen(reason);
-        }
-    } else {
-        len = 0;
-    }
-
-    /* 2 byte reason code + '\0' at the end. */
-    if ((WS_CTL_PAYLOAD_MAX - 3) < len) {
-        return CWSE_APP_DATA_LENGTH_TOO_LONG;
-    }
-
-    p = buf;
-    *p++ = (uint8_t) (0x00ff & (code >> 8));
-    *p++ = (uint8_t) (0x00ff & code);
-    
-    if (len) {
-        memcpy(p, reason, len);
-        p[len] = '\0';
-        len++;
-    }
-    len += 2;
-
-    ret = frame_sender_control(priv, CWS_CLOSE, buf, len);
-    priv->closed = true;
-    return ret;
+CWScode cws_close_urgent(CWS *priv, int code, const char *reason, size_t len)
+{
+    return _close(priv, CWS_CLOSE_URGENT, code, reason, len);
 }
 
 
@@ -400,6 +366,54 @@ static int _is_valid_close_to_server(int code)
     return -1;
 }
 
+static CWScode _close(CWS *priv, int options, int code, const char *reason, size_t len)
+{
+    CWScode ret;
+    uint8_t buf[WS_CTL_PAYLOAD_MAX];    /* Limited by RFC6455 Section 5.5 */
+    uint8_t *p;
+
+    if ((0 == code) && (NULL == reason) && (0 == len)) {
+        ret = frame_sender_control(priv, options, NULL, 0);
+        priv->closed = true;
+        return ret;
+    }
+
+    if (0 != _is_valid_close_to_server(code)) {
+        ret = frame_sender_control(priv, options, NULL, 0);
+        priv->closed = true;
+        return CWSE_INVALID_CLOSE_REASON_CODE;
+    }
+
+    if (reason) {
+        if (len == SIZE_MAX) {
+            len = strlen(reason);
+        }
+    } else {
+        len = 0;
+    }
+
+    /* 2 byte reason code + '\0' at the end. */
+    if ((WS_CTL_PAYLOAD_MAX - 3) < len) {
+        return CWSE_APP_DATA_LENGTH_TOO_LONG;
+    }
+
+    p = buf;
+    *p++ = (uint8_t) (0x00ff & (code >> 8));
+    *p++ = (uint8_t) (0x00ff & code);
+    
+    if (len) {
+        memcpy(p, reason, len);
+        p[len] = '\0';
+        len++;
+    }
+    len += 2;
+
+    ret = frame_sender_control(priv, options, buf, len);
+    priv->closed = true;
+    return ret;
+}
+
+
 
 /*----------------------------------------------------------------------------*/
 /*                      Internal Configuration Functions                      */
@@ -483,7 +497,7 @@ static struct curl_slist* _cws_calculate_websocket_key(CWS *priv, struct curl_sl
     char combined[sizeof(b64_key) + sizeof(guid) - 1];
     char send[sizeof(header) + sizeof(b64_key) - 1];
 
-    (priv->get_random_fn)(priv->user, priv, random_value, sizeof(random_value));
+    cws_random(priv, random_value, sizeof(random_value));
     cws_encode_base64(random_value, sizeof(random_value), b64_key);
 
     snprintf(send, sizeof(send), "%s%s", header, b64_key);

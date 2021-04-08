@@ -125,7 +125,7 @@ static size_t _cws_process_frame(CWS *priv, const char *buffer, size_t len)
         delta = 0;
         rv = frame_decode(&priv->recv.frame, priv->recv.header.buf, priv->recv.header.used, &delta);
         if (rv) {
-            cws_close(priv, CWS_CLOSE_REASON_PROTOCOL_ERROR, NULL, 0);
+            cws_close(priv, 1002, NULL, 0);
             return 0; /* Signal an error with 0. */
         }
 

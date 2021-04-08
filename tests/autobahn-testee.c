@@ -268,7 +268,7 @@ static void on_connect(void *data, CWS *ws, const char *websocket_protocols) {
 
 static void on_text(void *data, CWS *ws, const char *text, size_t len) {
     if (!check_utf8(text)) {
-        cws_close(ws, CWS_CLOSE_REASON_INCONSISTENT_DATA, "invalid UTF-8", SIZE_MAX);
+        cws_close(ws, 1007, "invalid UTF-8", SIZE_MAX);
         return;
     }
 
@@ -316,7 +316,7 @@ static void on_close(void *data, CWS *ws, int reason, const char *reason_text, s
     ctx->exit_started = time(NULL);
 
     if (!check_utf8(reason_text)) {
-        cws_close(ws, CWS_CLOSE_REASON_INCONSISTENT_DATA, "invalid UTF-8", SIZE_MAX);
+        cws_close(ws, 1007, "invalid UTF-8", SIZE_MAX);
         return;
     }
     cws_close(ws, 0, NULL, 0);
@@ -403,7 +403,7 @@ int main(int argc, char *argv[]) {
         cfg.on_ping = on_ping;
         cfg.on_pong = on_pong;
         cfg.on_close = on_close;
-        cfg.data = p;
+        cfg.user = p;
         cfg.verbose = 3;
 
         //fprintf(stderr, "TEST: %u\n", current_test);

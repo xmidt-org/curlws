@@ -52,7 +52,20 @@ if (${CMAKE_SYSTEM_NAME} MATCHES "Linux")
 target_link_libraries (test_utils gcov)
 endif()
 target_link_libraries (test_utils cunit)
-target_link_libraries (test_utils ${OPENSSL_LIBRARIES})
+target_link_libraries (test_utils)
+# ---------------------------------------------------------------------------- #
+
+
+# ---------------------------------------------------------------------------- #
+add_test(NAME Test_SHA1 COMMAND ${MEMORY_CHECK} ./test_sha1)
+
+add_executable(test_sha1 test_sha1.c ../src/sha1_openssl.c)
+
+if (${CMAKE_SYSTEM_NAME} MATCHES "Linux")
+target_link_libraries (test_sha1 gcov)
+endif()
+target_link_libraries (test_sha1 cunit)
+target_link_libraries (test_sha1 ${OPENSSL_LIBRARIES})
 # ---------------------------------------------------------------------------- #
 
 
@@ -101,7 +114,7 @@ if (${CMAKE_SYSTEM_NAME} MATCHES "Linux")
 target_link_libraries (test_handlers gcov)
 endif()
 target_link_libraries (test_handlers cunit)
-target_link_libraries (test_handlers ${OPENSSL_LIBRARIES} ${CURL_LIBRARIES})
+target_link_libraries (test_handlers ${CURL_LIBRARIES})
 # ---------------------------------------------------------------------------- #
 
 
@@ -141,7 +154,7 @@ if (${CMAKE_SYSTEM_NAME} MATCHES "Linux")
 target_link_libraries (test_header gcov)
 endif()
 target_link_libraries (test_header cunit)
-target_link_libraries (test_header ${OPENSSL_LIBRARIES})
+target_link_libraries (test_header)
 # ---------------------------------------------------------------------------- #
 
 
@@ -157,6 +170,7 @@ add_executable(test_curlws test_curlws.c
                            ../src/memory.c
                            ../src/receive.c
                            ../src/send.c
+                           ../src/sha1_openssl.c
                            ../src/utils.c)
 
 if (${CMAKE_SYSTEM_NAME} MATCHES "Linux")
@@ -191,8 +205,10 @@ add_executable(test_autobahn autobahn-testee.c
                              ../src/handlers.c
                              ../src/header.c
                              ../src/memory.c
+                             ../src/random.c
                              ../src/receive.c
                              ../src/send.c
+                             ../src/sha1_openssl.c
                              ../src/utils.c)
 
 

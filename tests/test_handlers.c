@@ -63,7 +63,6 @@ void test_populate_callbacks()
     CU_ASSERT(obj.on_ping_fn    == _default_on_ping);
     CU_ASSERT(obj.on_pong_fn    == _default_on_pong);
     CU_ASSERT(obj.on_close_fn   == _default_on_close);
-    CU_ASSERT(obj.get_random_fn == _default_get_random);
     CU_ASSERT(obj.debug_fn      == _default_debug);
     CU_ASSERT(obj.configure_fn  == _default_configure);
 
@@ -78,8 +77,6 @@ void test_populate_callbacks()
     src.on_ping    = (void*) 5;
     src.on_pong    = (void*) 6;
     src.on_close   = (void*) 7;
-    src.get_random = (void*) 8;
-    src.debug      = (void*) 9;
     src.configure  = (void*) 10;
 
     populate_callbacks(&obj, &src);
@@ -90,8 +87,6 @@ void test_populate_callbacks()
     CU_ASSERT(obj.on_ping_fn    == (void*) 5);
     CU_ASSERT(obj.on_pong_fn    == (void*) 6);
     CU_ASSERT(obj.on_close_fn   == (void*) 7);
-    CU_ASSERT(obj.get_random_fn == (void*) 8);
-    CU_ASSERT(obj.debug_fn      == (void*) 9);
     CU_ASSERT(obj.configure_fn  == (void*) 10);
 
 }
@@ -114,7 +109,6 @@ void test_defaults_dont_crash()
     (obj.on_ping_fn)(NULL, NULL, NULL, 0);
     (obj.on_pong_fn)(NULL, NULL, NULL, 0);
     (obj.on_close_fn)(NULL, NULL, 0, NULL, 0);
-    (obj.get_random_fn)(NULL, NULL, NULL, 0);
     (obj.configure_fn)(NULL, NULL, NULL);
     (obj.debug_fn)(NULL, NULL, "Hello, world.");
 
@@ -125,24 +119,6 @@ void test_defaults_dont_crash()
 }
 
 
-void test_default_random()
-{
-    uint8_t buf[10];
-    size_t i;
-    uint8_t expect[10] = { 0xb6, 0x5b, 0x89, 0x9e, 0x74, 0x25, 0xbb, 0x72, 0, 0 };
-
-    memset(buf, 0, sizeof(buf));
-    srand( 1000 );
-
-    _default_get_random(NULL, NULL, buf, sizeof(buf) - 2);
-
-    for (i = 0; i < sizeof(buf); i++ ) {
-        //printf( "%ld = 0x%02x ? 0x%02x\n", i, expect[i], buf[i] );
-        CU_ASSERT(buf[i] == expect[i]);
-    }
-}
-
-
 void add_suites( CU_pSuite *suite )
 {
     struct {
@@ -150,7 +126,6 @@ void add_suites( CU_pSuite *suite )
         void (*fn)(void);
     } tests[] = {
         { .label = "Test populate_callbacks()",  .fn = test_populate_callbacks  },
-        { .label = "Test _default_get_random()", .fn = test_default_random      },
         { .label = "Test defaults don't crash",  .fn = test_defaults_dont_crash },
         { .label = NULL, .fn = NULL }
     };

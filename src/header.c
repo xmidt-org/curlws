@@ -112,7 +112,7 @@ static size_t _header_cb(const char *buffer, size_t count, size_t nitems, void *
         if (!priv->accepted) {
             priv->dispatching++;
             (priv->on_close_fn)(priv->user, priv,
-                                CWS_CLOSE_REASON_SERVER_ERROR,
+                                1011,
                                 "server didn't accept the websocket upgrade",
                                 strlen("server didn't accept the websocket upgrade"));
             priv->dispatching--;

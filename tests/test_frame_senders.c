@@ -31,11 +31,10 @@
 #include "../src/frame_senders.h"
 #include "../src/ws.h"
 
-static void get_random(void *data, CWS *priv, void *buffer, size_t len)
+void cws_random(CWS *priv, void *buffer, size_t len)
 {
     uint8_t *bytes = buffer;
 
-    (void) data;
     (void) priv;
 
     for (size_t i = 0; i < len; i++) {
@@ -71,7 +70,6 @@ void test_frame_sender_control()
     CWS priv;
 
     memset(&priv, 0, sizeof(CWS));
-    priv.get_random_fn = get_random;
 
     CU_ASSERT(CWSE_INVALID_OPTIONS == frame_sender_control(&priv, -1, NULL, 0));
     CU_ASSERT(CWSE_INVALID_OPTIONS == frame_sender_control(&priv, CWS_PING|CWS_PONG, NULL, 0));
@@ -111,7 +109,6 @@ void test_frame_sender_data()
     CWS priv;
 
     memset(&priv, 0, sizeof(CWS));
-    priv.get_random_fn = get_random;
 
     CU_ASSERT(CWSE_INVALID_OPTIONS == frame_sender_data(&priv, -1, NULL, 0));
     CU_ASSERT(CWSE_INVALID_OPTIONS == frame_sender_data(&priv, CWS_CONT|CWS_TEXT, NULL, 0));

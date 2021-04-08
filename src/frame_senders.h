@@ -32,9 +32,10 @@
 
 #include "curlws.h"
 
-#define CWS_CLOSE   0x001000
-#define CWS_PING    0x002000
-#define CWS_PONG    0x004000
+#define CWS_CLOSE           0x001000
+#define CWS_CLOSE_URGENT    0x002000
+#define CWS_PING            0x004000
+#define CWS_PONG            0x008000
 
 /**
  * Used to send a control frame.

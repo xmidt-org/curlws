@@ -112,11 +112,25 @@ CWScode send_frame(CWS *priv, const struct cws_frame *f)
     } else {
         struct cws_buf_queue *qP = priv->send;
 
-        while (qP->next) {
-            qP = qP->next;
+        if (f->is_urgent) {
+            if (0 < qP->sent) {
+                /* This frame is partially sent.  Add the urgent frame next. */
+                buf->next = qP->next;
+                buf->prev = qP;
+                qP->next = buf;
+            } else {
+                /* Nothing sent.  Insert the urgent frame before the next frame. */
+                priv->send = buf;
+                buf->next = qP;
+                qP->prev = buf;
+            }
+        } else {
+            while (qP->next) {
+                qP = qP->next;
+            }
+            buf->prev = qP;
+            qP->next = buf;
         }
-        buf->prev = qP;
-        qP->next = buf;
     }
 
     /* Start the sending process from curl */

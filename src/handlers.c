@@ -56,7 +56,6 @@ static void _default_on_stream(void*, CWS*, int, const void*, size_t);
 static void _default_on_ping(void*, CWS*, const void*, size_t);
 static void _default_on_pong(void*, CWS*, const void*, size_t);
 static void _default_on_close(void*, CWS*, int, const char*, size_t);
-static void _default_get_random(void*, CWS*, void*, size_t);
 static void _default_configure(void*, CWS*, CURL*);
 static void _default_debug(void*, CWS*, const char*, ...);
 static void _default_verbose_debug(void*, CWS*, const char*, ...);
@@ -73,7 +72,6 @@ void populate_callbacks(CWS *dest, const struct cws_config *src)
     dest->on_ping_fn    = _default_on_ping;
     dest->on_pong_fn    = _default_on_pong;
     dest->on_close_fn   = _default_on_close;
-    dest->get_random_fn = _default_get_random;
     dest->debug_fn      = _default_debug;
     dest->configure_fn  = _default_configure;
 
@@ -107,12 +105,6 @@ void populate_callbacks(CWS *dest, const struct cws_config *src)
     }
     if (src->on_close) {
         dest->on_close_fn = src->on_close;
-    }
-    if (src->get_random) {
-        dest->get_random_fn = src->get_random;
-    }
-    if (src->debug) {
-        dest->debug_fn = src->debug;
     }
     if (src->configure) {
         dest->configure_fn = src->configure;
@@ -183,22 +175,6 @@ static void _default_on_close(void *data, CWS *priv, int status, const char *rea
     IGNORE_UNUSED(status);
     IGNORE_UNUSED(reason);
     IGNORE_UNUSED(len);
-}
-
-
-static void _default_get_random(void *data, CWS *priv, void *buffer, size_t len)
-{
-    uint8_t *bytes = buffer;
-    size_t i;
-
-    IGNORE_UNUSED(data);
-    IGNORE_UNUSED(priv);
-
-    /* Note that this does NOT need to be a crypto level randomization function
-     * but is simply used to prevent intermediary caches from causing issues. */
-    for (i = 0; i < len; i++) {
-        bytes[i] = (0x0ff & rand());
-    }
 }
 
 

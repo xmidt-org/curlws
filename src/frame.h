@@ -44,6 +44,7 @@ struct cws_frame {
     uint8_t fin        : 1; /* 0/1 FIN bit from rfc6455, page 28 */
     uint8_t mask       : 1; /* 0/1 Mask bit from rfc6455, page 29 */
     uint8_t is_control : 1; /* 1 if the opcode is control, 0 otherwise */
+    uint8_t is_urgent  : 1; /* 1 if the opcode is an urgent frame */
     uint8_t opcode     : 4; /* 0-15 opcode from rfc6455, page 29 */
 
     uint8_t masking_key[4]; /* The 4 byte masking key to use on upstream msgs */

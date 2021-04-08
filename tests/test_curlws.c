@@ -34,12 +34,11 @@
 #include "../src/curlws.h"
 #include "../src/curlws.c"
 
-static void get_random(void *data, CWS *priv, void *buffer, size_t len)
+void cws_random(CWS *priv, void *buffer, size_t len)
 {
     uint8_t *bytes = buffer;
     size_t i;
 
-    IGNORE_UNUSED(data);
     IGNORE_UNUSED(priv);
 
     /* Note that this does NOT need to be a crypto level randomization function
@@ -82,7 +81,6 @@ void test_calculate_websocket_key()
     memset(&obj, 0, sizeof(obj));
 
     srand( 1000 );
-    obj.get_random_fn = get_random;
 
     rv = _cws_calculate_websocket_key(&obj, headers);
     CU_ASSERT(NULL != rv);

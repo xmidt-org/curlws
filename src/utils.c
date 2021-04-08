@@ -25,9 +25,9 @@
  * https://opensource.org/licenses/MIT
  */
 #include <ctype.h>
+#include <stdlib.h>
+#include <stdio.h>
 #include <string.h>
-
-#include <openssl/evp.h>
 
 #include "utils.h"
 
@@ -54,24 +54,6 @@
 /*----------------------------------------------------------------------------*/
 /*                             External Functions                             */
 /*----------------------------------------------------------------------------*/
-void cws_sha1(const void *in, size_t len, void *out)
-{
-    static const EVP_MD *md = NULL;
-    EVP_MD_CTX *ctx = NULL;
-
-    if (!md) {
-        OpenSSL_add_all_digests();
-        md = EVP_get_digestbyname("sha1");
-    }
-
-    ctx = EVP_MD_CTX_create();
-    EVP_DigestInit_ex(ctx, md, NULL);
-    EVP_DigestUpdate(ctx, in, len);
-    EVP_DigestFinal_ex(ctx, out, NULL);
-    EVP_MD_CTX_destroy(ctx);
-}
-
-
 void cws_encode_base64(const void *in, const size_t len, char *out)
 {
     static const char base64_map[65] = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/=";

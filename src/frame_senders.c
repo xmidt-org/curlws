@@ -29,6 +29,7 @@
 
 #include "frame_senders.h"
 #include "internal.h"
+#include "random.h"
 #include "send.h"
 
 /*----------------------------------------------------------------------------*/
@@ -61,17 +62,23 @@ CWScode frame_sender_control(CWS *priv, int options, const void *data, size_t le
         .mask = 1,
         .is_control = 1,
     };
-    const int allowed = (CWS_CLOSE | CWS_PING | CWS_PONG);
+    const int allowed = (CWS_CLOSE | CWS_CLOSE_URGENT | CWS_PING | CWS_PONG);
 
     switch (options & allowed) {
         case CWS_CLOSE:
             f.opcode = WS_OPCODE_CLOSE;
             break;
+        case CWS_CLOSE_URGENT:
+            f.opcode = WS_OPCODE_CLOSE;
+            f.is_urgent = 1;
+            break;
         case CWS_PING:
             f.opcode = WS_OPCODE_PING;
+            f.is_urgent = 1;
             break;
         case CWS_PONG:
             f.opcode = WS_OPCODE_PONG;
+            f.is_urgent = 1;
             break;
         default:
             return CWSE_INVALID_OPTIONS;
@@ -93,7 +100,7 @@ CWScode frame_sender_control(CWS *priv, int options, const void *data, size_t le
         return CWSE_APP_DATA_LENGTH_TOO_LONG;
     }
 
-    (priv->get_random_fn)(priv->user, priv, f.masking_key, 4);
+    cws_random(priv, f.masking_key, 4);
 
     return send_frame(priv, &f);
 }
@@ -158,7 +165,7 @@ CWScode frame_sender_data(CWS *priv, int options, const void *data, size_t len)
     f.payload = data;
     f.payload_len = len;
 
-    (priv->get_random_fn)(priv->user, priv, f.masking_key, 4);
+    cws_random(priv, f.masking_key, 4);
 
     return send_frame(priv, &f);
 }
