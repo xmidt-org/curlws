@@ -32,7 +32,7 @@
 #include <unistd.h>
 #include <stdlib.h>
 #include <time.h>
-#include <sys/time.h>
+#include <sys/random.h>
 
 #include "internal.h"
 
@@ -62,7 +62,6 @@
 void cws_random(CWS *priv, void *buffer, size_t len)
 {
     uint8_t *bytes = buffer;
-    size_t i;
     static int seeded = 0;
 
     IGNORE_UNUSED(priv);
@@ -71,14 +70,14 @@ void cws_random(CWS *priv, void *buffer, size_t len)
         struct timespec ts;
 
         if (0 == clock_gettime(CLOCK_MONOTONIC, &ts)) {
-            srandom(ts.tv_nsec ^ ts.tv_sec);
+            srandom(((int)ts.tv_nsec) ^ ((int)ts.tv_sec));
             seeded = 1;
         }
     }
 
     /* Note that this does NOT need to be a crypto level randomization function
      * but is simply used to prevent intermediary caches from causing issues. */
-    for (i = 0; i < len; i++) {
+    for (size_t i = 0; i < len; i++) {
         bytes[i] = (0x0ff & random());
     }
 }
