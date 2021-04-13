@@ -43,6 +43,7 @@
 #include "send.h"
 #include "sha1.h"
 #include "utils.h"
+#include "utf8.h"
 #include "ws.h"
 
 /*----------------------------------------------------------------------------*/
@@ -257,13 +258,13 @@ CURLMcode cws_multi_remove_handle(CWS *ws, CURLM *multi_handle)
 
 CWScode cws_ping(CWS *priv, const void *data, size_t len)
 {
-    return frame_sender_control(priv, 0x9, data, len);
+    return frame_sender_control(priv, CWS_PING, data, len);
 }
 
 
 CWScode cws_pong(CWS *priv, const void *data, size_t len)
 {
-    return frame_sender_control(priv, 0xa, data, len);
+    return frame_sender_control(priv, CWS_PONG, data, len);
 }
 
 
@@ -274,13 +275,13 @@ CWScode cws_close(CWS *priv, int code, const char *reason, size_t len)
 
 CWScode cws_close_urgent(CWS *priv, int code, const char *reason, size_t len)
 {
-    return _close(priv, CWS_CLOSE_URGENT, code, reason, len);
+    return _close(priv, CWS_CLOSE | CWS_URGENT, code, reason, len);
 }
 
 
 CWScode cws_send_blk_binary(CWS *priv, const void *data, size_t len)
 {
-    return data_block_sender(priv, 0x2, data, len);
+    return data_block_sender(priv, CWS_BINARY, data, len);
 }
 
 
@@ -294,7 +295,11 @@ CWScode cws_send_blk_text(CWS *priv, const char *s, size_t len)
         len = 0;
     }
 
-    return data_block_sender(priv, 0x1, s, len);
+    if (((ssize_t) len) != utf8_validate(s, len)) {
+        return CWSE_INVALID_UTF8;
+    }
+
+    return data_block_sender(priv, CWS_TEXT, s, len);
 }
 
 
@@ -314,6 +319,11 @@ CWScode cws_send_strm_text(CWS *priv, int info, const char *s, size_t len)
     IGNORE_UNUSED(info);
     IGNORE_UNUSED(s);
     IGNORE_UNUSED(len);
+
+    if (((ssize_t) len) != utf8_validate(s, len)) {
+        return CWSE_INVALID_UTF8;
+    }
+
     return CWSE_OK;
 }
 
@@ -349,6 +359,10 @@ void _cws_cleanup(CWS *priv)
         if (priv->mem) {
             mem_cleanup_pool(priv->mem);
         }
+        if (priv->stream_buffer) {
+            free(priv->stream_buffer);
+        }
+
         free(priv);
     }
 }
@@ -390,6 +404,10 @@ static CWScode _close(CWS *priv, int options, int code, const char *reason, size
         }
     } else {
         len = 0;
+    }
+
+    if (((ssize_t) len) != utf8_validate(reason, len)) {
+        return CWSE_INVALID_UTF8;
     }
 
     /* 2 byte reason code + '\0' at the end. */

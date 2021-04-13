@@ -52,6 +52,9 @@ CWScode frame_sender_data(CWS *priv, int options, const void *data, size_t len)
     CU_ASSERT(__goal->len == len);
     if (NULL != __goal->data) {
         for (size_t i = 0; i < len; i++) {
+            if (((uint8_t*)__goal->data)[i] != ((uint8_t*)data)[i]) {
+                printf("%ld expect: '%c' != '%c'\n", i, ((const char*)__goal->data)[i], ((const char*)data)[i]);
+            }
             CU_ASSERT(((uint8_t*)__goal->data)[i] == ((uint8_t*)data)[i]);
         }
     } else {
@@ -68,11 +71,11 @@ void test_data_block_sender()
     CWS priv;
 
     memset(&priv, 0, sizeof(CWS));
-    priv.mem_cfg.data_block_size = 10;
+    priv.max_payload_size = 10;
 
     CU_ASSERT(CWSE_INVALID_OPTIONS == data_block_sender(&priv, -1, NULL, 0));
     CU_ASSERT(CWSE_INVALID_OPTIONS == data_block_sender(&priv, CWS_BINARY|CWS_TEXT, NULL, 0));
-    CU_ASSERT(CWSE_INVALID_OPTIONS == data_block_sender(&priv, CWS_TEXT|CWS_FIRST_FRAME, NULL, 0));
+    CU_ASSERT(CWSE_INVALID_OPTIONS == data_block_sender(&priv, CWS_TEXT|CWS_FIRST, NULL, 0));
 
     priv.closed = true;
     CU_ASSERT(CWSE_CLOSED_CONNECTION == data_block_sender(&priv, CWS_TEXT, NULL, 0));
@@ -81,7 +84,7 @@ void test_data_block_sender()
     do {
         struct mock vector = {
             .rv = CWSE_OK,
-            .options = CWS_TEXT | CWS_LAST_FRAME | CWS_FIRST_FRAME,
+            .options = CWS_TEXT | CWS_LAST | CWS_FIRST,
             .data = "ignore",
             .len = 6,
             .seen = 0,
@@ -115,7 +118,7 @@ void test_data_block_sender()
         struct mock vector[] = {
             {
                 .rv = CWSE_OK,
-                .options = CWS_BINARY | CWS_FIRST_FRAME,
+                .options = CWS_BINARY | CWS_FIRST,
                 .data = "0123456789",
                 .len = 10,
                 .seen = 0,
@@ -131,7 +134,7 @@ void test_data_block_sender()
             },
             {
                 .rv = CWSE_OK,
-                .options = CWS_CONT | CWS_LAST_FRAME,
+                .options = CWS_CONT | CWS_LAST,
                 .data = "9876543210",
                 .len = 10,
                 .seen = 0,
@@ -152,7 +155,7 @@ void test_data_block_sender()
         struct mock vector[] = {
             {
                 .rv = CWSE_OK,
-                .options = CWS_BINARY | CWS_FIRST_FRAME,
+                .options = CWS_BINARY | CWS_FIRST,
                 .data = "0123456789",
                 .len = 10,
                 .seen = 0,
@@ -168,7 +171,7 @@ void test_data_block_sender()
             },
             {
                 .rv = CWSE_OK,
-                .options = CWS_CONT | CWS_LAST_FRAME,
+                .options = CWS_CONT | CWS_LAST,
                 .data = "9876543",
                 .len = 7,
                 .seen = 0,
@@ -189,7 +192,7 @@ void test_data_block_sender()
         struct mock vector[] = {
             {
                 .rv = CWSE_OK,
-                .options = CWS_BINARY | CWS_FIRST_FRAME,
+                .options = CWS_BINARY | CWS_FIRST,
                 .data = "0123456789",
                 .len = 10,
                 .seen = 0,

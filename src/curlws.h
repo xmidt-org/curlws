@@ -37,11 +37,12 @@ extern "C" {
 #endif
 
 /* Used to define the location in the stream this frame is by (*on_stream) */
-#define CWS_CONT        0x000100
-#define CWS_BINARY      0x000200
-#define CWS_TEXT        0x000400
-#define CWS_FIRST_FRAME 0x010000
-#define CWS_LAST_FRAME  0x020000
+#define CWS_CONT        0x00000100
+#define CWS_BINARY      0x00000200
+#define CWS_TEXT        0x00000400
+
+#define CWS_FIRST       0x01000000
+#define CWS_LAST        0x02000000
 
 /* All possible error codes from all the curlws functions. Future versions
  * may return other values.
@@ -51,15 +52,16 @@ extern "C" {
  */
 typedef enum {
     CWSE_OK = 0,
-    CWSE_OUT_OF_MEMORY,                 /* 1 */
-    CWSE_CLOSED_CONNECTION,             /* 2 */
-    CWSE_INVALID_CLOSE_REASON_CODE,     /* 3 */
-    CWSE_APP_DATA_LENGTH_TOO_LONG,      /* 4 */
-    CWSE_UNSUPPORTED_INTEGER_SIZE,      /* 5 */
-    CWSE_INTERNAL_ERROR,                /* 6 */
-    CWSE_INVALID_OPCODE,                /* 7 */
-    CWSE_STREAM_CONTINUITY_ISSUE,       /* 8 */
-    CWSE_INVALID_OPTIONS,               /* 9 */
+    CWSE_OUT_OF_MEMORY,                 /*  1 */
+    CWSE_CLOSED_CONNECTION,             /*  2 */
+    CWSE_INVALID_CLOSE_REASON_CODE,     /*  3 */
+    CWSE_APP_DATA_LENGTH_TOO_LONG,      /*  4 */
+    CWSE_UNSUPPORTED_INTEGER_SIZE,      /*  5 */
+    CWSE_INTERNAL_ERROR,                /*  6 */
+    CWSE_INVALID_OPCODE,                /*  7 */
+    CWSE_STREAM_CONTINUITY_ISSUE,       /*  8 */
+    CWSE_INVALID_OPTIONS,               /*  9 */
+    CWSE_INVALID_UTF8,                  /* 10 */
 
     CWSE_LAST /* never use! */
 } CWScode;
@@ -88,6 +90,7 @@ struct cws_config {
      *      Connection
      *      Expect
      *      Sec-WebSocket-Accept
+     *      Sec-WebSocket-Extensions
      *      Sec-WebSocket-Key
      *      Sec-WebSocket-Protocol
      *      Sec-WebSocket-Version
@@ -203,9 +206,9 @@ struct cws_config {
      *
      * @note The info parameter describes where this frame is in the stream,
      *       and the type of the frame (Binary/Text).  For a stream with a
-     *       single frame, both CWS_FIRST_FRAME and CWS_LAST_FRAME will be set.
-     *       It is reasonable for a frame to not be either the first or last
-     *       frame
+     *       single frame, both CWS_FIRST and CWS_LAST will be set.  It is
+     *       reasonable for a frame to not be either the first or last
+     *       frame.
      *
      * @note If this callback is set to a non-NULL value, then the callbacks
      *       (*on_text) and (*on_binary) are disabled.
@@ -215,10 +218,10 @@ struct cws_config {
      * @param info   information about the frame of date presented
      *                  Either CWS_BINARY or CWS_TEXT will be set indicating
      *                  the type of the payload.
-     *                  CWS_FIRST_FRAME will be set if this is the first frame
-     *                  in a sequence.
-     *                  CWS_LAST_FRAME will be set if this is the last frame in
-     *                  a sequence.
+     *                  CWS_FIRST will be set if this is the first frame in a
+     *                  sequence.
+     *                  CWS_LAST will be set if this is the last frame in a
+     *                  sequence.
      * @param buffer the data being returned
      * @param len    the length of the data
      */
@@ -510,9 +513,8 @@ CWScode cws_send_blk_text(CWS *handle, const char *s, size_t len);
  * 
  * @param handle the websocket handle to interact with
  * @param info   information about the frame of date presented.  The type
- *               information is ignored.  Set the CWS_FIRST_FRAME and/or
- *               CWS_LAST_FRAME to indicate if the frame is the first or last
- *               in a sequence.
+ *               information is ignored.  Set the CWS_FIRST and/or CWS_LAST to
+ *               indicate if the frame is the first or last in a sequence.
  * @param data   the buffer to send
  * @param len    the number of bytes in the buffer
  *
@@ -533,9 +535,8 @@ CWScode cws_send_strm_binary(CWS *handle, int info, const void *data, size_t len
  *
  * @param handle the websocket handle to interact with
  * @param info   information about the frame of date presented.  The type
- *               information is ignored.  Set the CWS_FIRST_FRAME and/or
- *               CWS_LAST_FRAME to indicate if the frame is the first or last
- *               in a sequence.
+ *               information is ignored.  Set the CWS_FIRST and/or CWS_LAST to
+ *               indicate if the frame is the first or last in a sequence.
  * @param s      the text (UTF-8) to send.  If len = SIZE_MAX then strlen(s) is
  *               used to determine the length of the string.
  * @param len    the number of bytes in the buffer

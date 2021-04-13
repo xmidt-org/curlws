@@ -50,25 +50,25 @@ CWScode cws_pong(CWS *handle, const void *data, size_t len)
 /*----------------------------------------------------------------------------*/
 void test_populate_callbacks()
 {
-    CWS obj;
+    CWS priv;
     struct cws_config src;
 
-    memset(&obj, 0, sizeof(obj));
+    memset(&priv, 0, sizeof(priv));
     memset(&src, 0, sizeof(src));
 
-    populate_callbacks(&obj, &src);
-    CU_ASSERT(obj.on_connect_fn == _default_on_connect);
-    CU_ASSERT(obj.on_text_fn    == _default_on_text);
-    CU_ASSERT(obj.on_binary_fn  == _default_on_binary);
-    CU_ASSERT(obj.on_ping_fn    == _default_on_ping);
-    CU_ASSERT(obj.on_pong_fn    == _default_on_pong);
-    CU_ASSERT(obj.on_close_fn   == _default_on_close);
-    CU_ASSERT(obj.debug_fn      == _default_debug);
-    CU_ASSERT(obj.configure_fn  == _default_configure);
+    populate_callbacks(&priv, &src);
+    CU_ASSERT(priv.on_connect_fn == _default_on_connect);
+    CU_ASSERT(priv.on_text_fn    == _default_on_text);
+    CU_ASSERT(priv.on_binary_fn  == _default_on_binary);
+    CU_ASSERT(priv.on_ping_fn    == _default_on_ping);
+    CU_ASSERT(priv.on_pong_fn    == _default_on_pong);
+    CU_ASSERT(priv.on_close_fn   == _default_on_close);
+    CU_ASSERT(priv.debug_fn      == _default_debug);
+    CU_ASSERT(priv.configure_fn  == _default_configure);
 
     src.verbose = 1;
-    populate_callbacks(&obj, &src);
-    CU_ASSERT(obj.debug_fn == _default_verbose_debug);
+    populate_callbacks(&priv, &src);
+    CU_ASSERT(priv.debug_fn == _default_verbose_debug);
 
     src.on_connect = (void*) 1;
     src.on_text    = (void*) 2;
@@ -79,43 +79,43 @@ void test_populate_callbacks()
     src.on_close   = (void*) 7;
     src.configure  = (void*) 10;
 
-    populate_callbacks(&obj, &src);
-    CU_ASSERT(obj.on_connect_fn == (void*) 1);
-    CU_ASSERT(obj.on_text_fn    == (void*) 2);
-    CU_ASSERT(obj.on_binary_fn  == (void*) 3);
-    CU_ASSERT(obj.on_stream_fn  == (void*) 4);
-    CU_ASSERT(obj.on_ping_fn    == (void*) 5);
-    CU_ASSERT(obj.on_pong_fn    == (void*) 6);
-    CU_ASSERT(obj.on_close_fn   == (void*) 7);
-    CU_ASSERT(obj.configure_fn  == (void*) 10);
+    populate_callbacks(&priv, &src);
+    CU_ASSERT(priv.on_connect_fn == (void*) 1);
+    CU_ASSERT(priv.on_text_fn    == (void*) 2);
+    CU_ASSERT(priv.on_binary_fn  == (void*) 3);
+    CU_ASSERT(priv.on_stream_fn  == (void*) 4);
+    CU_ASSERT(priv.on_ping_fn    == (void*) 5);
+    CU_ASSERT(priv.on_pong_fn    == (void*) 6);
+    CU_ASSERT(priv.on_close_fn   == (void*) 7);
+    CU_ASSERT(priv.configure_fn  == (void*) 10);
 
 }
 
 
 void test_defaults_dont_crash()
 {
-    CWS obj;
+    CWS priv;
     struct cws_config src;
 
-    memset(&obj, 0, sizeof(obj));
+    memset(&priv, 0, sizeof(priv));
     memset(&src, 0, sizeof(src));
 
-    populate_callbacks(&obj, NULL);
+    populate_callbacks(&priv, NULL);
 
-    (obj.on_connect_fn)(NULL, NULL, NULL);
-    (obj.on_text_fn)(NULL, NULL, NULL, 0);
-    (obj.on_binary_fn)(NULL, NULL, NULL, 0);
-    (obj.on_stream_fn)(NULL, NULL, 0, NULL, 0);
-    (obj.on_ping_fn)(NULL, NULL, NULL, 0);
-    (obj.on_pong_fn)(NULL, NULL, NULL, 0);
-    (obj.on_close_fn)(NULL, NULL, 0, NULL, 0);
-    (obj.configure_fn)(NULL, NULL, NULL);
-    (obj.debug_fn)(NULL, NULL, "Hello, world.");
+    (priv.on_connect_fn)(NULL, &priv, NULL);
+    (priv.on_text_fn)(NULL, &priv, NULL, 0);
+    (priv.on_binary_fn)(NULL, &priv, NULL, 0);
+    (priv.on_stream_fn)(NULL, &priv, 0, NULL, 0);
+    (priv.on_ping_fn)(NULL, &priv, NULL, 0);
+    (priv.on_pong_fn)(NULL, &priv, NULL, 0);
+    (priv.on_close_fn)(NULL, &priv, 0, NULL, 0);
+    (priv.configure_fn)(NULL, &priv, NULL);
+    (priv.debug_fn)(NULL, &priv, "Hello, world.");
 
     /* Check the verbose debug callback */
     src.verbose = 3;
-    populate_callbacks(&obj, &src);
-    (obj.debug_fn)(NULL, NULL, "Hello, world.");
+    populate_callbacks(&priv, &src);
+    (priv.debug_fn)(NULL, &priv, "Hello, world.");
 }
 
 

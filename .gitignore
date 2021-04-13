@@ -12,12 +12,15 @@
 *.out
 coverage*
 report.json
+reports
+src/xxd.c
 
 # Ignore the various build artifacts
 .ignore
 
-# Vim
+# Vim & vscode
 *.swp
+.vscode
 
 # Build directory & artifacts
 build

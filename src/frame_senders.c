@@ -61,24 +61,23 @@ CWScode frame_sender_control(CWS *priv, int options, const void *data, size_t le
         .fin = 1,
         .mask = 1,
         .is_control = 1,
+        .is_urgent = (CWS_URGENT & options) ? 1 : 0,
     };
-    const int allowed = (CWS_CLOSE | CWS_CLOSE_URGENT | CWS_PING | CWS_PONG);
 
-    switch (options & allowed) {
+    /* No special labels are allowed for a control message */
+    if (options & ~CWS_CTRL_MASK) {
+        return CWSE_INVALID_OPTIONS;
+    }
+
+    switch (options & CWS_CTRL_MASK) {
         case CWS_CLOSE:
             f.opcode = WS_OPCODE_CLOSE;
             break;
-        case CWS_CLOSE_URGENT:
-            f.opcode = WS_OPCODE_CLOSE;
-            f.is_urgent = 1;
-            break;
         case CWS_PING:
             f.opcode = WS_OPCODE_PING;
-            f.is_urgent = 1;
             break;
         case CWS_PONG:
             f.opcode = WS_OPCODE_PONG;
-            f.is_urgent = 1;
             break;
         default:
             return CWSE_INVALID_OPTIONS;
@@ -109,12 +108,11 @@ CWScode frame_sender_control(CWS *priv, int options, const void *data, size_t le
 CWScode frame_sender_data(CWS *priv, int options, const void *data, size_t len)
 {
     struct cws_frame f = {
-        .fin = (CWS_LAST_FRAME & options) ? 1 : 0,
+        .fin = (CWS_LAST & options) ? 1 : 0,
         .mask = 1,
         .is_control = 0,
     };
-    const int allowed = (CWS_CONT | CWS_BINARY | CWS_TEXT |
-                         CWS_FIRST_FRAME | CWS_LAST_FRAME);
+    const int allowed = (CWS_NONCTRL_MASK | CWS_FIRST | CWS_LAST);
     int lastinfo = priv->last_sent_data_frame_info;
 
     if (options != (options & allowed)) {
@@ -123,10 +121,10 @@ CWScode frame_sender_data(CWS *priv, int options, const void *data, size_t len)
 
     switch (options & (CWS_CONT|CWS_BINARY|CWS_TEXT)) {
         case CWS_CONT:
-            if (CWS_FIRST_FRAME & options) {
+            if (CWS_FIRST & options) {
                 return CWSE_INVALID_OPTIONS;
             }
-            if ((0 == lastinfo) || (CWS_LAST_FRAME & lastinfo)) {
+            if ((0 == lastinfo) || (CWS_LAST & lastinfo)) {
                 return CWSE_STREAM_CONTINUITY_ISSUE;
             }
             f.opcode = WS_OPCODE_CONTINUATION;
@@ -134,10 +132,10 @@ CWScode frame_sender_data(CWS *priv, int options, const void *data, size_t len)
 
         case CWS_BINARY:
         case CWS_TEXT:
-            if (!(CWS_FIRST_FRAME & options)) {
+            if (!(CWS_FIRST & options)) {
                 return CWSE_INVALID_OPTIONS;
             }
-            if ((0 != lastinfo) && !(CWS_LAST_FRAME & lastinfo)) {
+            if ((0 != lastinfo) && !(CWS_LAST & lastinfo)) {
                 return CWSE_STREAM_CONTINUITY_ISSUE;
             }
 

@@ -32,10 +32,12 @@
 
 #include "curlws.h"
 
-#define CWS_CLOSE           0x001000
-#define CWS_CLOSE_URGENT    0x002000
-#define CWS_PING            0x004000
-#define CWS_PONG            0x008000
+#define CWS_CLOSE           0x00010000
+#define CWS_PING            0x00020000
+#define CWS_PONG            0x00040000
+#define CWS_CTRL_MASK       (CWS_CLOSE|CWS_PING|CWS_PONG)
+#define CWS_NONCTRL_MASK    (CWS_CONT|CWS_BINARY|CWS_TEXT)
+#define CWS_URGENT          0x04000000
 
 /**
  * Used to send a control frame.
@@ -63,11 +65,11 @@ CWScode frame_sender_control(CWS *priv, int options, const void *data, size_t le
  * @param priv    the curlws object to sent data through
  * @param options only one of the following rows is valid:
  *                CWS_CONT
- *                CWS_CONT | CWS_LAST_FRAME
- *                CWS_BINARY | CWS_FIRST_FRAME
- *                CWS_BINARY | CWS_FIRST_FRAME | CWS_LAST_FRAME
- *                CWS_TEXT   | CWS_FIRST_FRAME
- *                CWS_TEXT   | CWS_FIRST_FRAME | CWS_LAST_FRAME
+ *                CWS_CONT | CWS_LAST
+ *                CWS_BINARY | CWS_FIRST
+ *                CWS_BINARY | CWS_FIRST | CWS_LAST
+ *                CWS_TEXT   | CWS_FIRST
+ *                CWS_TEXT   | CWS_FIRST | CWS_LAST
  *
  * @param data   the optional payload data to send
  * @param len    the number of bytes in the payload

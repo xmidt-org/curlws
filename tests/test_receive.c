@@ -241,7 +241,7 @@ void test_simple()
     uint8_t test[] = { 0x81, 0x00 };
     struct mock_stream vector[] = {
         {
-            .info = CWS_TEXT | CWS_FIRST_FRAME | CWS_LAST_FRAME,
+            .info = CWS_TEXT | CWS_FIRST | CWS_LAST,
             .len = 0,
             .data = NULL,
             .seen = 0,
@@ -263,7 +263,7 @@ void test_simple_one_byte()
     uint8_t test[] = { 0x81, 0x01, 'a' };
     struct mock_stream vector[] = {
         {
-            .info = CWS_TEXT | CWS_FIRST_FRAME | CWS_LAST_FRAME,
+            .info = CWS_TEXT | CWS_FIRST | CWS_LAST,
             .len = 1,
             .data = "a",
             .seen = 0,
@@ -285,7 +285,7 @@ void test_simple_one_byte_binary()
     uint8_t test[] = { 0x82, 0x01, 'a' };
     struct mock_stream vector[] = {
         {
-            .info = CWS_BINARY | CWS_FIRST_FRAME | CWS_LAST_FRAME,
+            .info = CWS_BINARY | CWS_FIRST | CWS_LAST,
             .len = 1,
             .data = "a",
             .seen = 0,
@@ -335,7 +335,7 @@ void test_simple_stream()
 
     struct mock_stream vector[] = {
         {
-            .info = CWS_TEXT | CWS_FIRST_FRAME,
+            .info = CWS_TEXT | CWS_FIRST,
             .len = 8,
             .data = "01234567",
             .seen = 0,
@@ -356,7 +356,7 @@ void test_simple_stream()
             .next = NULL,
         },
         {
-            .info = CWS_CONT | CWS_LAST_FRAME,
+            .info = CWS_CONT | CWS_LAST,
             .len = 3,
             .data = "898",
             .seen = 0,

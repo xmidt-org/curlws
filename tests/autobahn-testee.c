@@ -34,20 +34,11 @@
 #include <string.h>
 #include <ctype.h>
 
-struct ws_list {
+struct myapp_ctx {
     CWS *ws;
+    CURLM *multi;
     int exitval;
     time_t exit_started;
-    struct ws_list *next;
-    int test_number;
-};
-
-struct myapp_ctx {
-    struct ws_list *head;
-    CURLM *multi;
-    //CWS *ws;
-    //int exitval;
-    //time_t exit_started;
 };
 
 static bool verbose = false;
@@ -69,7 +60,6 @@ static bool verbose = false;
  * replace this with your own main loop integration
  */
 static void a_main_loop(struct myapp_ctx *ctx) {
-    struct ws_list *p = ctx->head;
     CURLM *multi = ctx->multi;
     int still_running = 0;
 
@@ -83,8 +73,6 @@ static void a_main_loop(struct myapp_ctx *ctx) {
         int msgs_left, rc;
         int maxfd = -1;
         long curl_timeo = -1;
-        bool exit;
-        time_t now;
 
         FD_ZERO(&fdread);
         FD_ZERO(&fdwrite);
@@ -122,41 +110,27 @@ static void a_main_loop(struct myapp_ctx *ctx) {
             break;
         }
 
-        printf( "rc: %d, still_running: %d, select timeout: %ld, %ld\n", rc, still_running, timeout.tv_sec, timeout.tv_usec);
-
         /* See how the transfers went */
         while ((msg = curl_multi_info_read(multi, &msgs_left))) {
             if (msg->msg == CURLMSG_DONE) {
-                curl_multi_remove_handle(multi, msg->easy_handle);
                 INF("HTTP completed with status %d '%s'",
                     msg->data.result, curl_easy_strerror(msg->data.result));
             }
         }
 
-        exit = true;
-        now = time(NULL);
-        p = ctx->head;
-        while (p) {
-            //printf("exit_started %ld, %ld\n", p->exit_started, (now - p->exit_started));
-            if (!p->exit_started || (now - p->exit_started < 2)) {
-                exit = false;
-                p = NULL;
-            } else {
-                p = p->next;
-            }
-        }
-        //printf("exit: %d\n", exit);
-
-        if (exit) {
+        if (ctx->exit_started) {
+            time_t now = time(NULL);
+            if (now - ctx->exit_started > 2) {
+                INF("timed out %lu seconds waiting for server to close socket.",
+                    now - ctx->exit_started);
             break;
         }
+        }
     } while (still_running);
-    /*
-    INF("quit main loop still_running=%d, ctx->p->exit_started=%ld (%ld seconds)",
+    INF("quit main loop still_running=%d, ctx->exit_started=%ld (%ld seconds)",
         still_running,
         ctx->exit_started,
         (ctx->exit_started > 0) ? time(NULL) - ctx->exit_started : 0);
-    */
 }
 
 /* https://www.w3.org/International/questions/qa-forms-utf-8 */
@@ -267,12 +241,18 @@ static void on_connect(void *data, CWS *ws, const char *websocket_protocols) {
 }
 
 static void on_text(void *data, CWS *ws, const char *text, size_t len) {
-    if (!check_utf8(text)) {
-        cws_close(ws, 1007, "invalid UTF-8", SIZE_MAX);
-        return;
+    if (0 < len) {
+        char *tmp = (char*) malloc(len+1);
+        memcpy(tmp, text, len);
+        tmp[len] = '\0';
+        if (!check_utf8(tmp)) {
+            cws_close(ws, 1007, "invalid UTF-8", SIZE_MAX);
+            return;
+        }
+        free(tmp);
     }
 
-    INF("TEXT %zd bytes={\n%s\n}", len, text);
+    INF("TEXT %zd bytes={ '%s' }", len, text);
     cws_send_blk_text(ws, text, len);
     (void)data;
 }
@@ -309,25 +289,28 @@ static void on_pong(void *data, CWS *ws, const void *reason, size_t len) {
     (void)ws;
 }
 
-static void on_close(void *data, CWS *ws, int reason, const char *reason_text, size_t reason_text_len) {
-    struct ws_list *ctx = data;
+static void on_close(void *data, CWS *ws, int reason, const char *reason_text, size_t len) {
+    struct myapp_ctx *ctx = data;
 
-    INF("CLOSE=%4d %zd bytes '%s'", reason, reason_text_len, reason_text);
+    INF("CLOSE=%4d %zd bytes '%s'", reason, len, reason_text);
     ctx->exit_started = time(NULL);
 
-    if (!check_utf8(reason_text)) {
-        cws_close(ws, 1007, "invalid UTF-8", SIZE_MAX);
-        return;
+    if (0 < len) {
+        char *tmp = (char*) malloc(len+1);
+        memcpy(tmp, reason_text, len);
+        tmp[len] = '\0';
+        if (!check_utf8(reason_text)) {
+            cws_close(ws, 1007, "invalid UTF-8", SIZE_MAX);
+            return;
+        }
+        free(tmp);
     }
-    cws_close(ws, 0, NULL, 0);
 }
 
 int main(int argc, char *argv[]) {
     const char *base_url;
     unsigned start_test, end_test, current_test;
-    int i, exitval, opt = 1;
-    struct myapp_ctx myapp_ctx;
-    struct ws_list *p = NULL;
+    int i, opt = 1;
 
     for (i = 1; i < argc; i++) {
         if (argv[i][0] != '-')
@@ -356,94 +339,72 @@ int main(int argc, char *argv[]) {
         }
     }
 
-    if (opt + 3 > argc) {
+    if (opt + 2 > argc) {
         fprintf(stderr, "ERROR: missing url start and end test number. See -h.\n");
         return EXIT_FAILURE;
     }
 
     base_url = argv[opt];
     start_test = atoi(argv[opt + 1]);
-    end_test = atoi(argv[opt + 2]);
+    end_test = start_test;
+    if (opt + 3 <= argc) {
+        end_test = atoi(argv[opt + 2]);
+    }
 
     curl_global_init(CURL_GLOBAL_DEFAULT);
 
-    memset(&myapp_ctx, 0, sizeof(myapp_ctx));
-
-    /*
-     * This is a traditional curl_multi app, see:
-     *
-     * https://curl.haxx.se/libcurl/c/multi-app.html
-     */
-    myapp_ctx.multi = curl_multi_init();
-    if (!myapp_ctx.multi) {
-        printf("invalid multi handle\n");
-        goto error_multi;
-    }
-
     for (current_test = start_test; current_test <= end_test; current_test++) {
         char test_url[4096];
+        struct myapp_ctx myapp_ctx = {
+            .exitval = EXIT_SUCCESS,
+        };
         struct cws_config cfg;
         CURLMcode rv;
 
-        if (!p) {
-            p = (struct ws_list*) calloc(1, sizeof(struct ws_list));
-            myapp_ctx.head = p;
-        } else {
-            p->next = (struct ws_list*) calloc(1, sizeof(struct ws_list));
-            p = p->next;
-        }
-        p->test_number = current_test;
-
         memset(&cfg, 0, sizeof(cfg));
         cfg.url = test_url;
-        cfg.verbose = verbose;
+        cfg.verbose = 1;
         cfg.on_connect = on_connect;
         cfg.on_text = on_text;
         cfg.on_binary = on_binary;
         cfg.on_ping = on_ping;
         cfg.on_pong = on_pong;
         cfg.on_close = on_close;
-        cfg.user = p;
-        cfg.verbose = 3;
+        cfg.user = &myapp_ctx;
+        cfg.explicit_expect = 1;
+        cfg.max_payload_size = 131070;
 
-        //fprintf(stderr, "TEST: %u\n", current_test);
+        fprintf(stderr, "TEST: %u\n", current_test);
 
         snprintf(test_url, sizeof(test_url),
-                 "%s/runCase?case=%u&agent=curl-websocket",
+                 "%s/runCase?case=%u&agent=curlws",
                  base_url, current_test);
 
-        p->ws = cws_create(&cfg);
-        INF("ws: %p, url: %s", p->ws, test_url);
-        if (!p->ws)
-            goto error_ws;
+        myapp_ctx.ws = cws_create(&cfg);
+        if (!myapp_ctx.ws)
+            goto error_multi;
 
-        rv = cws_multi_add_handle(p->ws, myapp_ctx.multi);
+        myapp_ctx.multi = curl_multi_init();
+        if (!myapp_ctx.multi) {
+            cws_destroy(myapp_ctx.ws);
+            goto error_multi;
+        }
+
+        rv = cws_multi_add_handle(myapp_ctx.ws, myapp_ctx.multi);
         if (CURLM_OK != rv) {
             printf("cws_multi_add_handle(): %d\n", rv);
         }
+
+        a_main_loop(&myapp_ctx);
+        cws_multi_remove_handle(myapp_ctx.ws, myapp_ctx.multi);
+        curl_multi_cleanup(myapp_ctx.multi);
+
+        cws_destroy(myapp_ctx.ws);
     }
 
-    a_main_loop(&myapp_ctx);
-
-  error_ws:
-    exitval = 0;
-    p = myapp_ctx.head;
-    while (p) {
-        struct ws_list *next;
-        cws_multi_remove_handle(p->ws, myapp_ctx.multi);
-        exitval |= p->exitval;
-        next = p->next;
-        cws_destroy(p->ws);
-        printf("TEST %d - %d\n", p->test_number, p->exitval);
-        free(p);
-        p = next;
-    }
-
-    curl_multi_cleanup(myapp_ctx.multi);
-
-  error_multi:
+error_multi:
 
     curl_global_cleanup();
 
-    return exitval;
+    return 0;
 }

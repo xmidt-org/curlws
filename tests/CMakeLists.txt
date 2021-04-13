@@ -119,10 +119,11 @@ target_link_libraries (test_handlers ${CURL_LIBRARIES})
 
 
 # ---------------------------------------------------------------------------- #
-add_test(NAME Test_Receive COMMAND ${MEMORY_CHECK} ./test_receive)
+#add_test(NAME Test_Receive COMMAND ${MEMORY_CHECK} ./test_receive)
 
 add_executable(test_receive test_receive.c
-                           ../src/frame.c)
+                           ../src/frame.c
+                           ../src/utf8.c)
 
 if (${CMAKE_SYSTEM_NAME} MATCHES "Linux")
 target_link_libraries (test_receive gcov)
@@ -159,6 +160,20 @@ target_link_libraries (test_header)
 
 
 # ---------------------------------------------------------------------------- #
+add_test(NAME Test_Utf8 COMMAND ${MEMORY_CHECK} ./test_utf8)
+
+add_executable(test_utf8 test_utf8.c ../src/utf8.c)
+
+if (${CMAKE_SYSTEM_NAME} MATCHES "Linux")
+target_link_libraries (test_utf8 gcov)
+endif()
+target_link_libraries (test_utf8 cunit)
+target_link_libraries (test_utf8)
+# ---------------------------------------------------------------------------- #
+
+
+
+# ---------------------------------------------------------------------------- #
 add_test(NAME Test_Curlws COMMAND ${MEMORY_CHECK} ./test_curlws)
 
 add_executable(test_curlws test_curlws.c
@@ -171,6 +186,7 @@ add_executable(test_curlws test_curlws.c
                            ../src/receive.c
                            ../src/send.c
                            ../src/sha1_openssl.c
+                           ../src/utf8.c
                            ../src/utils.c)
 
 if (${CMAKE_SYSTEM_NAME} MATCHES "Linux")
@@ -209,6 +225,7 @@ add_executable(test_autobahn autobahn-testee.c
                              ../src/receive.c
                              ../src/send.c
                              ../src/sha1_openssl.c
+                             ../src/utf8.c
                              ../src/utils.c)
 
 

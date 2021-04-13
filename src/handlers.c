@@ -27,6 +27,7 @@
 #include <stdarg.h>
 #include <stddef.h>
 #include <stdlib.h>
+#include <string.h>
 
 #include "handlers.h"
 #include "internal.h"
@@ -114,63 +115,100 @@ void populate_callbacks(CWS *dest, const struct cws_config *src)
 /*----------------------------------------------------------------------------*/
 /*                             Internal functions                             */
 /*----------------------------------------------------------------------------*/
-static void _default_on_connect(void *data, CWS *priv, const char *websocket_protocols)
+static void _default_on_connect(void *user, CWS *priv, const char *websocket_protocols)
 {
-    IGNORE_UNUSED(data);
+    IGNORE_UNUSED(user);
     IGNORE_UNUSED(priv);
     IGNORE_UNUSED(websocket_protocols);
 }
 
 
-static void _default_on_text(void *data, CWS *priv, const char *text, size_t len)
+static void _default_on_text(void *user, CWS *priv, const char *text, size_t len)
 {
-    IGNORE_UNUSED(data);
+    IGNORE_UNUSED(user);
     IGNORE_UNUSED(priv);
     IGNORE_UNUSED(text);
     IGNORE_UNUSED(len);
 }
 
 
-static void _default_on_binary(void *data, CWS *priv, const void *mem, size_t len)
+static void _default_on_binary(void *user, CWS *priv, const void *buffer, size_t len)
 {
-    IGNORE_UNUSED(data);
+    IGNORE_UNUSED(user);
     IGNORE_UNUSED(priv);
-    IGNORE_UNUSED(mem);
+    IGNORE_UNUSED(buffer);
+    IGNORE_UNUSED(len);
+}
+
+static void _default_on_stream(void *user, CWS *priv, int info, const void *buffer, size_t len)
+{
+    int one_frame = (CWS_FIRST | CWS_LAST);
+
+    //printf( "on_stream( ... 0x%08x, buffer, %ld )\n", (uint32_t) info, len);
+
+    if (one_frame == (one_frame & info)) {
+        if (CWS_BINARY & info) {
+            //printf( "on_stream() --> single binary frame: %ld\n", len);
+            (*priv->on_binary_fn)(user, priv, buffer, len);
+        } else {
+            //printf( "on_stream() --> single text frame: %ld\n", len);
+            (*priv->on_text_fn)(user, priv, buffer, len);
+        }
+    } else {
+        size_t prev_len;
+        if (CWS_FIRST & info) {
+            priv->stream_type = (CWS_BINARY | CWS_TEXT) & info;
+            priv->stream_buffer_len = 0;
+        }
+
+        prev_len = priv->stream_buffer_len;
+        priv->stream_buffer_len += len;
+
+        if (0 < priv->stream_buffer_len) {
+            priv->stream_buffer = realloc(priv->stream_buffer, priv->stream_buffer_len);
+            memcpy(&((uint8_t*)priv->stream_buffer)[prev_len], buffer, len);
+        }
+
+        if (CWS_LAST & info) {
+            if (CWS_BINARY & priv->stream_type) {
+                //printf( "on_stream() --> assembled binary frame: %ld\n", priv->stream_buffer_len);
+                (*priv->on_binary_fn)(user, priv, priv->stream_buffer, priv->stream_buffer_len);
+            } else {
+                //printf( "on_stream() --> assembled text frame: %ld\n", priv->stream_buffer_len);
+                (*priv->on_text_fn)(user, priv, priv->stream_buffer, priv->stream_buffer_len);
+            }
+
+            if (NULL != priv->stream_buffer) {
+                free(priv->stream_buffer);
+            }
+            priv->stream_buffer = NULL;
+            priv->stream_buffer_len = 0;
+        }
+    }
+}
+
+
+
+static void _default_on_ping(void *user, CWS *priv, const void *buffer, size_t len)
+{
+    IGNORE_UNUSED(user);
+
+    cws_pong(priv, buffer, len);
+}
+
+
+static void _default_on_pong(void *user, CWS *priv, const void *buffer, size_t len)
+{
+    IGNORE_UNUSED(user);
+    IGNORE_UNUSED(priv);
+    IGNORE_UNUSED(buffer);
     IGNORE_UNUSED(len);
 }
 
 
-static void _default_on_stream(void *data, CWS *priv, int info, const void *mem, size_t len)
+static void _default_on_close(void *user, CWS *priv, int status, const char *reason, size_t len)
 {
-    IGNORE_UNUSED(data);
-    IGNORE_UNUSED(priv);
-    IGNORE_UNUSED(info);
-    IGNORE_UNUSED(mem);
-    IGNORE_UNUSED(len);
-}
-
-
-
-static void _default_on_ping(void *data, CWS *priv, const void *mem, size_t len)
-{
-    IGNORE_UNUSED(data);
-
-    cws_pong(priv, mem, len);
-}
-
-
-static void _default_on_pong(void *data, CWS *priv, const void *mem, size_t len)
-{
-    IGNORE_UNUSED(data);
-    IGNORE_UNUSED(priv);
-    IGNORE_UNUSED(mem);
-    IGNORE_UNUSED(len);
-}
-
-
-static void _default_on_close(void *data, CWS *priv, int status, const char *reason, size_t len)
-{
-    IGNORE_UNUSED(data);
+    IGNORE_UNUSED(user);
     IGNORE_UNUSED(priv);
     IGNORE_UNUSED(status);
     IGNORE_UNUSED(reason);
@@ -178,27 +216,27 @@ static void _default_on_close(void *data, CWS *priv, int status, const char *rea
 }
 
 
-static void _default_configure(void *data, CWS *priv, CURL *easy)
+static void _default_configure(void *user, CWS *priv, CURL *easy)
 {
-    IGNORE_UNUSED(data);
+    IGNORE_UNUSED(user);
     IGNORE_UNUSED(priv);
     IGNORE_UNUSED(easy);
 }
 
 
-static void _default_debug(void *data, CWS *priv, const char *format, ...)
+static void _default_debug(void *user, CWS *priv, const char *format, ...)
 {
-    IGNORE_UNUSED(data);
+    IGNORE_UNUSED(user);
     IGNORE_UNUSED(priv);
     IGNORE_UNUSED(format);
 }
 
 
-static void _default_verbose_debug(void *data, CWS *priv, const char *format, ...)
+static void _default_verbose_debug(void *user, CWS *priv, const char *format, ...)
 {
     va_list args;
 
-    IGNORE_UNUSED(data);
+    IGNORE_UNUSED(user);
     IGNORE_UNUSED(priv);
 
     va_start(args, format);

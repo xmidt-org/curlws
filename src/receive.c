@@ -30,6 +30,7 @@
 #include <string.h>
 
 #include "receive.h"
+#include "utf8.h"
 #include "ws.h"
 
 /*----------------------------------------------------------------------------*/
@@ -52,7 +53,6 @@
 /*----------------------------------------------------------------------------*/
 static size_t _writefunction_cb(const char*, size_t, size_t, void*);
 static size_t _cws_process_frame(CWS*, const char*, size_t);
-static void _handle_control_frame(CWS*);
 static inline size_t _min_size_t(size_t, size_t);
 
 /*----------------------------------------------------------------------------*/
@@ -60,8 +60,6 @@ static inline size_t _min_size_t(size_t, size_t);
 /*----------------------------------------------------------------------------*/
 void receive_init(CWS *priv)
 {
-    priv->recv.header.needed = WS_FRAME_HEADER_MIN;
-
     curl_easy_setopt(priv->easy, CURLOPT_WRITEFUNCTION, _writefunction_cb);
     curl_easy_setopt(priv->easy, CURLOPT_WRITEDATA, priv);
 }
@@ -93,7 +91,7 @@ static size_t _writefunction_cb(const char *buffer, size_t count, size_t nitems,
 
         if (0 == used) {
             printf("_writefuncation_cb( buffer, %ld, %ld, data ) Error, Exit\n", count, nitems);
-            return 0;
+            return count * nitems;
         }
 
         len -= used;
@@ -105,110 +103,80 @@ static size_t _writefunction_cb(const char *buffer, size_t count, size_t nitems,
 }
 
 
-static size_t _cws_process_frame(CWS *priv, const char *buffer, size_t len)
+/**
+ * A helper function that processes the data into a frame if possible.
+ *
+ * @param priv the object to reference
+ * @param buf  the buffer to work with.  On success, the buffer pointer is
+ *             changed to reflect the consumed bytes.
+ * @param len  the length of the buffer.  On success, the buffer length is
+ *             changed to reflect the consumed bytes.
+ *
+ * @retval greater than 0 if more bytes are needed
+ * @retval 0 if the header is valid
+ * @retval -1 if there was an error, the buf & length are not changed & the
+ *         socket has been closed automatically.
+ */
+static ssize_t _process_frame_header(CWS *priv, const char **buf, size_t *len)
 {
-    size_t used = 0;
+    struct recv *r = &priv->recv;
+    struct header *h = &priv->recv.header;
+    const char *buffer = *buf;
+    size_t _len = *len;
+    size_t min;
+    ssize_t delta;
 
-    /* Are we waiting on frame header data? */
-    if (priv->recv.header.needed) {
-        size_t min = _min_size_t(priv->recv.header.needed, len);
-        int rv;
-        ssize_t delta;
-
-        memcpy(&priv->recv.header.buf[priv->recv.header.used], buffer, min);
-        priv->recv.header.used += min;
-        priv->recv.header.needed -= min;
-        len -= min;
-        used += min;
-        buffer += min;
-
-        delta = 0;
-        rv = frame_decode(&priv->recv.frame, priv->recv.header.buf, priv->recv.header.used, &delta);
-        if (rv) {
-            cws_close(priv, 1002, NULL, 0);
-            return 0; /* Signal an error with 0. */
-        }
-
-        /* We need more data for a complete header */
-        if (delta < 0) {
-            /* Delta is the number of bytes need * -1 */
-            priv->recv.header.needed = 0 - delta;
-            if (0 == len) {
-                return used;
-            }
-        }
-        
-        /* Done processing the buffer because we have all the data we need. */
-        priv->recv.header.used = 0;
+    if (r->is_frame_valid) {
+        return 0;
     }
 
-    /* There is a complete header */
-
-    if (priv->recv.frame.is_control) {
-        if (priv->recv.control.used < priv->recv.frame.payload_len) {
-            size_t min = _min_size_t(priv->recv.frame.payload_len, len);
-
-            memcpy(&priv->recv.control.buf[priv->recv.control.used], buffer, min);
-            priv->recv.control.used += min;
-            used += min;
-        }
-
-        if (priv->recv.control.used == priv->recv.frame.payload_len) {
-            _handle_control_frame(priv);
-
-            priv->recv.header.needed = WS_FRAME_HEADER_MIN;
-            priv->recv.header.used = 0;
-            priv->recv.control.used = 0;
-        }
-
-        return used;
-    } else {
-        size_t min = _min_size_t(priv->recv.frame.payload_len, len);
-        used += min;
-
-        if (WS_OPCODE_CONTINUATION == priv->recv.frame.opcode) {
-            priv->recv.fragment_info &= ~CWS_FIRST_FRAME;
-        } else {
-            if (WS_OPCODE_TEXT == priv->recv.frame.opcode) {
-                priv->recv.fragment_info = CWS_FIRST_FRAME | CWS_TEXT;
-            } else {
-                priv->recv.fragment_info = CWS_FIRST_FRAME | CWS_BINARY;
-            }
-        }
-
-        /* If the payload == the min, then we have the last of the data */
-        if (priv->recv.frame.payload_len == min) {
-            if (priv->recv.frame.fin) {
-                priv->recv.fragment_info |= CWS_LAST_FRAME;
-            }
-
-            priv->dispatching++;
-            (priv->on_stream_fn)(priv->user, priv, priv->recv.fragment_info, buffer, min);
-            priv->dispatching--;
-
-            priv->recv.header.needed = WS_FRAME_HEADER_MIN;
-        } else {
-            if (0 < min) {
-                priv->dispatching++;
-                (priv->on_stream_fn)(priv->user, priv, priv->recv.fragment_info, buffer, min);
-                priv->dispatching--;
-
-                priv->recv.frame.payload_len -= min;
-                priv->recv.frame.opcode = WS_OPCODE_CONTINUATION;
-                priv->recv.fragment_info &= ~(CWS_TEXT | CWS_BINARY);
-                priv->recv.fragment_info |= CWS_CONT;
-            }
-        }
+    if (0 == h->needed) {
+        h->needed = WS_FRAME_HEADER_MIN;
     }
 
-    return used;
+    min = _min_size_t(h->needed, _len);
+
+    memcpy(&h->buf[h->used], buffer, min);
+    h->used += min;
+    h->needed -= min;
+    _len -= min;
+    buffer += min;
+
+    delta = 0;
+    if (frame_decode(&r->frame, h->buf, h->used, &delta)) {
+        cws_close(priv, 1002, NULL, 0);
+        return -1;
+    }
+
+    /* We need more data for a complete header */
+    if (delta < 0) {
+        /* Delta is the number of bytes need * -1 */
+        h->needed = 0 - delta;
+        *buf = buffer;
+        *len = _len;
+        return h->needed;
+    }
+
+    if (0 != frame_validate(&r->frame, FRAME_DIR_S2C)) {
+        cws_close(priv, 1002, NULL, 0);
+        return -1;
+    }
+
+    /* Done processing the buffer because we have all the data we need. */
+    h->used = 0;
+    r->is_frame_valid = true;
+    *buf = buffer;
+    *len = _len;
+
+    return 0;
 }
+
 
 static bool _is_valid_close_from_server(int code)
 {
     if (((3000 <= code) && (code <= 4999)) ||
         ((1000 <= code) && (code <= 1003)) ||
-        ((1007 <= code) && (code <= 1009)) || (1011 == code))
+        ((1007 <= code) && (code <= 1011)))
     {
         return true;
     }
@@ -216,54 +184,311 @@ static bool _is_valid_close_from_server(int code)
     return false;
 }
 
-static void _handle_control_frame(CWS *priv)
-{
-    if (WS_OPCODE_PING == priv->recv.frame.opcode) {
-        priv->dispatching++;
-        (priv->on_ping_fn)(priv->user, priv, priv->recv.control.buf, priv->recv.control.used);
-        priv->dispatching--;
-    } else if (WS_OPCODE_PONG == priv->recv.frame.opcode) {
-        priv->dispatching++;
-        (priv->on_pong_fn)(priv->user, priv, priv->recv.control.buf, priv->recv.control.used);
-        priv->dispatching--;
-    } else if (WS_OPCODE_CLOSE == priv->recv.frame.opcode) {
-        int status = 1005;
-        const char *s = "";
-        size_t len = priv->recv.frame.payload_len;
 
-        switch (len) {
-            case 0:
-                break;
-            case 1:
-                /* Invalid as 0 or 2+ bytes are needed */
-                status = 1002;
-                len = 0;
-                cws_close(priv, status, "invalid close payload length", SIZE_MAX);
-                break;
-            default:
-                status = priv->recv.control.buf[0] << 8 | priv->recv.control.buf[1];
-                if (!_is_valid_close_from_server(status)) {
-                    status = 1002;
-                    len = 0;
-                    cws_close(priv, status, "invalid close reason", SIZE_MAX);
-                } else {
-                    /* Ensure there is a trailing '\0' to prevent buffer overruns */
-                    priv->recv.control.buf[priv->recv.frame.payload_len] = '\0';
-                    s = (const char*) &priv->recv.control.buf[2];
-                    len -= 2;
-                }
+static void _handle_close(CWS *priv, struct recv *r)
+{
+    int status = 1005;
+    const char *s = NULL;
+    size_t len = r->frame.payload_len;
+
+    if (1 == len) {
+        /* Invalid as 0 or 2+ bytes are needed */
+        status = 1002;
+        len = 0;
+        cws_close(priv, status, "invalid close payload length", SIZE_MAX);
+        return;
+    }
+
+    if (1 < len) {
+        ssize_t rv;
+
+        status = r->control.buf[0] << 8 | r->control.buf[1];
+        if (!_is_valid_close_from_server(status)) {
+            status = 1002;
+            len = 0;
+            cws_close(priv, status, "invalid close reason", SIZE_MAX);
+            return;
         }
 
-        (priv->on_close_fn)(priv->user, priv, status, s, len);
+        /* Ensure there is a trailing '\0' to prevent buffer overruns */
+        r->control.buf[r->frame.payload_len] = '\0';
+        s = (const char*) &r->control.buf[2];
+        len -= 2;
 
-        if (!priv->closed) {
-            if (1005 == status) {
-                status = 0;
-            }
-            cws_close(priv, status, s, 0);
+        rv = utf8_validate(s, len);
+        if (len != (size_t) rv) {
+            cws_close(priv, 1007, NULL, 0);
+            return;
         }
     }
+
+    (priv->on_close_fn)(priv->user, priv, status, s, len);
+
+    if (!priv->closed) {
+        if (1005 == status) {
+            status = 0;
+        }
+        cws_close(priv, status, s, 0);
+    }
 }
+
+
+/**
+ * @retval  greater than 0 if more bytes are needed
+ * @retval  0 if the control frame was processed
+ * @retval -1 if there was an error & the frame was closed
+ */
+static ssize_t _process_control_frame(CWS *priv, const char **buf, size_t *len)
+{
+    struct recv *r = &priv->recv;
+    const char *buffer = *buf;
+    size_t _len = *len;
+
+    if (r->control.used < r->frame.payload_len) {
+        size_t min = _min_size_t(r->frame.payload_len, _len);
+
+        memcpy(&r->control.buf[r->control.used], buffer, min);
+        r->control.used += min;
+        _len -= min;
+        buffer += min;
+    }
+
+    if (r->control.used == r->frame.payload_len) {
+        if (WS_OPCODE_PING == r->frame.opcode) {
+            priv->dispatching++;
+            (priv->on_ping_fn)(priv->user, priv, r->control.buf, r->control.used);
+            priv->dispatching--;
+            r->is_frame_valid = false;
+        } else if (WS_OPCODE_PONG == priv->recv.frame.opcode) {
+            priv->dispatching++;
+            (priv->on_pong_fn)(priv->user, priv, r->control.buf, r->control.used);
+            priv->dispatching--;
+            r->is_frame_valid = false;
+        } else {    /* We know the frame only has these 3 */
+            _handle_close(priv, r);
+            r->is_frame_valid = false;
+            return -1;
+        }
+
+        r->header.needed = WS_FRAME_HEADER_MIN;
+        r->header.used = 0;
+        r->control.used = 0;
+    }
+
+    *len = _len;
+    *buf = buffer;
+    return 0;
+}
+
+
+#define CWS_NONCTRL_MASK    (CWS_CONT|CWS_BINARY|CWS_TEXT)
+/**
+ * @retval  greater than 0 if more bytes are needed
+ * @retval  0 if the data was processed
+ * @retval -1 if there was an error & the frame was closed
+ */
+static ssize_t _process_frame_data_stream(CWS *priv, const char **buf, size_t *len)
+{
+    struct recv *r = &priv->recv;
+    const char *buffer = *buf;
+    const char *buf_to_send = buffer;
+    size_t _len = *len;
+    size_t min = _min_size_t(r->frame.payload_len, _len);
+    size_t len_to_send = min;
+
+    if (0 == r->stream_type) {
+        /* 1st stream packet wasn't a continuation */
+        cws_close(priv, 1002, NULL, 0);
+        return -1;
+    }
+
+    if ((CWS_TEXT == r->stream_type) && (0 < r->utf8.needed)) {
+        min = _min_size_t(r->utf8.needed, min);
+        memcpy(&r->utf8.buf[r->utf8.used], buffer, min);
+        r->utf8.used += min;
+        r->utf8.needed -= min;
+
+        if (0 != r->utf8.needed) {
+            if (false == utf8_maybe_valid(r->utf8.buf, r->utf8.used)) {
+                cws_close(priv, 1007, NULL, 0);
+                return -1;
+            }
+
+            len_to_send = min;
+            buf_to_send = NULL;
+            /*
+            r->frame.payload_len -= min;
+
+            buffer += min;
+            _len -= min;
+            *buf = buffer;
+            *len = _len;
+            return r->utf8.needed;
+            */
+        } else {
+            ssize_t rv;
+
+            /* We have extra bytes from the previous frame, so we should add
+             * them to this frame to make sure we don't roll over backwards. */
+            r->frame.payload_len += r->utf8.used - min;
+
+            len_to_send = r->utf8.used;
+            buf_to_send = r->utf8.buf;
+
+            rv = utf8_validate(buf_to_send, len_to_send);
+            if (rv < 0) {
+                cws_close(priv, 1007, NULL, 0);
+                return -1;
+            }
+        }
+    } else if (CWS_TEXT == r->stream_type) {
+        ssize_t rv;
+        size_t left;
+
+        rv = utf8_validate(buffer, min);
+        left = min - (size_t) rv;
+
+        if (rv < 0) {
+            cws_close(priv, 1007, NULL, 0);
+            return -1;
+        }
+
+        if (0 < left) {
+            if (0 == r->frame.fin) {
+                memcpy(r->utf8.buf, &buffer[min - (size_t) left], left);
+                r->utf8.used = left;
+                r->utf8.needed = utf8_get_size(r->utf8.buf[0]);
+                r->utf8.needed -= left;
+
+                r->frame.payload_len -= left;
+                len_to_send -= left;
+            } else {
+                cws_close(priv, 1007, NULL, 0);
+                return -1;
+            }
+        }
+    }
+
+    r->frame.payload_len -= len_to_send;
+
+    if ((0 == r->frame.payload_len) && (1 == r->frame.fin)) {
+        r->fragment_info |= CWS_LAST;
+    }
+
+    if (NULL != buf_to_send) {
+        priv->dispatching++;
+        (priv->on_stream_fn)(priv->user, priv, r->fragment_info, buf_to_send, len_to_send);
+        priv->dispatching--;
+    }
+
+    r->fragment_info &= ~CWS_FIRST;
+
+    if (buf_to_send == r->utf8.buf) {
+        r->utf8.used = 0;
+        r->utf8.needed = 0;
+    }
+
+    if (0 == r->frame.payload_len) {
+        r->is_frame_valid = false;
+        /* Set the expectation for the next frame to be a CONTINUATION */
+        r->fragment_info &= ~CWS_NONCTRL_MASK;
+        r->fragment_info |= CWS_CONT;
+    }
+
+    if (CWS_LAST == (CWS_LAST & r->fragment_info)) {
+        r->fragment_info = 0;
+        r->stream_type = 0;
+    }
+
+    buffer += min;
+    _len -= min;
+
+
+    *buf = buffer;
+    *len = _len;
+    return 0;
+}
+
+/**
+ * @retval  greater than 0 if more bytes are needed
+ * @retval  0 if the control frame was processed
+ * @retval -1 if there was an error & the frame was closed
+ */
+static ssize_t _process_data_frame(CWS *priv, const char **buf, size_t *len)
+{
+    struct recv *r = &priv->recv;
+    const char *buffer = *buf;
+    size_t _len = *len;
+    ssize_t rv;
+
+    if (WS_OPCODE_BINARY == r->frame.opcode) {
+        if (0 == r->fragment_info) {
+            /* New frame */
+            r->stream_type = CWS_BINARY;
+            r->fragment_info = CWS_FIRST | CWS_BINARY;
+        } else if ((0 < r->frame.payload_len) &&
+                   (CWS_BINARY == (CWS_NONCTRL_MASK & r->fragment_info)))
+        {
+            /* Continue to send data */
+        } else {
+            cws_close(priv, 1002, NULL, 0);
+            return -1;
+        }
+    } else if (WS_OPCODE_TEXT == r->frame.opcode) {
+        if (0 == r->fragment_info) {
+            /* New frame */
+            r->stream_type = CWS_TEXT;
+            r->fragment_info = CWS_FIRST | CWS_TEXT;
+        } else if ((0 < r->frame.payload_len) &&
+                   (CWS_TEXT == (CWS_NONCTRL_MASK & r->fragment_info)))
+        {
+            /* Continue to send data */
+        } else {
+            cws_close(priv, 1002, NULL, 0);
+            return -1;
+        }
+    } else if (WS_OPCODE_CONTINUATION == r->frame.opcode) {
+        if (0 == r->stream_type) {
+            cws_close(priv, 1002, NULL, 0);
+            return -1;
+        }
+        r->fragment_info &= ~CWS_NONCTRL_MASK;
+        r->fragment_info |= CWS_CONT;
+    } else {
+        /* Should never be hit unless the spec changes and only have of this
+         * implementation changes. */
+        cws_close(priv, 1002, NULL, 0);
+        return -1;
+    }
+
+    rv = _process_frame_data_stream(priv, &buffer, &_len);
+
+    *buf = buffer;
+    *len = _len;
+    return rv;
+}
+
+
+static size_t _cws_process_frame(CWS *priv, const char *buffer, size_t len)
+{
+    size_t starting_len = len;
+
+    /* Are we waiting on frame header data? */
+    if (0 != _process_frame_header(priv, &buffer, &len)) {
+        return starting_len - len;
+    }
+
+    /* There is a completed header */
+    if (priv->recv.frame.is_control) {
+        _process_control_frame(priv, &buffer, &len);
+    } else {
+        _process_data_frame(priv, &buffer, &len);
+    }
+
+    return starting_len - len;
+}
+
+
 
 static inline size_t _min_size_t(size_t a, size_t b)
 {

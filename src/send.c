@@ -84,6 +84,7 @@ CWScode send_frame(CWS *priv, const struct cws_frame *f)
     struct cws_buf_queue *buf;
     size_t buffer_size;
 
+    //printf( "send_frame() len: %ld\n", f->payload_len);
     if (f->is_control) {
         buf = (struct cws_buf_queue*) mem_alloc_ctrl(priv->mem);
         buffer_size = WS_CTL_FRAME_MAX;
@@ -139,7 +140,7 @@ CWScode send_frame(CWS *priv, const struct cws_frame *f)
         priv->pause_flags &= ~CURLPAUSE_SEND;
         curl_easy_pause(priv->easy, priv->pause_flags);
 
-        printf( "\n\ncurl_easy_pause( easy, 0x%08x )\n\n", (uint32_t) priv->pause_flags);
+        //printf( "curl_easy_pause( easy, 0x%08x )\n", (uint32_t) priv->pause_flags);
     }
     return CWSE_OK;
 }
@@ -165,10 +166,10 @@ static size_t _readfunction_cb(char *buffer, size_t count, size_t n, void *data)
     size_t sent = 0;
     size_t data_to_send;
 
-    printf( "_readfunction_cb()\n");
+    //printf( "_readfunction_cb( buffer, %ld, %ld, data)\n", count, n);
 
     if (priv->redirection) {
-        printf( "_readfunction_cb() exit: %ld\n", space_left);
+        //printf( "_readfunction_cb() 1 exit: %ld\n", space_left);
         return space_left;
     }
 
@@ -176,11 +177,12 @@ static size_t _readfunction_cb(char *buffer, size_t count, size_t n, void *data)
         /* When the connection is closed, we should return 0 to tell curl to
          * shut down the connection. */
         if (priv->closed) {
+            //printf( "_readfunction_cb() 2 exit: %ld\n", space_left);
             return 0;
         }
 
         priv->pause_flags |= CURLPAUSE_SEND;
-        printf( "_readfunction_cb() exit: PAUSE\n");
+        //printf( "_readfunction_cb() exit: PAUSE\n");
         return CURL_READFUNC_PAUSE;
     }
 
@@ -227,6 +229,6 @@ static size_t _readfunction_cb(char *buffer, size_t count, size_t n, void *data)
         }
     }
 
-    printf( "_readfunction_cb() exit: %ld\n", sent);
+    //printf( "_readfunction_cb() 3 exit: %ld\n", sent);
     return sent;
 }

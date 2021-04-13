@@ -88,7 +88,7 @@ static size_t _header_cb(const char *buffer, size_t count, size_t nitems, void *
         {NULL, NULL}
     };
 
-    printf( "_header_cb()\n");
+    //printf( "_header_cb()\n");
 
     curl_easy_getinfo(priv->easy, CURLINFO_RESPONSE_CODE, &http_status);
     curl_easy_getinfo(priv->easy, CURLINFO_HTTP_VERSION,  &http_version);
@@ -96,7 +96,7 @@ static size_t _header_cb(const char *buffer, size_t count, size_t nitems, void *
     /* If we are being redirected, let curl do that for us. */
     if (300 <= http_status && http_status <= 399) {
         priv->redirection = true;
-        printf( "_header_cb() exit: %ld\n", len);
+        //printf( "_header_cb() exit: %ld\n", len);
         return len;
     } else {
         priv->redirection = false;
@@ -117,7 +117,7 @@ static size_t _header_cb(const char *buffer, size_t count, size_t nitems, void *
                                 strlen("server didn't accept the websocket upgrade"));
             priv->dispatching--;
             _cws_cleanup(priv);
-            printf( "_header_cb() exit: %ld\n", 0L);
+            //printf( "_header_cb() exit: %ld\n", 0L);
             return 0;
         } else {
             priv->dispatching++;
@@ -125,7 +125,7 @@ static size_t _header_cb(const char *buffer, size_t count, size_t nitems, void *
                                   STR_OR_EMPTY(priv->websocket_protocols.received));
             priv->dispatching--;
             _cws_cleanup(priv);
-            printf( "_header_cb() exit: %ld\n", len);
+            //printf( "_header_cb() exit: %ld\n", len);
             return len;
         }
     }
@@ -138,7 +138,7 @@ static size_t _header_cb(const char *buffer, size_t count, size_t nitems, void *
             free(priv->websocket_protocols.received);
             priv->websocket_protocols.received = NULL;
         }
-        printf( "_header_cb() exit: %ld\n", len);
+        //printf( "_header_cb() exit: %ld\n", len);
         return len;
     }
 
@@ -152,7 +152,7 @@ static size_t _header_cb(const char *buffer, size_t count, size_t nitems, void *
         }
     }
 
-    printf( "_header_cb() exit: %ld\n", len);
+    //printf( "_header_cb() exit: %ld\n", len);
     return len;
 }
 

@@ -72,24 +72,24 @@ CWScode data_block_sender(CWS *priv, int options, const void *data, size_t len)
         return CWSE_CLOSED_CONNECTION;
     }
 
-    options |= CWS_FIRST_FRAME;
+    options |= CWS_FIRST;
     if (!data || !len) {
-        options |= CWS_LAST_FRAME;
+        options |= CWS_LAST;
         return frame_sender_data(priv, options, NULL, 0);
     }
 
-    while (priv->mem_cfg.data_block_size < len) {
-        rv = frame_sender_data(priv, options, data, priv->mem_cfg.data_block_size);
+    while (priv->max_payload_size < len) {
+        rv = frame_sender_data(priv, options, data, priv->max_payload_size);
         if (CWSE_OK != rv) {    /* Should only fail if we ran out of memory */
             return rv;
         }
 
         options = CWS_CONT;
-        len -= priv->mem_cfg.data_block_size;
-        data += priv->mem_cfg.data_block_size;
+        len -= priv->max_payload_size;
+        data += priv->max_payload_size;
     }
 
-    options |= CWS_LAST_FRAME;
+    options |= CWS_LAST;
     return frame_sender_data(priv, options, data, len);
 }
 

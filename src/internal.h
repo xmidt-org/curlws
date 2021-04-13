@@ -33,6 +33,7 @@
 
 #include "frame.h"
 #include "memory.h"
+#include "utf8.h"
 #include "ws.h"
 
 /*----------------------------------------------------------------------------*/
@@ -92,16 +93,24 @@ struct cws_object {
     struct cws_buf_queue *send;
 
     /* The structure needed to deal with the incoming data stream */
-    struct {
+    struct recv {
         /* The information needed across fragments */
+        int stream_type;
         int fragment_info;
+
+        struct utf8_buffer {    
+            char buf[MAX_UTF_BYTES];
+            size_t used;
+            size_t needed;
+        } utf8;
 
         /* Valid if header.needed = 0. The decoded WS frame header.*/
         struct cws_frame frame;
+        bool is_frame_valid;
 
         /* Scratch space for collecting the data needed to decode WS a frame
          * header. */
-        struct {
+        struct header {
             uint8_t buf[WS_FRAME_HEADER_MAX];
             size_t used;
             size_t needed;
@@ -109,12 +118,16 @@ struct cws_object {
 
         /* Scratch space for collecting the data needed to decode control WS
          * payload.  The header is still stored in the header struct above. */
-        struct {
+        struct control {
             uint8_t buf[WS_CTL_PAYLOAD_MAX];
             size_t used;
             size_t needed;
         } control;
     } recv;
+
+    int stream_type;
+    size_t stream_buffer_len;
+    void *stream_buffer;
 
     /* Connection State flags */
     uint8_t dispatching;
