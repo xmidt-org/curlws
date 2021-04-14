@@ -134,6 +134,22 @@ target_link_libraries (test_receive)
 
 
 # ---------------------------------------------------------------------------- #
+#add_test(NAME Test_Receive COMMAND ${MEMORY_CHECK} ./test_receive)
+
+add_executable(test_autobahn_27 test_autobahn_27.c
+                           ../src/frame.c
+                           ../src/utf8.c)
+
+if (${CMAKE_SYSTEM_NAME} MATCHES "Linux")
+target_link_libraries (test_autobahn_27 gcov)
+endif()
+target_link_libraries (test_autobahn_27 cunit)
+target_link_libraries (test_autobahn_27)
+# ---------------------------------------------------------------------------- #
+
+
+
+# ---------------------------------------------------------------------------- #
 add_test(NAME Test_Send COMMAND ${MEMORY_CHECK} ./test_send)
 
 add_executable(test_send test_send.c ../src/frame.c)

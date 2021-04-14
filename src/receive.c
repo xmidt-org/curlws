@@ -245,8 +245,8 @@ static ssize_t _process_control_frame(CWS *priv, const char **buf, size_t *len)
     const char *buffer = *buf;
     size_t _len = *len;
 
-    if (r->control.used < r->frame.payload_len) {
-        size_t min = _min_size_t(r->frame.payload_len, _len);
+    if ((r->control.used < r->frame.payload_len) && (0 < _len)) {
+        size_t min = _min_size_t(r->frame.payload_len - r->control.used, _len);
 
         memcpy(&r->control.buf[r->control.used], buffer, min);
         r->control.used += min;
