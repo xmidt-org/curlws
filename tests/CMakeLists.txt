@@ -227,10 +227,10 @@ target_link_libraries (test_curlws ${OPENSSL_LIBRARIES} ${CURL_LIBRARIES})
 
 
 # ---------------------------------------------------------------------------- #
-#add_test(NAME Test_Autobahn___1__10  COMMAND ${MEMORY_CHECK} ./test_autobahn ws://localhost:9001   1  10)
-#add_test(NAME Test_Autobahn__11__20  COMMAND ${MEMORY_CHECK} ./test_autobahn ws://localhost:9001  11  20)
-#add_test(NAME Test_Autobahn__21__30  COMMAND ${MEMORY_CHECK} ./test_autobahn ws://localhost:9001  21  30)
-#add_test(NAME Test_Autobahn__31__40  COMMAND ${MEMORY_CHECK} ./test_autobahn ws://localhost:9001  31  40)
+add_test(NAME Test_Autobahn___1__10  COMMAND ${MEMORY_CHECK} ./test_autobahn ws://localhost:9001   1  10)
+add_test(NAME Test_Autobahn__11__20  COMMAND ${MEMORY_CHECK} ./test_autobahn ws://localhost:9001  11  20)
+add_test(NAME Test_Autobahn__21__30  COMMAND ${MEMORY_CHECK} ./test_autobahn ws://localhost:9001  21  30)
+add_test(NAME Test_Autobahn__31__40  COMMAND ${MEMORY_CHECK} ./test_autobahn ws://localhost:9001  31  40)
 #add_test(NAME Test_Autobahn__41__50  COMMAND ${MEMORY_CHECK} ./test_autobahn ws://localhost:9001  41  50)
 #add_test(NAME Test_Autobahn__51__60  COMMAND ${MEMORY_CHECK} ./test_autobahn ws://localhost:9001  51  60)
 #add_test(NAME Test_Autobahn__61__70  COMMAND ${MEMORY_CHECK} ./test_autobahn ws://localhost:9001  61  70)
