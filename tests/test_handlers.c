@@ -110,12 +110,12 @@ void test_defaults_dont_crash()
     (priv.on_pong_fn)(NULL, &priv, NULL, 0);
     (priv.on_close_fn)(NULL, &priv, 0, NULL, 0);
     (priv.configure_fn)(NULL, &priv, NULL);
-    (priv.debug_fn)(NULL, &priv, "Hello, world.");
+    (priv.debug_fn)(&priv, "Hello, world.");
 
     /* Check the verbose debug callback */
     src.verbose = 3;
     populate_callbacks(&priv, &src);
-    (priv.debug_fn)(NULL, &priv, "Hello, world.");
+    (priv.debug_fn)(&priv, "Hello, world.");
 }
 
 

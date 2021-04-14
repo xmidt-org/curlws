@@ -88,9 +88,8 @@ void on_close(void *data, CWS *priv, int code, const char *reason, size_t len)
     (void) len;
 }
 
-void debug_fn(void *data, CWS *priv, const char *format, ...)
+void debug_fn(CWS *priv, const char *format, ...)
 {
-    (void) data;
     (void) priv;
     (void) format;
 }

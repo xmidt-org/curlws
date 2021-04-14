@@ -363,7 +363,7 @@ int main(int argc, char *argv[]) {
 
         memset(&cfg, 0, sizeof(cfg));
         cfg.url = test_url;
-        cfg.verbose = 1;
+        cfg.verbose = (true == verbose) ? 1 : 0;
         cfg.on_connect = on_connect;
         cfg.on_text = on_text;
         cfg.on_binary = on_binary;

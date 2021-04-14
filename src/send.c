@@ -84,7 +84,6 @@ CWScode send_frame(CWS *priv, const struct cws_frame *f)
     struct cws_buf_queue *buf;
     size_t buffer_size;
 
-    //printf( "send_frame() len: %ld\n", f->payload_len);
     if (f->is_control) {
         buf = (struct cws_buf_queue*) mem_alloc_ctrl(priv->mem);
         buffer_size = WS_CTL_FRAME_MAX;
@@ -134,13 +133,17 @@ CWScode send_frame(CWS *priv, const struct cws_frame *f)
         }
     }
 
+    (*priv->debug_fn)(priv,
+                      "[ websocket frame queued opcode: %s payload len: %zd ]\n",
+                      frame_opcode_to_string(f), f->payload_len);
+
     /* Start the sending process from curl */
     if (priv->pause_flags & CURLPAUSE_SEND) {
 
         priv->pause_flags &= ~CURLPAUSE_SEND;
         curl_easy_pause(priv->easy, priv->pause_flags);
 
-        //printf( "curl_easy_pause( easy, 0x%08x )\n", (uint32_t) priv->pause_flags);
+        (*priv->debug_fn)(priv, "[ websocket unpause sending ]\n");
     }
     return CWSE_OK;
 }
@@ -166,10 +169,8 @@ static size_t _readfunction_cb(char *buffer, size_t count, size_t n, void *data)
     size_t sent = 0;
     size_t data_to_send;
 
-    //printf( "_readfunction_cb( buffer, %ld, %ld, data)\n", count, n);
-
     if (priv->redirection) {
-        //printf( "_readfunction_cb() 1 exit: %ld\n", space_left);
+        (*priv->debug_fn)(priv, "> websocket %zd bytes ignored due to redirection\n", space_left);
         return space_left;
     }
 
@@ -177,12 +178,14 @@ static size_t _readfunction_cb(char *buffer, size_t count, size_t n, void *data)
         /* When the connection is closed, we should return 0 to tell curl to
          * shut down the connection. */
         if (priv->closed) {
-            //printf( "_readfunction_cb() 2 exit: %ld\n", space_left);
+            (*priv->debug_fn)(priv, "> websocket closed by returning 0\n");
             return 0;
         }
 
         priv->pause_flags |= CURLPAUSE_SEND;
-        //printf( "_readfunction_cb() exit: PAUSE\n");
+
+        (*priv->debug_fn)(priv, "> websocket sending paused\n");
+
         return CURL_READFUNC_PAUSE;
     }
 
@@ -229,6 +232,6 @@ static size_t _readfunction_cb(char *buffer, size_t count, size_t n, void *data)
         }
     }
 
-    //printf( "_readfunction_cb() 3 exit: %ld\n", sent);
+    (*priv->debug_fn)(priv, "> websocket sent: %ld\n", sent);
     return sent;
 }

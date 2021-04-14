@@ -109,5 +109,14 @@ int frame_decode(struct cws_frame *f, const void *buf, size_t len, ssize_t *delt
  */
 size_t frame_encode(const struct cws_frame *f, void *buf, size_t len);
 
+
+/**
+ * Provides a constant string showing the opcode based on the frame.
+ *
+ * @param f    the frame to inspect
+ *
+ * @return a string with the opcode type represented
+ */
+const char* frame_opcode_to_string(const struct cws_frame *f);
 #endif
 

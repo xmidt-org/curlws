@@ -58,8 +58,8 @@ static void _default_on_ping(void*, CWS*, const void*, size_t);
 static void _default_on_pong(void*, CWS*, const void*, size_t);
 static void _default_on_close(void*, CWS*, int, const char*, size_t);
 static void _default_configure(void*, CWS*, CURL*);
-static void _default_debug(void*, CWS*, const char*, ...);
-static void _default_verbose_debug(void*, CWS*, const char*, ...);
+static void _default_debug(CWS*, const char*, ...);
+static void _default_verbose_debug(CWS*, const char*, ...);
 
 /*----------------------------------------------------------------------------*/
 /*                             External Functions                             */
@@ -224,19 +224,17 @@ static void _default_configure(void *user, CWS *priv, CURL *easy)
 }
 
 
-static void _default_debug(void *user, CWS *priv, const char *format, ...)
+static void _default_debug(CWS *priv, const char *format, ...)
 {
-    IGNORE_UNUSED(user);
     IGNORE_UNUSED(priv);
     IGNORE_UNUSED(format);
 }
 
 
-static void _default_verbose_debug(void *user, CWS *priv, const char *format, ...)
+static void _default_verbose_debug(CWS *priv, const char *format, ...)
 {
     va_list args;
 
-    IGNORE_UNUSED(user);
     IGNORE_UNUSED(priv);
 
     va_start(args, format);

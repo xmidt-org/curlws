@@ -36,7 +36,7 @@
 /*----------------------------------------------------------------------------*/
 /*                                   Macros                                   */
 /*----------------------------------------------------------------------------*/
-/* none */
+#define CWS_NONCTRL_MASK    (CWS_CONT|CWS_BINARY|CWS_TEXT)
 
 /*----------------------------------------------------------------------------*/
 /*                               Data Structures                              */
@@ -67,15 +67,19 @@ void receive_init(CWS *priv)
 /*----------------------------------------------------------------------------*/
 /*                             Internal functions                             */
 /*----------------------------------------------------------------------------*/
+
+/**
+ * This is the callback used by curl.
+ */
 static size_t _writefunction_cb(const char *buffer, size_t count, size_t nitems, void *data)
 {
     CWS *priv = data;
     size_t len = count * nitems;
 
-    printf("_writefuncation_cb( buffer, %ld, %ld, data )\n", count, nitems);
+    (*priv->debug_fn)(priv, "< websocket bytes received: %ld\n", len);
 
     if (priv->redirection) {
-        printf("_writefuncation_cb( buffer, %ld, %ld, data ) Redirection, Exit\n", count, nitems);
+        (*priv->debug_fn)(priv, "< websocket bytes ignored due to redirection\n");
         return len;
     }
 
@@ -83,14 +87,12 @@ static size_t _writefunction_cb(const char *buffer, size_t count, size_t nitems,
         size_t used;
 
         if (priv->closed) {
-            printf("_writefuncation_cb( buffer, %ld, %ld, data ) Closed, Exit\n", count, nitems);
             return count * nitems;
         }
 
         used = _cws_process_frame(priv, buffer, len);
 
         if (0 == used) {
-            printf("_writefuncation_cb( buffer, %ld, %ld, data ) Error, Exit\n", count, nitems);
             return count * nitems;
         }
 
@@ -98,7 +100,6 @@ static size_t _writefunction_cb(const char *buffer, size_t count, size_t nitems,
         buffer += used;
     }
 
-    printf("_writefuncation_cb( buffer, %ld, %ld, data ) Normal, Exit\n", count, nitems);
     return count * nitems;
 }
 
@@ -281,7 +282,6 @@ static ssize_t _process_control_frame(CWS *priv, const char **buf, size_t *len)
 }
 
 
-#define CWS_NONCTRL_MASK    (CWS_CONT|CWS_BINARY|CWS_TEXT)
 /**
  * @retval  greater than 0 if more bytes are needed
  * @retval  0 if the data was processed
