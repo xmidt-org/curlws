@@ -280,6 +280,34 @@ endif()
 target_link_libraries (test_autobahn ${OPENSSL_LIBRARIES} ${CURL_LIBRARIES})
 # ---------------------------------------------------------------------------- #
 
+
+# ---------------------------------------------------------------------------- #
+#add_test(NAME Test_Autobahn_parallel  COMMAND ${MEMORY_CHECK} ./test_autobahn_parallel ws://localhost:9001 1 303)
+
+add_executable(test_autobahn_parallel autobahn-testee-parallel.c
+                                      ../src/curlws.c
+                                      ../src/data_block_sender.c
+                                      ../src/frame_senders.c
+                                      ../src/frame.c
+                                      ../src/handlers.c
+                                      ../src/header.c
+                                      ../src/memory.c
+                                      ../src/random.c
+                                      ../src/receive.c
+                                      ../src/send.c
+                                      ../src/sha1_openssl.c
+                                      ../src/utf8.c
+                                      ../src/utils.c)
+
+
+if (${CMAKE_SYSTEM_NAME} MATCHES "Linux")
+target_link_libraries (test_autobahn_parallel gcov)
+endif()
+target_link_libraries (test_autobahn_parallel ${OPENSSL_LIBRARIES} ${CURL_LIBRARIES})
+# ---------------------------------------------------------------------------- #
+
+
+
 add_custom_target(coverage
                   COMMAND lcov -q --capture
                           --directory ${CMAKE_CURRENT_BINARY_DIR}/CMakeFiles/
