@@ -393,8 +393,6 @@ static CWScode _close(CWS *priv, int options, int code, const char *reason, size
     }
 
     if (0 != _is_valid_close_to_server(code)) {
-        ret = frame_sender_control(priv, options, NULL, 0);
-        priv->closed = true;
         return CWSE_INVALID_CLOSE_REASON_CODE;
     }
 
