@@ -45,22 +45,45 @@ CURLcode curl_easy_setopt(CURL *easy, CURLoption option, ... )
     return CURLE_OK;
 }
 
+struct mock_ping {
+    const char *data;
+    size_t len;
+    int seen;
+
+    struct mock_ping *next;
+};
+
+
+static struct mock_ping *__on_ping_goal = NULL;
 static void on_ping(void *data, CWS *handle, const void *buffer, size_t len)
 {
-    printf( "on_ping(data, handle, '%.*s', %zd)\n", (int) len, (const char*) buffer, len);
     (void) data;
-    (void) handle;
+
+    //printf( "on_ping(data, handle, '%.*s', %zd)\n", (int) len, (const char*) buffer, len);
+
+    CU_ASSERT_FATAL(NULL != __on_ping_goal);
+    CU_ASSERT(NULL != handle);
+    CU_ASSERT(__on_ping_goal->len == len);
+    if (NULL != __on_ping_goal->data) {
+        for (size_t i = 0; i < len; i++) {
+            CU_ASSERT(__on_ping_goal->data[i] == ((char*)buffer)[i]);
+        }
+    }
+    __on_ping_goal->seen++;
+    __on_ping_goal = __on_ping_goal->next;
 }
+
 
 static void on_debug(CWS *priv, const char *format, ...)
 {
-    va_list args;
+    //va_list args;
 
     IGNORE_UNUSED(priv);
+    IGNORE_UNUSED(format);
 
-    va_start(args, format);
-    vfprintf(stderr, format, args);
-    va_end(args);
+    //va_start(args, format);
+    //vfprintf(stderr, format, args);
+    //va_end(args);
 }
 
 CWScode cws_close(CWS *priv, int code, const char *reason, size_t len)
@@ -108,9 +131,72 @@ void test_27()
         1, 1, 1, 1, 1 };
     const char *p;
 
-    size_t total = 0;
+    struct mock_ping pings[] = {
+        {
+            .data = "payload-0",
+            .len  = 9,
+            .seen = 0,
+        },
+        {
+            .data = "payload-1",
+            .len  = 9,
+            .seen = 0,
+        },
+        {
+            .data = "payload-2",
+            .len  = 9,
+            .seen = 0,
+        },
+        {
+            .data = "payload-3",
+            .len  = 9,
+            .seen = 0,
+        },
+        {
+            .data = "payload-4",
+            .len  = 9,
+            .seen = 0,
+        },
+        {
+            .data = "payload-5",
+            .len  = 9,
+            .seen = 0,
+        },
+        {
+            .data = "payload-6",
+            .len  = 9,
+            .seen = 0,
+        },
+        {
+            .data = "payload-7",
+            .len  = 9,
+            .seen = 0,
+        },
+        {
+            .data = "payload-8",
+            .len  = 9,
+            .seen = 0,
+        },
+        {
+            .data = "payload-9",
+            .len  = 9,
+            .seen = 0,
+            .next = NULL,
+        },
+    };
 
     setup_test(&priv);
+
+    pings[0].next = &pings[1];
+    pings[1].next = &pings[2];
+    pings[2].next = &pings[3];
+    pings[3].next = &pings[4];
+    pings[4].next = &pings[5];
+    pings[5].next = &pings[6];
+    pings[6].next = &pings[7];
+    pings[7].next = &pings[8];
+    pings[8].next = &pings[9];
+    __on_ping_goal = pings;
 
     p = in;
     for (size_t i = 0; i < sizeof(list)/sizeof(size_t); i++) {
@@ -120,8 +206,16 @@ void test_27()
         p += list[i];
     }
 
-    printf("sending: %zd string: %zd\n", total, strlen(in));
-    //CU_ASSERT(2 == _writefunction_cb((const char*) test, 2, 1, &priv));
+    CU_ASSERT(1 == pings[0].seen);
+    CU_ASSERT(1 == pings[1].seen);
+    CU_ASSERT(1 == pings[2].seen);
+    CU_ASSERT(1 == pings[3].seen);
+    CU_ASSERT(1 == pings[4].seen);
+    CU_ASSERT(1 == pings[5].seen);
+    CU_ASSERT(1 == pings[6].seen);
+    CU_ASSERT(1 == pings[7].seen);
+    CU_ASSERT(1 == pings[8].seen);
+    CU_ASSERT(1 == pings[9].seen);
 }
 
 
