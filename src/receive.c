@@ -127,7 +127,7 @@ static ssize_t _process_frame_header(CWS *priv, const char **buf, size_t *len)
     size_t min;
     ssize_t delta;
 
-    if (r->is_frame_valid) {
+    if (r->frame) {
         return 0;
     }
 
@@ -143,8 +143,11 @@ static ssize_t _process_frame_header(CWS *priv, const char **buf, size_t *len)
     _len -= min;
     buffer += min;
 
+    r->frame = &r->_frame;
+
     delta = 0;
-    if (frame_decode(&r->frame, h->buf, h->used, &delta)) {
+    if (frame_decode(r->frame, h->buf, h->used, &delta)) {
+        r->frame = NULL;
         cws_close(priv, 1002, NULL, 0);
         return -1;
     }
@@ -152,20 +155,21 @@ static ssize_t _process_frame_header(CWS *priv, const char **buf, size_t *len)
     /* We need more data for a complete header */
     if (delta < 0) {
         /* Delta is the number of bytes need * -1 */
+        r->frame = NULL;
         h->needed = 0 - delta;
         *buf = buffer;
         *len = _len;
         return h->needed;
     }
 
-    if (0 != frame_validate(&r->frame, FRAME_DIR_S2C)) {
+    if (0 != frame_validate(r->frame, FRAME_DIR_S2C)) {
+        r->frame = NULL;
         cws_close(priv, 1002, NULL, 0);
         return -1;
     }
 
     /* Done processing the buffer because we have all the data we need. */
     h->used = 0;
-    r->is_frame_valid = true;
     *buf = buffer;
     *len = _len;
 
@@ -190,7 +194,7 @@ static void _handle_close(CWS *priv, struct recv *r)
 {
     int status = 1005;
     const char *s = NULL;
-    size_t len = r->frame.payload_len;
+    size_t len = r->frame->payload_len;
 
     if (1 == len) {
         /* Invalid as 0 or 2+ bytes are needed */
@@ -212,7 +216,7 @@ static void _handle_close(CWS *priv, struct recv *r)
         }
 
         /* Ensure there is a trailing '\0' to prevent buffer overruns */
-        r->control.buf[r->frame.payload_len] = '\0';
+        r->control.buf[r->frame->payload_len] = '\0';
         s = (const char*) &r->control.buf[2];
         len -= 2;
 
@@ -245,8 +249,8 @@ static ssize_t _process_control_frame(CWS *priv, const char **buf, size_t *len)
     const char *buffer = *buf;
     size_t _len = *len;
 
-    if ((r->control.used < r->frame.payload_len) && (0 < _len)) {
-        size_t min = _min_size_t(r->frame.payload_len - r->control.used, _len);
+    if ((r->control.used < r->frame->payload_len) && (0 < _len)) {
+        size_t min = _min_size_t(r->frame->payload_len - r->control.used, _len);
 
         memcpy(&r->control.buf[r->control.used], buffer, min);
         r->control.used += min;
@@ -254,20 +258,20 @@ static ssize_t _process_control_frame(CWS *priv, const char **buf, size_t *len)
         buffer += min;
     }
 
-    if (r->control.used == r->frame.payload_len) {
-        if (WS_OPCODE_PING == r->frame.opcode) {
+    if (r->control.used == r->frame->payload_len) {
+        if (WS_OPCODE_PING == r->frame->opcode) {
             priv->dispatching++;
             (priv->on_ping_fn)(priv->user, priv, r->control.buf, r->control.used);
             priv->dispatching--;
-            r->is_frame_valid = false;
-        } else if (WS_OPCODE_PONG == priv->recv.frame.opcode) {
+            r->frame = NULL;
+        } else if (WS_OPCODE_PONG == priv->recv.frame->opcode) {
             priv->dispatching++;
             (priv->on_pong_fn)(priv->user, priv, r->control.buf, r->control.used);
             priv->dispatching--;
-            r->is_frame_valid = false;
+            r->frame = NULL;
         } else {    /* We know the frame only has these 3 */
             _handle_close(priv, r);
-            r->is_frame_valid = false;
+            r->frame = NULL;
             return -1;
         }
 
@@ -293,7 +297,7 @@ static ssize_t _process_frame_data_stream(CWS *priv, const char **buf, size_t *l
     const char *buffer = *buf;
     const char *buf_to_send = buffer;
     size_t _len = *len;
-    size_t min = _min_size_t(r->frame.payload_len, _len);
+    size_t min = _min_size_t(r->frame->payload_len, _len);
     size_t len_to_send = min;
 
     if (0 == r->stream_type) {
@@ -316,21 +320,12 @@ static ssize_t _process_frame_data_stream(CWS *priv, const char **buf, size_t *l
 
             len_to_send = min;
             buf_to_send = NULL;
-            /*
-            r->frame.payload_len -= min;
-
-            buffer += min;
-            _len -= min;
-            *buf = buffer;
-            *len = _len;
-            return r->utf8.needed;
-            */
         } else {
             ssize_t rv;
 
             /* We have extra bytes from the previous frame, so we should add
              * them to this frame to make sure we don't roll over backwards. */
-            r->frame.payload_len += r->utf8.used - min;
+            r->frame->payload_len += r->utf8.used - min;
 
             len_to_send = r->utf8.used;
             buf_to_send = r->utf8.buf;
@@ -354,13 +349,13 @@ static ssize_t _process_frame_data_stream(CWS *priv, const char **buf, size_t *l
         }
 
         if (0 < left) {
-            if (0 == r->frame.fin) {
+            if (0 == r->frame->fin) {
                 memcpy(r->utf8.buf, &buffer[min - (size_t) left], left);
                 r->utf8.used = left;
                 r->utf8.needed = utf8_get_size(r->utf8.buf[0]);
                 r->utf8.needed -= left;
 
-                r->frame.payload_len -= left;
+                r->frame->payload_len -= left;
                 len_to_send -= left;
             } else {
                 cws_close(priv, 1007, NULL, 0);
@@ -369,9 +364,9 @@ static ssize_t _process_frame_data_stream(CWS *priv, const char **buf, size_t *l
         }
     }
 
-    r->frame.payload_len -= len_to_send;
+    r->frame->payload_len -= len_to_send;
 
-    if ((0 == r->frame.payload_len) && (1 == r->frame.fin)) {
+    if ((0 == r->frame->payload_len) && (1 == r->frame->fin)) {
         r->fragment_info |= CWS_LAST;
     }
 
@@ -388,8 +383,8 @@ static ssize_t _process_frame_data_stream(CWS *priv, const char **buf, size_t *l
         r->utf8.needed = 0;
     }
 
-    if (0 == r->frame.payload_len) {
-        r->is_frame_valid = false;
+    if (0 == r->frame->payload_len) {
+        r->frame = NULL;
         /* Set the expectation for the next frame to be a CONTINUATION */
         r->fragment_info &= ~CWS_NONCTRL_MASK;
         r->fragment_info |= CWS_CONT;
@@ -421,12 +416,12 @@ static ssize_t _process_data_frame(CWS *priv, const char **buf, size_t *len)
     size_t _len = *len;
     ssize_t rv;
 
-    if (WS_OPCODE_BINARY == r->frame.opcode) {
+    if (WS_OPCODE_BINARY == r->frame->opcode) {
         if (0 == r->fragment_info) {
             /* New frame */
             r->stream_type = CWS_BINARY;
             r->fragment_info = CWS_FIRST | CWS_BINARY;
-        } else if ((0 < r->frame.payload_len) &&
+        } else if ((0 < r->frame->payload_len) &&
                    (CWS_BINARY == (CWS_NONCTRL_MASK & r->fragment_info)))
         {
             /* Continue to send data */
@@ -434,12 +429,12 @@ static ssize_t _process_data_frame(CWS *priv, const char **buf, size_t *len)
             cws_close(priv, 1002, NULL, 0);
             return -1;
         }
-    } else if (WS_OPCODE_TEXT == r->frame.opcode) {
+    } else if (WS_OPCODE_TEXT == r->frame->opcode) {
         if (0 == r->fragment_info) {
             /* New frame */
             r->stream_type = CWS_TEXT;
             r->fragment_info = CWS_FIRST | CWS_TEXT;
-        } else if ((0 < r->frame.payload_len) &&
+        } else if ((0 < r->frame->payload_len) &&
                    (CWS_TEXT == (CWS_NONCTRL_MASK & r->fragment_info)))
         {
             /* Continue to send data */
@@ -447,7 +442,7 @@ static ssize_t _process_data_frame(CWS *priv, const char **buf, size_t *len)
             cws_close(priv, 1002, NULL, 0);
             return -1;
         }
-    } else if (WS_OPCODE_CONTINUATION == r->frame.opcode) {
+    } else if (WS_OPCODE_CONTINUATION == r->frame->opcode) {
         if (0 == r->stream_type) {
             cws_close(priv, 1002, NULL, 0);
             return -1;
@@ -472,17 +467,23 @@ static ssize_t _process_data_frame(CWS *priv, const char **buf, size_t *len)
 static size_t _cws_process_frame(CWS *priv, const char *buffer, size_t len)
 {
     size_t starting_len = len;
+    struct cws_frame *frame = priv->recv.frame;
 
-    /* Are we waiting on frame header data? */
-    if (0 != _process_frame_header(priv, &buffer, &len)) {
-        return starting_len - len;
+    if (!frame) {
+        /* Are we waiting on frame header data? */
+        if (0 != _process_frame_header(priv, &buffer, &len)) {
+            return starting_len - len;
+        }
     }
 
-    /* There is a completed header */
-    if (priv->recv.frame.is_control) {
-        _process_control_frame(priv, &buffer, &len);
-    } else {
-        _process_data_frame(priv, &buffer, &len);
+    frame = priv->recv.frame;
+    if (frame) {
+        /* There is a completed header */
+        if (frame->is_control) {
+            _process_control_frame(priv, &buffer, &len);
+        } else {
+            _process_data_frame(priv, &buffer, &len);
+        }
     }
 
     return starting_len - len;

@@ -78,6 +78,7 @@ struct cws_object {
     void (*on_close_fn)(void*, CWS*, int, const char*, size_t);
     void (*configure_fn)(void*, CWS*, CURL*);
 
+    /* The internally controlled callback switched by verbosity levels */
     void (*debug_fn)(CWS*, const char*, ...);
 
     /* The memory configuration & pool. */
@@ -105,9 +106,12 @@ struct cws_object {
             size_t needed;
         } utf8;
 
-        /* Valid if header.needed = 0. The decoded WS frame header.*/
-        struct cws_frame frame;
-        bool is_frame_valid;
+        /* If the decoded frame is valid, it is not NULL. */
+        struct cws_frame *frame;
+
+        /* This is the actual frame data pointed to by frame.  This saves the
+         * overhead of allocation/free. */
+        struct cws_frame _frame;
 
         /* Scratch space for collecting the data needed to decode WS a frame
          * header. */
