@@ -123,7 +123,6 @@ static void _handle_close(CWS *priv, struct recv *r)
     if (1 == len) {
         /* Invalid as 0 or 2+ bytes are needed */
         status = 1002;
-        len = 0;
         cws_close(priv, status, "invalid close payload length", SIZE_MAX);
         return;
     }
@@ -134,7 +133,6 @@ static void _handle_close(CWS *priv, struct recv *r)
         status = r->control.buf[0] << 8 | r->control.buf[1];
         if (!_is_valid_close_from_server(status)) {
             status = 1002;
-            len = 0;
             cws_close(priv, status, "invalid close reason", SIZE_MAX);
             return;
         }
@@ -339,7 +337,7 @@ static ssize_t _process_data_frame(CWS *priv, const char **buf, size_t *len)
             if ((0 == r->frame->fin) ||
                 ((1 == r->frame->fin) && (min < r->frame->payload_len)))
             {
-                memcpy(r->utf8.buf, &buffer[min - (size_t) left], left);
+                memcpy(r->utf8.buf, &buffer[min - left], left);
                 r->utf8.used = left;
                 r->utf8.needed = utf8_get_size(r->utf8.buf[0]);
                 r->utf8.needed -= left;
