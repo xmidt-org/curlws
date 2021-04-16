@@ -137,9 +137,14 @@ void cb_on_pong(CWS *priv, const void *buf, size_t len)
 
 void cb_on_close(CWS *priv, int code, const char *text, size_t len)
 {
-    if (SIZE_MAX == len) {
-        len = strlen(text);
+    if (text) {
+        if (SIZE_MAX == len) {
+            len = strlen(text);
+        }
+    } else {
+        len = 0;
     }
+
     if (priv->cfg.verbose) {
         fprintf(stderr, "< websocket on_close code: %d, len: %zd, text: '%.*s'\n",
                 code, len, (int) len, text);
