@@ -128,9 +128,9 @@ void test_simple()
     setup_test(&priv);
 
     /* Ignore redirection */
-    priv.redirection = true;
+    priv.header_state.redirection = true;
     CU_ASSERT(40 == _readfunction_cb((char*) buffer, 40, 1, &priv));
-    priv.redirection = false;
+    priv.header_state.redirection = false;
 
     /* Test the empty send queue --> pause things behavior */
     CU_ASSERT(NULL == priv.send);

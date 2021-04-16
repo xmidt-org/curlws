@@ -109,6 +109,16 @@ struct recv {
     } control;
 };
 
+struct header_map {
+    bool redirection;
+    bool accepted;
+    bool upgraded;
+    bool connection_websocket;
+
+    /* The websocket extensions */
+    char *ws_protocols_received;
+};
+
 struct cws_object {
     /* Configured values that shouldn't change after they are set. */
     struct cfg_set cfg;
@@ -121,9 +131,6 @@ struct cws_object {
 
     /* The headers curl needs us to store. */
     struct curl_slist *headers;
-
-    /* The websocket extensions */
-    char *ws_protocols_received;
 
     /* The key header that the server is expected to return. */
     char expected_key_header[WS_HTTP_EXPECTED_KEY_SIZE];
@@ -141,7 +148,6 @@ struct cws_object {
     /* The structure needed to deal with the incoming data stream */
     struct recv recv;
 
-
     int stream_type;
     size_t stream_buffer_len;
     void *stream_buffer;
@@ -149,12 +155,11 @@ struct cws_object {
     /* Connection State flags */
     uint8_t dispatching;
     uint8_t pause_flags;
-    bool redirection;
-    bool accepted;
-    bool upgraded;
-    bool connection_websocket;
+
+    /* The header state structure */
+    struct header_map header_state;
+
     bool closed;
-    bool deleted;
 };
 
 /*----------------------------------------------------------------------------*/

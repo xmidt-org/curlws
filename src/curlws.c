@@ -237,10 +237,7 @@ error:
 
 void cws_destroy(CWS *priv)
 {
-    if (priv) {
-        priv->deleted = true;
-        _cws_cleanup(priv);
-    }
+    _cws_cleanup(priv);
 }
 
 
@@ -334,13 +331,10 @@ CWScode cws_send_strm_text(CWS *priv, int info, const char *s, size_t len)
 
 void _cws_cleanup(CWS *priv)
 {
-    if (priv->dispatching > 0)
-        return;
-
-    if (!priv->deleted)
-        return;
-
     if (priv) {
+        if (priv->dispatching > 0)
+            return;
+
         if (priv->cfg.url) {
             free(priv->cfg.url);
         }
@@ -353,8 +347,8 @@ void _cws_cleanup(CWS *priv)
         if (priv->cfg.ws_protocols_requested) {
             free(priv->cfg.ws_protocols_requested);
         }
-        if (priv->ws_protocols_received) {
-            free(priv->ws_protocols_received);
+        if (priv->header_state.ws_protocols_received) {
+            free(priv->header_state.ws_protocols_received);
         }
         if (priv->mem) {
             mem_cleanup_pool(priv->mem);

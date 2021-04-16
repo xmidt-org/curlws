@@ -115,41 +115,41 @@ void test_simple()
     __http_code = 307;
     __http_version = CURL_HTTP_VERSION_1_1;
     CU_ASSERT(30 == _header_cb("HTTP/1.1 307 Temporary Redirect", 30, 1, &priv));
-    CU_ASSERT(true == priv.redirection);
+    CU_ASSERT(true == priv.header_state.redirection);
     /* Assert that the headers that are normally for us are ignored. */
     CU_ASSERT(30 == _header_cb("Sec-WebSocket-Accept:  foobar ", 30, 1, &priv));
-    CU_ASSERT(false == priv.accepted);
+    CU_ASSERT(false == priv.header_state.accepted);
     CU_ASSERT(2 == _header_cb("\r\n", 2, 1, &priv));
 
     /* Now go onto a successful call */
     __http_code = 101;
     __http_version = CURL_HTTP_VERSION_1_1;
-    priv.accepted = true;
-    priv.upgraded = true;
-    priv.connection_websocket = true;
-    priv.ws_protocols_received = cws_strndup("chat", 4);
+    priv.header_state.accepted = true;
+    priv.header_state.upgraded = true;
+    priv.header_state.connection_websocket = true;
+    priv.header_state.ws_protocols_received = cws_strndup("chat", 4);
     CU_ASSERT(32 == _header_cb("HTTP/1.1 101  Switching Protocols", 32, 1, &priv));
-    CU_ASSERT(false == priv.accepted);
-    CU_ASSERT(false == priv.upgraded);
-    CU_ASSERT(false == priv.connection_websocket);
-    CU_ASSERT(NULL == priv.ws_protocols_received);
+    CU_ASSERT(false == priv.header_state.accepted);
+    CU_ASSERT(false == priv.header_state.upgraded);
+    CU_ASSERT(false == priv.header_state.connection_websocket);
+    CU_ASSERT(NULL == priv.header_state.ws_protocols_received);
 
     snprintf(priv.expected_key_header, 29, "foobar");
-    CU_ASSERT(false == priv.accepted);
+    CU_ASSERT(false == priv.header_state.accepted);
     CU_ASSERT(30 == _header_cb("Sec-WebSocket-Accept:  foobar ", 30, 1, &priv));
-    CU_ASSERT(true == priv.accepted);
-    CU_ASSERT(NULL == priv.ws_protocols_received);
+    CU_ASSERT(true == priv.header_state.accepted);
+    CU_ASSERT(NULL == priv.header_state.ws_protocols_received);
     CU_ASSERT(30 == _header_cb("Sec-WebSocket-Protocol:dog,cat", 30, 1, &priv));
-    CU_ASSERT_STRING_EQUAL("dog,cat", priv.ws_protocols_received);
+    CU_ASSERT_STRING_EQUAL("dog,cat", priv.header_state.ws_protocols_received);
     CU_ASSERT(30 == _header_cb("Sec-WebSocket-Protocol:       ", 30, 1, &priv));
-    CU_ASSERT(NULL == priv.ws_protocols_received);
+    CU_ASSERT(NULL == priv.header_state.ws_protocols_received);
 
-    CU_ASSERT(false == priv.upgraded);
+    CU_ASSERT(false == priv.header_state.upgraded);
     CU_ASSERT(20 == _header_cb("Connection:  upgrade", 20, 1, &priv));
-    CU_ASSERT(true == priv.upgraded);
-    CU_ASSERT(false == priv.connection_websocket);
+    CU_ASSERT(true == priv.header_state.upgraded);
+    CU_ASSERT(false == priv.header_state.connection_websocket);
     CU_ASSERT(18 == _header_cb("Upgrade: websocket", 18, 1, &priv));
-    CU_ASSERT(true == priv.connection_websocket);
+    CU_ASSERT(true == priv.header_state.connection_websocket);
 
     CU_ASSERT(2 == _header_cb("\r\n", 2, 1, &priv));
 }
@@ -181,21 +181,21 @@ void test_failures()
 
     /* Wrong accept string. */
     snprintf(priv.expected_key_header, 29, "foobar");
-    priv.accepted = true;
+    priv.header_state.accepted = true;
     CU_ASSERT(30 == _header_cb("Sec-WebSocket-Accept:  nobar  ", 30, 1, &priv));
-    CU_ASSERT(false == priv.accepted);
+    CU_ASSERT(false == priv.header_state.accepted);
 
-    priv.accepted = true;
+    priv.header_state.accepted = true;
     CU_ASSERT(30 == _header_cb("Sec-WebSocket-Accept:  notbar ", 30, 1, &priv));
-    CU_ASSERT(false == priv.accepted);
+    CU_ASSERT(false == priv.header_state.accepted);
 
-    priv.upgraded = true;
+    priv.header_state.upgraded = true;
     CU_ASSERT(20 == _header_cb("Connection:  BADrade", 20, 1, &priv));
-    CU_ASSERT(false == priv.upgraded);
+    CU_ASSERT(false == priv.header_state.upgraded);
 
-    priv.connection_websocket = true;
+    priv.header_state.connection_websocket = true;
     CU_ASSERT(18 == _header_cb("Upgrade: BADsocket", 18, 1, &priv));
-    CU_ASSERT(false == priv.connection_websocket);
+    CU_ASSERT(false == priv.header_state.connection_websocket);
 }
 
 

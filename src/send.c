@@ -173,7 +173,7 @@ static size_t _readfunction_cb(char *buffer, size_t count, size_t n, void *data)
     size_t sent = 0;
     size_t data_to_send;
 
-    if (priv->redirection) {
+    if (priv->header_state.redirection) {
         if (priv->cfg.verbose) {
             fprintf(stderr, "> websocket %zd bytes ignored due to redirection\n", space_left);
         }

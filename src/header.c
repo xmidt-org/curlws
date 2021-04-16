@@ -95,10 +95,10 @@ static size_t _header_cb(const char *buffer, size_t count, size_t nitems, void *
 
     /* If we are being redirected, let curl do that for us. */
     if (300 <= http_status && http_status <= 399) {
-        priv->redirection = true;
+        priv->header_state.redirection = true;
         return len;
     } else {
-        priv->redirection = false;
+        priv->header_state.redirection = false;
     }
 
     /* Only accept `HTTP/1.1 101 Switching Protocols` */
@@ -108,28 +108,26 @@ static size_t _header_cb(const char *buffer, size_t count, size_t nitems, void *
 
     /* We've reached the end of the headers. */
     if (len == 2 && memcmp(buffer, "\r\n", 2) == 0) {
-        if (!priv->accepted) {
+        if (!priv->header_state.accepted) {
             priv->dispatching++;
             cb_on_close(priv, 1011, "server didn't accept the websocket upgrade", SIZE_MAX);
             priv->dispatching--;
-            _cws_cleanup(priv);
             return 0;
         } else {
             priv->dispatching++;
-            cb_on_connect(priv, priv->ws_protocols_received);
+            cb_on_connect(priv, priv->header_state.ws_protocols_received);
             priv->dispatching--;
-            _cws_cleanup(priv);
             return len;
         }
     }
 
     if (cws_has_prefix(buffer, len, "HTTP/")) {
-        priv->accepted = false;
-        priv->upgraded = false;
-        priv->connection_websocket = false;
-        if (priv->ws_protocols_received) {
-            free(priv->ws_protocols_received);
-            priv->ws_protocols_received = NULL;
+        priv->header_state.accepted = false;
+        priv->header_state.upgraded = false;
+        priv->header_state.connection_websocket = false;
+        if (priv->header_state.ws_protocols_received) {
+            free(priv->header_state.ws_protocols_received);
+            priv->header_state.ws_protocols_received = NULL;
         }
         return len;
     }
@@ -149,7 +147,7 @@ static size_t _header_cb(const char *buffer, size_t count, size_t nitems, void *
 
 static void _check_accept(CWS *priv, const char *buffer, size_t len)
 {
-    priv->accepted = false;
+    priv->header_state.accepted = false;
 
     if (len != strlen(priv->expected_key_header)) {
         if (priv->cfg.verbose) {
@@ -171,23 +169,23 @@ static void _check_accept(CWS *priv, const char *buffer, size_t len)
         return;
     }
 
-    priv->accepted = true;
+    priv->header_state.accepted = true;
 }
 
 
 static void _check_protocol(CWS *priv, const char *buffer, size_t len)
 {
-    if (priv->ws_protocols_received) {
-        free(priv->ws_protocols_received);
+    if (priv->header_state.ws_protocols_received) {
+        free(priv->header_state.ws_protocols_received);
     }
 
-    priv->ws_protocols_received = cws_strndup(buffer, len);
+    priv->header_state.ws_protocols_received = cws_strndup(buffer, len);
 }
 
 
 static void _check_upgrade(CWS *priv, const char *buffer, size_t len)
 {
-    priv->connection_websocket = false;
+    priv->header_state.connection_websocket = false;
 
     if (cws_strncasecmp(buffer, "websocket", len)) {
         if (priv->cfg.verbose) {
@@ -199,13 +197,13 @@ static void _check_upgrade(CWS *priv, const char *buffer, size_t len)
         return;
     }
 
-    priv->connection_websocket = true;
+    priv->header_state.connection_websocket = true;
 }
 
 
 static void _check_connection(CWS *priv, const char *buffer, size_t len)
 {
-    priv->upgraded = false;
+    priv->header_state.upgraded = false;
 
     if (cws_strncasecmp(buffer, "upgrade", len)) {
         if (priv->cfg.verbose) {
@@ -217,7 +215,7 @@ static void _check_connection(CWS *priv, const char *buffer, size_t len)
         return;
     }
 
-    priv->upgraded = true;
+    priv->header_state.upgraded = true;
 }
 
 
