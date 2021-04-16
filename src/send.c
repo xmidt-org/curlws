@@ -203,7 +203,7 @@ static size_t _readfunction_cb(char *buffer, size_t count, size_t n, void *data)
 
     /* Fill up the buffer with whatever frames we have queued. */
     while ((0 < space_left) && (0 < data_to_send)) {
-        uint8_t *p;
+        const uint8_t *p;
         size_t lesser = space_left;
         p = &priv->send->buffer[priv->send->sent];
 
