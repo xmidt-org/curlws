@@ -29,6 +29,7 @@
 #include <stdlib.h>
 #include <string.h>
 
+#include "cb.h"
 #include "handlers.h"
 #include "internal.h"
 
@@ -58,13 +59,11 @@ static void _default_on_ping(void*, CWS*, const void*, size_t);
 static void _default_on_pong(void*, CWS*, const void*, size_t);
 static void _default_on_close(void*, CWS*, int, const char*, size_t);
 static void _default_configure(void*, CWS*, CURL*);
-static void _default_debug(CWS*, const char*, ...);
-static void _default_verbose_debug(CWS*, const char*, ...);
 
 /*----------------------------------------------------------------------------*/
 /*                             External Functions                             */
 /*----------------------------------------------------------------------------*/
-void populate_callbacks(CWS *dest, const struct cws_config *src)
+void populate_callbacks(struct callbacks *dest, const struct cws_config *src)
 {
     dest->on_connect_fn = _default_on_connect;
     dest->on_text_fn    = _default_on_text;
@@ -73,16 +72,10 @@ void populate_callbacks(CWS *dest, const struct cws_config *src)
     dest->on_ping_fn    = _default_on_ping;
     dest->on_pong_fn    = _default_on_pong;
     dest->on_close_fn   = _default_on_close;
-    dest->debug_fn      = _default_debug;
     dest->configure_fn  = _default_configure;
 
     if (NULL == src) {
         return;
-    }
-
-    /* Optionally select the verbose debug handler */
-    if (0 != (1 & src->verbose)) {
-        dest->debug_fn = _default_verbose_debug;
     }
 
     /* Overwrite the default values with the user specified values. */
@@ -111,6 +104,7 @@ void populate_callbacks(CWS *dest, const struct cws_config *src)
         dest->configure_fn = src->configure;
     }
 }
+
 
 /*----------------------------------------------------------------------------*/
 /*                             Internal functions                             */
@@ -144,15 +138,13 @@ static void _default_on_stream(void *user, CWS *priv, int info, const void *buff
 {
     int one_frame = (CWS_FIRST | CWS_LAST);
 
-    //printf( "on_stream( ... 0x%08x, buffer, %ld )\n", (uint32_t) info, len);
+    IGNORE_UNUSED(user);
 
     if (one_frame == (one_frame & info)) {
         if (CWS_BINARY & info) {
-            //printf( "on_stream() --> single binary frame: %ld\n", len);
-            (*priv->on_binary_fn)(user, priv, buffer, len);
+            cb_on_binary(priv, buffer, len);
         } else {
-            //printf( "on_stream() --> single text frame: %ld\n", len);
-            (*priv->on_text_fn)(user, priv, buffer, len);
+            cb_on_text(priv, buffer, len);
         }
     } else {
         size_t prev_len;
@@ -171,11 +163,9 @@ static void _default_on_stream(void *user, CWS *priv, int info, const void *buff
 
         if (CWS_LAST & info) {
             if (CWS_BINARY & priv->stream_type) {
-                //printf( "on_stream() --> assembled binary frame: %ld\n", priv->stream_buffer_len);
-                (*priv->on_binary_fn)(user, priv, priv->stream_buffer, priv->stream_buffer_len);
+                cb_on_binary(priv, priv->stream_buffer, priv->stream_buffer_len);
             } else {
-                //printf( "on_stream() --> assembled text frame: %ld\n", priv->stream_buffer_len);
-                (*priv->on_text_fn)(user, priv, priv->stream_buffer, priv->stream_buffer_len);
+                cb_on_text(priv, priv->stream_buffer, priv->stream_buffer_len);
             }
 
             if (NULL != priv->stream_buffer) {
@@ -221,23 +211,4 @@ static void _default_configure(void *user, CWS *priv, CURL *easy)
     IGNORE_UNUSED(user);
     IGNORE_UNUSED(priv);
     IGNORE_UNUSED(easy);
-}
-
-
-static void _default_debug(CWS *priv, const char *format, ...)
-{
-    IGNORE_UNUSED(priv);
-    IGNORE_UNUSED(format);
-}
-
-
-static void _default_verbose_debug(CWS *priv, const char *format, ...)
-{
-    va_list args;
-
-    IGNORE_UNUSED(priv);
-
-    va_start(args, format);
-    vfprintf(stderr, format, args);
-    va_end(args);
 }

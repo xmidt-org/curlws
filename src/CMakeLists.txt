@@ -22,7 +22,8 @@
 #   https://opensource.org/licenses/MIT
 
 
-add_library(curlws SHARED curlws.c
+add_library(curlws SHARED cb.c
+                          curlws.c
                           data_block_sender.c
                           frame.c
                           frame_senders.c

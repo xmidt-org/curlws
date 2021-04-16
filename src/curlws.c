@@ -108,13 +108,13 @@ CWS *cws_create(const struct cws_config *config)
     priv = (CWS*) calloc(1, sizeof(struct cws_object));
     if (!priv) { goto error; }
 
-    priv->max_payload_size = 1024;
+    priv->cfg.max_payload_size = 1024;
     if (config->max_payload_size) {
-        priv->max_payload_size = config->max_payload_size;
+        priv->cfg.max_payload_size = config->max_payload_size;
     }
 
     /* The largest frame size, so allocate this amount. */
-    max_payload_size = priv->max_payload_size + WS_FRAME_HEADER_MAX;
+    max_payload_size = priv->cfg.max_payload_size + WS_FRAME_HEADER_MAX;
 
     priv->mem_cfg.data_block_size = send_get_memory_needed(max_payload_size);
     priv->mem_cfg.control_block_size = send_get_memory_needed(WS_CTL_FRAME_MAX);
@@ -122,12 +122,12 @@ CWS *cws_create(const struct cws_config *config)
     priv->mem = mem_init_pool(&priv->mem_cfg);
     if (!priv) { goto error; }
 
-    populate_callbacks(priv, config);
+    populate_callbacks(&priv->cb, config);
 
     priv->easy = curl_easy_init();
     if (!priv->easy) { goto error; }
 
-    priv->user = config->user;
+    priv->cfg.user = config->user;
 
     /* Place things here that are "ok" for a user to overwrite. */
 
@@ -144,7 +144,7 @@ CWS *cws_create(const struct cws_config *config)
         curl_easy_setopt(priv->easy, CURLOPT_INTERFACE, config->interface);
     }
 
-    priv->configure_fn(priv->user, priv, priv->easy);
+    (*priv->cb.configure_fn)(priv->cfg.user, priv, priv->easy);
 
     curl_easy_setopt(priv->easy, CURLOPT_PRIVATE, priv);
 
@@ -152,9 +152,9 @@ CWS *cws_create(const struct cws_config *config)
     receive_init(priv);
     send_init(priv);
 
-    priv->url = cws_rewrite_url(config->url);
-    if (!priv->url) { goto error; }
-    curl_easy_setopt(priv->easy, CURLOPT_URL, priv->url);
+    priv->cfg.url = cws_rewrite_url(config->url);
+    if (!priv->cfg.url) { goto error; }
+    curl_easy_setopt(priv->easy, CURLOPT_URL, priv->cfg.url);
 
     if (0 != (2 & config->verbose)) {
         curl_easy_setopt(priv->easy, CURLOPT_VERBOSE, 1L);
@@ -341,8 +341,8 @@ void _cws_cleanup(CWS *priv)
         return;
 
     if (priv) {
-        if (priv->url) {
-            free(priv->url);
+        if (priv->cfg.url) {
+            free(priv->cfg.url);
         }
         if (priv->easy) {
             curl_easy_cleanup(priv->easy);
@@ -350,11 +350,11 @@ void _cws_cleanup(CWS *priv)
         if (priv->headers) {
             curl_slist_free_all(priv->headers);
         }
-        if (priv->websocket_protocols.requested) {
-            free(priv->websocket_protocols.requested);
+        if (priv->cfg.ws_protocols_requested) {
+            free(priv->cfg.ws_protocols_requested);
         }
-        if (priv->websocket_protocols.received) {
-            free(priv->websocket_protocols.received);
+        if (priv->ws_protocols_received) {
+            free(priv->ws_protocols_received);
         }
         if (priv->mem) {
             mem_cleanup_pool(priv->mem);
@@ -547,7 +547,7 @@ static struct curl_slist* _cws_add_websocket_protocols(CWS *priv, struct curl_sl
     free(buf);
 
     if (headers) {
-        priv->websocket_protocols.requested = cws_strdup(websocket_protocols);
+        priv->cfg.ws_protocols_requested = cws_strdup(websocket_protocols);
     }
 
     return headers;

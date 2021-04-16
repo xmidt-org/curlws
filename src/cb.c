@@ -24,14 +24,9 @@
  *
  * https://opensource.org/licenses/MIT
  */
-#include <stdbool.h>
-#include <stdint.h>
-#include <stddef.h>
+#include <string.h>
 
-#include "curlws.h"
-#include "data_block_sender.h"
-#include "frame_senders.h"
-#include "internal.h"
+#include "cb.h"
 
 /*----------------------------------------------------------------------------*/
 /*                                   Macros                                   */
@@ -56,42 +51,108 @@
 /*----------------------------------------------------------------------------*/
 /*                             External Functions                             */
 /*----------------------------------------------------------------------------*/
-CWScode data_block_sender(CWS *priv, int options, const void *data, size_t len)
+void cb_on_connect(CWS *priv, const char *protos)
 {
-    CWScode rv;
-
-    switch (options) {
-        case CWS_BINARY:
-        case CWS_TEXT:
-            break;
-        default:
-            return CWSE_INVALID_OPTIONS;
+    if (priv->cfg.verbose) {
+        fprintf(stderr, "< websocket on_connect protos: '%s'\n", protos);
     }
 
-    if (priv->closed) {
-        return CWSE_CLOSED_CONNECTION;
+    (*priv->cb.on_connect_fn)(priv->cfg.user, priv, protos);
+
+    if (priv->cfg.verbose) {
+        fprintf(stderr, "> websocket on_connect\n");
     }
-
-    options |= CWS_FIRST;
-    if (!data || !len) {
-        options |= CWS_LAST;
-        return frame_sender_data(priv, options, NULL, 0);
-    }
-
-    while (priv->cfg.max_payload_size < len) {
-        rv = frame_sender_data(priv, options, data, priv->cfg.max_payload_size);
-        if (CWSE_OK != rv) {    /* Should only fail if we ran out of memory */
-            return rv;
-        }
-
-        options = CWS_CONT;
-        len -= priv->cfg.max_payload_size;
-        data += priv->cfg.max_payload_size;
-    }
-
-    options |= CWS_LAST;
-    return frame_sender_data(priv, options, data, len);
 }
+
+
+void cb_on_text(CWS *priv, const char *text, size_t len)
+{
+    if (priv->cfg.verbose) {
+        fprintf(stderr, "< websocket on_text len: %zd, text: '%.*s'\n", len, (int) len, text);
+    }
+
+    (*priv->cb.on_text_fn)(priv->cfg.user, priv, text, len);
+
+    if (priv->cfg.verbose) {
+        fprintf(stderr, "> websocket on_text\n");
+    }
+}
+
+
+void cb_on_binary(CWS *priv, const void *buf, size_t len)
+{
+    if (priv->cfg.verbose) {
+        fprintf(stderr, "< websocket on_binary len: %zd, [buf]\n", len);
+    }
+
+    (*priv->cb.on_binary_fn)(priv->cfg.user, priv, buf, len);
+
+    if (priv->cfg.verbose) {
+        fprintf(stderr, "> websocket on_binary\n");
+    }
+}
+
+
+void cb_on_stream(CWS *priv, int info, const void *buf, size_t len)
+{
+    if (priv->cfg.verbose) {
+        fprintf(stderr, "< websocket on_stream info: 0x%08x, len: %zd, [buf]\n", info, len);
+    }
+
+    (*priv->cb.on_stream_fn)(priv->cfg.user, priv, info, buf, len);
+
+    if (priv->cfg.verbose) {
+        fprintf(stderr, "> websocket on_stream\n");
+    }
+}
+
+
+void cb_on_ping(CWS *priv, const void *buf, size_t len)
+{
+    if (priv->cfg.verbose) {
+        fprintf(stderr, "< websocket on_ping len: %zd, [buf]\n", len);
+    }
+
+    (*priv->cb.on_ping_fn)(priv->cfg.user, priv, buf, len);
+
+    if (priv->cfg.verbose) {
+        fprintf(stderr, "> websocket on_ping\n");
+    }
+}
+
+
+void cb_on_pong(CWS *priv, const void *buf, size_t len)
+{
+    if (priv->cfg.verbose) {
+        fprintf(stderr, "< websocket on_pong len: %zd, [buf]\n", len);
+    }
+
+    (*priv->cb.on_pong_fn)(priv->cfg.user, priv, buf, len);
+
+    if (priv->cfg.verbose) {
+        fprintf(stderr, "> websocket on_pong\n");
+    }
+}
+
+
+void cb_on_close(CWS *priv, int code, const char *text, size_t len)
+{
+    if (SIZE_MAX == len) {
+        len = strlen(text);
+    }
+    if (priv->cfg.verbose) {
+        fprintf(stderr, "< websocket on_close code: %d, len: %zd, text: '%.*s'\n",
+                code, len, (int) len, text);
+    }
+
+
+    (*priv->cb.on_close_fn)(priv->cfg.user, priv, code, text, len);
+
+    if (priv->cfg.verbose) {
+        fprintf(stderr, "> websocket on_close\n");
+    }
+}
+
 
 /*----------------------------------------------------------------------------*/
 /*                             Internal functions                             */

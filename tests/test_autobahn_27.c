@@ -74,18 +74,6 @@ static void on_ping(void *data, CWS *handle, const void *buffer, size_t len)
 }
 
 
-static void on_debug(CWS *priv, const char *format, ...)
-{
-    //va_list args;
-
-    IGNORE_UNUSED(priv);
-    IGNORE_UNUSED(format);
-
-    //va_start(args, format);
-    //vfprintf(stderr, format, args);
-    //va_end(args);
-}
-
 CWScode cws_close(CWS *priv, int code, const char *reason, size_t len)
 {
     (void) priv;
@@ -100,8 +88,7 @@ void setup_test(CWS *priv)
 {
     memset(priv, 0, sizeof(CWS));
     receive_init(priv);
-    priv->on_ping_fn = on_ping;
-    priv->debug_fn = on_debug;
+    priv->cb.on_ping_fn = on_ping;
 }
 
 

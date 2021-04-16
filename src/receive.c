@@ -29,6 +29,7 @@
 #include <stddef.h>
 #include <string.h>
 
+#include "cb.h"
 #include "receive.h"
 #include "utf8.h"
 #include "ws.h"
@@ -76,10 +77,14 @@ static size_t _writefunction_cb(const char *buffer, size_t count, size_t nitems,
     CWS *priv = data;
     size_t len = count * nitems;
 
-    (*priv->debug_fn)(priv, "< websocket bytes received: %ld\n", len);
+    if (priv->cfg.verbose) {
+        fprintf(stderr, "< websocket bytes received: %ld\n", len);
+    }
 
     if (priv->redirection) {
-        (*priv->debug_fn)(priv, "< websocket bytes ignored due to redirection\n");
+        if (priv->cfg.verbose) {
+            fprintf(stderr, "< websocket bytes ignored due to redirection\n");
+        }
         return len;
     }
 
@@ -149,7 +154,7 @@ static void _handle_close(CWS *priv, struct recv *r)
         }
     }
 
-    (priv->on_close_fn)(priv->user, priv, status, s, len);
+    cb_on_close(priv, status, s, len);
 
     if (!priv->closed) {
         if (1005 == status) {
@@ -250,12 +255,12 @@ static ssize_t _process_control_frame(CWS *priv, const char **buf, size_t *len)
     if (r->control.used == r->frame->payload_len) {
         if (WS_OPCODE_PING == r->frame->opcode) {
             priv->dispatching++;
-            (priv->on_ping_fn)(priv->user, priv, r->control.buf, r->control.used);
+            cb_on_ping(priv, r->control.buf, r->control.used);
             priv->dispatching--;
             r->frame = NULL;
         } else if (WS_OPCODE_PONG == priv->recv.frame->opcode) {
             priv->dispatching++;
-            (priv->on_pong_fn)(priv->user, priv, r->control.buf, r->control.used);
+            cb_on_pong(priv, r->control.buf, r->control.used);
             priv->dispatching--;
             r->frame = NULL;
         } else {    /* We know the frame only has these 3 */
@@ -361,7 +366,7 @@ static ssize_t _process_data_frame(CWS *priv, const char **buf, size_t *len)
         ((0 != ((CWS_FIRST | CWS_LAST) & r->fragment_info)) || (0 < len_to_send)))
     {
         priv->dispatching++;
-        (priv->on_stream_fn)(priv->user, priv, r->fragment_info, buf_to_send, len_to_send);
+        cb_on_stream(priv, r->fragment_info, buf_to_send, len_to_send);
         priv->dispatching--;
     }
 

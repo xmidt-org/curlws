@@ -88,12 +88,6 @@ void on_close(void *data, CWS *priv, int code, const char *reason, size_t len)
     (void) len;
 }
 
-void debug_fn(CWS *priv, const char *format, ...)
-{
-    (void) priv;
-    (void) format;
-}
-
 void _cws_cleanup(CWS *priv)
 {
     (void) priv;
@@ -103,9 +97,8 @@ void setup_test(CWS *priv)
 {
     memset(priv, 0, sizeof(CWS));
 
-    priv->on_connect_fn = on_connect;
-    priv->on_close_fn = on_close;
-    priv->debug_fn = debug_fn;
+    priv->cb.on_connect_fn = on_connect;
+    priv->cb.on_close_fn = on_close;
 
     header_init(priv);
     srand(0);
@@ -134,22 +127,22 @@ void test_simple()
     priv.accepted = true;
     priv.upgraded = true;
     priv.connection_websocket = true;
-    priv.websocket_protocols.received = cws_strndup("chat", 4);
+    priv.ws_protocols_received = cws_strndup("chat", 4);
     CU_ASSERT(32 == _header_cb("HTTP/1.1 101  Switching Protocols", 32, 1, &priv));
     CU_ASSERT(false == priv.accepted);
     CU_ASSERT(false == priv.upgraded);
     CU_ASSERT(false == priv.connection_websocket);
-    CU_ASSERT(NULL == priv.websocket_protocols.received);
+    CU_ASSERT(NULL == priv.ws_protocols_received);
 
     snprintf(priv.expected_key_header, 29, "foobar");
     CU_ASSERT(false == priv.accepted);
     CU_ASSERT(30 == _header_cb("Sec-WebSocket-Accept:  foobar ", 30, 1, &priv));
     CU_ASSERT(true == priv.accepted);
-    CU_ASSERT(NULL == priv.websocket_protocols.received);
+    CU_ASSERT(NULL == priv.ws_protocols_received);
     CU_ASSERT(30 == _header_cb("Sec-WebSocket-Protocol:dog,cat", 30, 1, &priv));
-    CU_ASSERT_STRING_EQUAL("dog,cat", priv.websocket_protocols.received);
+    CU_ASSERT_STRING_EQUAL("dog,cat", priv.ws_protocols_received);
     CU_ASSERT(30 == _header_cb("Sec-WebSocket-Protocol:       ", 30, 1, &priv));
-    CU_ASSERT(NULL == priv.websocket_protocols.received);
+    CU_ASSERT(NULL == priv.ws_protocols_received);
 
     CU_ASSERT(false == priv.upgraded);
     CU_ASSERT(20 == _header_cb("Connection:  upgrade", 20, 1, &priv));

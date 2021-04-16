@@ -45,30 +45,25 @@
 /*                               Data Structures                              */
 /*----------------------------------------------------------------------------*/
 
-struct cws_object {
+struct cfg_set {
     /* The initial URL to connect to. */
     char *url;
-
-    /* The curl object that represents the connection. */
-    CURL *easy;
-
-    /* The headers curl needs us to store. */
-    struct curl_slist *headers;
-
-    /* The websocket extensions */
-    struct {
-        char *requested;
-        char *received;
-    } websocket_protocols;
-
-    /* The key header that the server is expected to return. */
-    char expected_key_header[WS_HTTP_EXPECTED_KEY_SIZE];
 
     /* The user provided data. */
     void *user;
 
-    /* The callback functions used.  These will be called without NULL
-     * checking as the library expects to use default values. */
+    /* The maximum payload size. */
+    size_t max_payload_size;
+
+    /* The verbosity of the logging. */
+    int verbose;
+
+    char *ws_protocols_requested;
+};
+
+/* The callback functions used.  These will be called without NULL
+ * checking as the library expects to use default values. */
+struct callbacks {
     void (*on_connect_fn)(void*, CWS*, const char*);
     void (*on_text_fn)(void*, CWS*, const char*, size_t);
     void (*on_binary_fn)(void*, CWS*, const void*, size_t);
@@ -77,9 +72,61 @@ struct cws_object {
     void (*on_pong_fn)(void*, CWS*, const void*, size_t);
     void (*on_close_fn)(void*, CWS*, int, const char*, size_t);
     void (*configure_fn)(void*, CWS*, CURL*);
+};
 
-    /* The internally controlled callback switched by verbosity levels */
-    void (*debug_fn)(CWS*, const char*, ...);
+struct recv {
+    /* The information needed across fragments */
+    int stream_type;
+    int fragment_info;
+
+    struct utf8_buffer {    
+        char buf[MAX_UTF_BYTES];
+        size_t used;
+        size_t needed;
+    } utf8;
+
+    /* If the decoded frame is valid, it is not NULL. */
+    struct cws_frame *frame;
+
+    /* This is the actual frame data pointed to by frame.  This saves the
+     * overhead of allocation/free. */
+    struct cws_frame _frame;
+
+    /* Scratch space for collecting the data needed to decode WS a frame
+     * header. */
+    struct header {
+        uint8_t buf[WS_FRAME_HEADER_MAX];
+        size_t used;
+        size_t needed;
+    } header;
+
+    /* Scratch space for collecting the data needed to decode control WS
+     * payload.  The header is still stored in the header struct above. */
+    struct control {
+        uint8_t buf[WS_CTL_PAYLOAD_MAX];
+        size_t used;
+        size_t needed;
+    } control;
+};
+
+struct cws_object {
+    /* Configured values that shouldn't change after they are set. */
+    struct cfg_set cfg;
+
+    /* The callbacks. */
+    struct callbacks cb;
+
+    /* The curl object that represents the connection. */
+    CURL *easy;
+
+    /* The headers curl needs us to store. */
+    struct curl_slist *headers;
+
+    /* The websocket extensions */
+    char *ws_protocols_received;
+
+    /* The key header that the server is expected to return. */
+    char expected_key_header[WS_HTTP_EXPECTED_KEY_SIZE];
 
     /* The memory configuration & pool. */
     struct mem_pool_config mem_cfg;
@@ -88,47 +135,12 @@ struct cws_object {
     /* The details about the last data frame queued to send. */
     int last_sent_data_frame_info;
 
-    /* The maximum payload size */
-    size_t max_payload_size;
-
     /* The outgoing queue of bytes to send. */
     struct cws_buf_queue *send;
 
     /* The structure needed to deal with the incoming data stream */
-    struct recv {
-        /* The information needed across fragments */
-        int stream_type;
-        int fragment_info;
+    struct recv recv;
 
-        struct utf8_buffer {    
-            char buf[MAX_UTF_BYTES];
-            size_t used;
-            size_t needed;
-        } utf8;
-
-        /* If the decoded frame is valid, it is not NULL. */
-        struct cws_frame *frame;
-
-        /* This is the actual frame data pointed to by frame.  This saves the
-         * overhead of allocation/free. */
-        struct cws_frame _frame;
-
-        /* Scratch space for collecting the data needed to decode WS a frame
-         * header. */
-        struct header {
-            uint8_t buf[WS_FRAME_HEADER_MAX];
-            size_t used;
-            size_t needed;
-        } header;
-
-        /* Scratch space for collecting the data needed to decode control WS
-         * payload.  The header is still stored in the header struct above. */
-        struct control {
-            uint8_t buf[WS_CTL_PAYLOAD_MAX];
-            size_t used;
-            size_t needed;
-        } control;
-    } recv;
 
     int stream_type;
     size_t stream_buffer_len;

@@ -108,7 +108,7 @@ target_link_libraries (test_data_block_sender cunit)
 # ---------------------------------------------------------------------------- #
 add_test(NAME Test_Handlers COMMAND ${MEMORY_CHECK} ./test_handlers)
 
-add_executable(test_handlers test_handlers.c)
+add_executable(test_handlers test_handlers.c ../src/cb.c)
 
 if (${CMAKE_SYSTEM_NAME} MATCHES "Linux")
 target_link_libraries (test_handlers gcov)
@@ -122,6 +122,7 @@ target_link_libraries (test_handlers ${CURL_LIBRARIES})
 add_test(NAME Test_Receive COMMAND ${MEMORY_CHECK} ./test_receive)
 
 add_executable(test_receive test_receive.c
+                           ../src/cb.c
                            ../src/frame.c
                            ../src/utf8.c)
 
@@ -137,8 +138,9 @@ target_link_libraries (test_receive)
 add_test(NAME Test_Autobahn_27 COMMAND ${MEMORY_CHECK} ./test_autobahn_27)
 
 add_executable(test_autobahn_27 test_autobahn_27.c
-                           ../src/frame.c
-                           ../src/utf8.c)
+                                ../src/cb.c
+                                ../src/frame.c
+                                ../src/utf8.c)
 
 if (${CMAKE_SYSTEM_NAME} MATCHES "Linux")
 target_link_libraries (test_autobahn_27 gcov)
@@ -165,7 +167,9 @@ target_link_libraries (test_send)
 # ---------------------------------------------------------------------------- #
 add_test(NAME Test_Header COMMAND ${MEMORY_CHECK} ./test_header)
 
-add_executable(test_header test_header.c ../src/utils.c)
+add_executable(test_header test_header.c
+                           ../src/cb.c
+                           ../src/utils.c)
 
 if (${CMAKE_SYSTEM_NAME} MATCHES "Linux")
 target_link_libraries (test_header gcov)
@@ -193,6 +197,7 @@ target_link_libraries (test_utf8)
 add_test(NAME Test_Curlws COMMAND ${MEMORY_CHECK} ./test_curlws)
 
 add_executable(test_curlws test_curlws.c
+                           ../src/cb.c
                            ../src/data_block_sender.c
                            ../src/frame_senders.c
                            ../src/frame.c
@@ -260,6 +265,7 @@ add_test(NAME Test_Autobahn_291_300  COMMAND ./test_autobahn ws://localhost:9001
 add_test(NAME Test_Autobahn_301_303  COMMAND ./test_autobahn ws://localhost:9001 301 303)
 
 add_executable(test_autobahn autobahn-testee.c
+                             ../src/cb.c
                              ../src/curlws.c
                              ../src/data_block_sender.c
                              ../src/frame_senders.c
@@ -286,6 +292,7 @@ target_link_libraries (test_autobahn ${OPENSSL_LIBRARIES} ${CURL_LIBRARIES})
 add_test(NAME Test_Autobahn_parallel  COMMAND ./test_autobahn_parallel ws://localhost:9001 1 303)
 
 add_executable(test_autobahn_parallel autobahn-testee-parallel.c
+                                      ../src/cb.c
                                       ../src/curlws.c
                                       ../src/data_block_sender.c
                                       ../src/frame_senders.c

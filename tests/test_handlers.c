@@ -56,19 +56,16 @@ void test_populate_callbacks()
     memset(&priv, 0, sizeof(priv));
     memset(&src, 0, sizeof(src));
 
-    populate_callbacks(&priv, &src);
-    CU_ASSERT(priv.on_connect_fn == _default_on_connect);
-    CU_ASSERT(priv.on_text_fn    == _default_on_text);
-    CU_ASSERT(priv.on_binary_fn  == _default_on_binary);
-    CU_ASSERT(priv.on_ping_fn    == _default_on_ping);
-    CU_ASSERT(priv.on_pong_fn    == _default_on_pong);
-    CU_ASSERT(priv.on_close_fn   == _default_on_close);
-    CU_ASSERT(priv.debug_fn      == _default_debug);
-    CU_ASSERT(priv.configure_fn  == _default_configure);
+    populate_callbacks(&priv.cb, &src);
+    CU_ASSERT(priv.cb.on_connect_fn == _default_on_connect);
+    CU_ASSERT(priv.cb.on_text_fn    == _default_on_text);
+    CU_ASSERT(priv.cb.on_binary_fn  == _default_on_binary);
+    CU_ASSERT(priv.cb.on_ping_fn    == _default_on_ping);
+    CU_ASSERT(priv.cb.on_pong_fn    == _default_on_pong);
+    CU_ASSERT(priv.cb.on_close_fn   == _default_on_close);
+    CU_ASSERT(priv.cb.configure_fn  == _default_configure);
 
-    src.verbose = 1;
-    populate_callbacks(&priv, &src);
-    CU_ASSERT(priv.debug_fn == _default_verbose_debug);
+    populate_callbacks(&priv.cb, &src);
 
     src.on_connect = (void*) 1;
     src.on_text    = (void*) 2;
@@ -79,15 +76,15 @@ void test_populate_callbacks()
     src.on_close   = (void*) 7;
     src.configure  = (void*) 10;
 
-    populate_callbacks(&priv, &src);
-    CU_ASSERT(priv.on_connect_fn == (void*) 1);
-    CU_ASSERT(priv.on_text_fn    == (void*) 2);
-    CU_ASSERT(priv.on_binary_fn  == (void*) 3);
-    CU_ASSERT(priv.on_stream_fn  == (void*) 4);
-    CU_ASSERT(priv.on_ping_fn    == (void*) 5);
-    CU_ASSERT(priv.on_pong_fn    == (void*) 6);
-    CU_ASSERT(priv.on_close_fn   == (void*) 7);
-    CU_ASSERT(priv.configure_fn  == (void*) 10);
+    populate_callbacks(&priv.cb, &src);
+    CU_ASSERT(priv.cb.on_connect_fn == (void*) 1);
+    CU_ASSERT(priv.cb.on_text_fn    == (void*) 2);
+    CU_ASSERT(priv.cb.on_binary_fn  == (void*) 3);
+    CU_ASSERT(priv.cb.on_stream_fn  == (void*) 4);
+    CU_ASSERT(priv.cb.on_ping_fn    == (void*) 5);
+    CU_ASSERT(priv.cb.on_pong_fn    == (void*) 6);
+    CU_ASSERT(priv.cb.on_close_fn   == (void*) 7);
+    CU_ASSERT(priv.cb.configure_fn  == (void*) 10);
 
 }
 
@@ -100,22 +97,20 @@ void test_defaults_dont_crash()
     memset(&priv, 0, sizeof(priv));
     memset(&src, 0, sizeof(src));
 
-    populate_callbacks(&priv, NULL);
+    populate_callbacks(&priv.cb, NULL);
 
-    (priv.on_connect_fn)(NULL, &priv, NULL);
-    (priv.on_text_fn)(NULL, &priv, NULL, 0);
-    (priv.on_binary_fn)(NULL, &priv, NULL, 0);
-    (priv.on_stream_fn)(NULL, &priv, 0, NULL, 0);
-    (priv.on_ping_fn)(NULL, &priv, NULL, 0);
-    (priv.on_pong_fn)(NULL, &priv, NULL, 0);
-    (priv.on_close_fn)(NULL, &priv, 0, NULL, 0);
-    (priv.configure_fn)(NULL, &priv, NULL);
-    (priv.debug_fn)(&priv, "Hello, world.");
+    (priv.cb.on_connect_fn)(NULL, &priv, NULL);
+    (priv.cb.on_text_fn)(NULL, &priv, NULL, 0);
+    (priv.cb.on_binary_fn)(NULL, &priv, NULL, 0);
+    (priv.cb.on_stream_fn)(NULL, &priv, 0, NULL, 0);
+    (priv.cb.on_ping_fn)(NULL, &priv, NULL, 0);
+    (priv.cb.on_pong_fn)(NULL, &priv, NULL, 0);
+    (priv.cb.on_close_fn)(NULL, &priv, 0, NULL, 0);
+    (priv.cb.configure_fn)(NULL, &priv, NULL);
 
     /* Check the verbose debug callback */
     src.verbose = 3;
-    populate_callbacks(&priv, &src);
-    (priv.debug_fn)(&priv, "Hello, world.");
+    populate_callbacks(&priv.cb, &src);
 }
 
 

@@ -255,19 +255,6 @@ static void on_pong(void *data, CWS *handle, const void *buffer, size_t len)
 }
 
 
-static void on_debug(CWS *priv, const char *format, ...)
-{
-    //va_list args;
-
-    IGNORE_UNUSED(priv);
-    IGNORE_UNUSED(format);
-
-    //va_start(args, format);
-    //vfprintf(stderr, format, args);
-    //va_end(args);
-}
-
-
 struct test_vector {
     const char *test_name;
     const char *in;
@@ -294,11 +281,10 @@ void run_test( struct test_vector *v )
     memset(&priv, 0, sizeof(CWS));
 
     receive_init(&priv);
-    priv.on_stream_fn = on_stream;
-    priv.on_close_fn = on_close;
-    priv.on_ping_fn = on_ping;
-    priv.on_pong_fn = on_pong;
-    priv.debug_fn = on_debug;
+    priv.cb.on_stream_fn = on_stream;
+    priv.cb.on_close_fn = on_close;
+    priv.cb.on_ping_fn = on_ping;
+    priv.cb.on_pong_fn = on_pong;
 
     __on_ping_goal = v->ping;
     __on_pong_goal = v->pong;

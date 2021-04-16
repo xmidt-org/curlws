@@ -67,22 +67,13 @@ void mem_free(void *ptr)
     free(ptr);
 }
 
-void debug_fn(CWS *priv, const char *format, ...)
-{
-    (void) priv;
-    (void) format;
-}
-
-
-
 
 void setup_test(CWS *priv)
 {
     memset(priv, 0, sizeof(CWS));
-    priv->max_payload_size = 1024;
+    priv->cfg.max_payload_size = 1024;
     priv->mem_cfg.data_block_size = 1024 + WS_FRAME_HEADER_MAX;
     send_init(priv);
-    priv->debug_fn = debug_fn;
     srand(0);
 }
 

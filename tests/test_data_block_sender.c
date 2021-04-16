@@ -71,7 +71,7 @@ void test_data_block_sender()
     CWS priv;
 
     memset(&priv, 0, sizeof(CWS));
-    priv.max_payload_size = 10;
+    priv.cfg.max_payload_size = 10;
 
     CU_ASSERT(CWSE_INVALID_OPTIONS == data_block_sender(&priv, -1, NULL, 0));
     CU_ASSERT(CWSE_INVALID_OPTIONS == data_block_sender(&priv, CWS_BINARY|CWS_TEXT, NULL, 0));

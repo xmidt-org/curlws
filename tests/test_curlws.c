@@ -61,9 +61,9 @@ void test_cws_add_websocket_protocols()
 
     rv = _cws_add_websocket_protocols(&obj, headers, "chat");
     CU_ASSERT(NULL != rv);
-    CU_ASSERT_STRING_EQUAL(obj.websocket_protocols.requested, "chat");
-    free(obj.websocket_protocols.requested);
-    obj.websocket_protocols.requested = NULL;
+    CU_ASSERT_STRING_EQUAL(obj.cfg.ws_protocols_requested, "chat");
+    free(obj.cfg.ws_protocols_requested);
+    obj.cfg.ws_protocols_requested = NULL;
 
     CU_ASSERT_STRING_EQUAL(rv->data, "Sec-WebSocket-Protocol: chat");
     CU_ASSERT(NULL == rv->next);
