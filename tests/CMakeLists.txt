@@ -119,7 +119,7 @@ target_link_libraries (test_handlers ${CURL_LIBRARIES})
 
 
 # ---------------------------------------------------------------------------- #
-#add_test(NAME Test_Receive COMMAND ${MEMORY_CHECK} ./test_receive)
+add_test(NAME Test_Receive COMMAND ${MEMORY_CHECK} ./test_receive)
 
 add_executable(test_receive test_receive.c
                            ../src/frame.c
@@ -134,7 +134,7 @@ target_link_libraries (test_receive)
 
 
 # ---------------------------------------------------------------------------- #
-#add_test(NAME Test_Receive COMMAND ${MEMORY_CHECK} ./test_receive)
+add_test(NAME Test_Autobahn_27 COMMAND ${MEMORY_CHECK} ./test_autobahn_27)
 
 add_executable(test_autobahn_27 test_autobahn_27.c
                            ../src/frame.c

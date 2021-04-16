@@ -372,7 +372,7 @@ static int _is_valid_close_to_server(int code)
 {
     if (((3000 <= code) && (code <= 4999)) ||
         ((1000 <= code) && (code <= 1003)) ||
-        ((1007 <= code) && (code <= 1010)))
+        ((1007 <= code) && (code <= 1011)))
     {
         return 0;
     }

@@ -52,42 +52,47 @@ struct mock_cws_close {
     int seen;
     CWScode rv;
 
-    struct mock_cws_close *next;
+    int more;
 };
 static struct mock_cws_close *__cws_close_goal = NULL;
 CWScode cws_close(CWS *priv, int code, const char *reason, size_t len)
 {
-    CWScode rv;
+    CWScode rv = CWSE_OK;
 
-    printf( "cws_close( ... code: %d, reason: '%.*s', len: %ld )\n", code, (int) len, reason, len );
+    //printf( "cws_close( ... code: %d, reason: '%.*s', len: %ld )\n", code, (int) len, reason, len );
 
-    CU_ASSERT_FATAL(NULL != __cws_close_goal);
-    CU_ASSERT(NULL != priv);
-    priv->closed = true;
-    CU_ASSERT(__cws_close_goal->code == code);
-    CU_ASSERT(__cws_close_goal->len == len);
-    /* Make sure the string lengths actually are the same ... */
-    if (SIZE_MAX == len) {
-        len = strlen(reason);
-    }
-    if (SIZE_MAX == __cws_close_goal->len) {
-        __cws_close_goal->len = strlen(reason);
-    }
-    CU_ASSERT(__cws_close_goal->len == len);
+    if (__cws_close_goal) {
+        CU_ASSERT(NULL != priv);
+        priv->closed = true;
+        CU_ASSERT(__cws_close_goal->code == code);
+        CU_ASSERT(__cws_close_goal->len == len);
+        /* Make sure the string lengths actually are the same ... */
+        if (SIZE_MAX == len) {
+            len = strlen(reason);
+        }
+        if (SIZE_MAX == __cws_close_goal->len) {
+            __cws_close_goal->len = strlen(reason);
+        }
+        CU_ASSERT(__cws_close_goal->len == len);
 
-    if ((NULL != __cws_close_goal->reason) && (__cws_close_goal->len == len)) {
-        for (size_t i = 0; i < len; i++) {
-            if (__cws_close_goal->reason[i] != reason[i]) {
-                printf( "%ld: want: '%c', got: '%c'\n", i, __cws_close_goal->reason[i], reason[i]);
+        if ((NULL != __cws_close_goal->reason) && (__cws_close_goal->len == len)) {
+            for (size_t i = 0; i < len; i++) {
+                if (__cws_close_goal->reason[i] != reason[i]) {
+                    printf( "%ld: want: '%c', got: '%c'\n", i, __cws_close_goal->reason[i], reason[i]);
+                }
+                CU_ASSERT(__cws_close_goal->reason[i] == reason[i]);
             }
-            CU_ASSERT(__cws_close_goal->reason[i] == reason[i]);
+        }
+
+        rv = __cws_close_goal->rv;
+
+        __cws_close_goal->seen++;
+        if (0 != __cws_close_goal->more) {
+            __cws_close_goal = &__cws_close_goal[1];
+        } else {
+            __cws_close_goal = NULL;
         }
     }
-
-    rv = __cws_close_goal->rv;
-
-    __cws_close_goal->seen++;
-    __cws_close_goal = __cws_close_goal->next;
 
     return rv;
 }
@@ -98,7 +103,7 @@ struct mock_stream {
     const char *data;
     size_t len;
     int seen;
-    struct mock_stream *next;
+    int more;
 };
 
 static struct mock_stream *__on_stream_goal = NULL;
@@ -108,33 +113,38 @@ static void on_stream(void *data, CWS *handle, int info, const void *buffer, siz
 
     //printf("on_stream( ... info: %08x, buffer: 0x%p, len: %ld )\n", info, buffer, len);
 
-    CU_ASSERT_FATAL(NULL != __on_stream_goal);
-    CU_ASSERT(NULL != handle);
+    if (__on_stream_goal) {
+        CU_ASSERT(NULL != handle);
 
-    CU_ASSERT(__on_stream_goal->info == info);
-    if (__on_stream_goal->info != info) {
-        printf("info: want: %08x, got: %08x\n", __on_stream_goal->info, info);
-    }
+        CU_ASSERT(__on_stream_goal->info == info);
+        if (__on_stream_goal->info != info) {
+            printf("info: want: %08x, got: %08x\n", __on_stream_goal->info, info);
+        }
 
-    CU_ASSERT(__on_stream_goal->len == len);
-    if (__on_stream_goal->len != len) {
-        printf("len: want: %ld, got: %ld\n", __on_stream_goal->len, len);
-    }
+        CU_ASSERT(__on_stream_goal->len == len);
+        if (__on_stream_goal->len != len) {
+            printf("len: want: %ld, got: %ld\n", __on_stream_goal->len, len);
+        }
 
-    if (NULL != __on_stream_goal->data) {
-        for (size_t i = 0; i < len; i++) {
-            const char *c = (const char*) buffer;
+        if (NULL != __on_stream_goal->data) {
+            for (size_t i = 0; i < len; i++) {
+                const char *c = (const char*) buffer;
 
-            if (__on_stream_goal->data[i] != c[i]) {
-                printf("data[%zd]: want: '%c' (0x%02x), got: '%c' (0x%02x)\n",
-                        i, __on_stream_goal->data[i], __on_stream_goal->data[i],
-                        c[i], c[i]);
+                if (__on_stream_goal->data[i] != c[i]) {
+                    printf("data[%zd]: want: '%c' (0x%02x), got: '%c' (0x%02x)\n",
+                            i, __on_stream_goal->data[i], __on_stream_goal->data[i],
+                            c[i], c[i]);
+                }
+                CU_ASSERT(__on_stream_goal->data[i] == c[i]);
             }
-            CU_ASSERT(__on_stream_goal->data[i] == c[i]);
+        }
+        __on_stream_goal->seen++;
+        if (0 != __on_stream_goal->more) {
+            __on_stream_goal = &__on_stream_goal[1];
+        } else {
+            __on_stream_goal = NULL;
         }
     }
-    __on_stream_goal->seen++;
-    __on_stream_goal = __on_stream_goal->next;
 }
 
 
@@ -143,8 +153,7 @@ struct mock_close {
     const char *reason;
     size_t len;
     int seen;
-
-    struct mock_close *next;
+    int more;
 };
 
 static struct mock_close *__on_close_goal = NULL;
@@ -154,468 +163,359 @@ static void on_close(void *data, CWS *handle, int code, const char *reason, size
 
     //printf( "on_close( ... code: %d, reason: '%.*s', len: %lu )\n", code, (int) len, reason, len );
 
-    CU_ASSERT_FATAL(NULL != __on_close_goal);
-    CU_ASSERT(NULL != handle);
-    CU_ASSERT(__on_close_goal->code == code);
-    CU_ASSERT(__on_close_goal->len == len);
-    /* Make sure the string lengths actually are the same ... */
-    if (SIZE_MAX == len) {
-        len = strlen(reason);
-    }
-    if (SIZE_MAX == __on_close_goal->len) {
-        __on_close_goal->len = strlen(reason);
-    }
-    CU_ASSERT(__on_close_goal->len == len);
+    if (__on_close_goal) {
+        CU_ASSERT(NULL != handle);
+        CU_ASSERT(__on_close_goal->code == code);
+        CU_ASSERT(__on_close_goal->len == len);
+        /* Make sure the string lengths actually are the same ... */
+        if (SIZE_MAX == len) {
+            len = strlen(reason);
+        }
+        if (SIZE_MAX == __on_close_goal->len) {
+            __on_close_goal->len = strlen(reason);
+        }
+        CU_ASSERT(__on_close_goal->len == len);
 
-    if ((NULL != __on_close_goal->reason) && (__on_close_goal->len == len)) {
-        for (size_t i = 0; i < len; i++) {
-            CU_ASSERT(__on_close_goal->reason[i] == reason[i]);
+        if ((NULL != __on_close_goal->reason) && (__on_close_goal->len == len)) {
+            for (size_t i = 0; i < len; i++) {
+                CU_ASSERT(__on_close_goal->reason[i] == reason[i]);
+            }
+        }
+        __on_close_goal->seen++;
+        if (0 != __on_close_goal->more) {
+            __on_close_goal = &__on_close_goal[1];
+        } else {
+            __on_close_goal = NULL;
         }
     }
-    __on_close_goal->seen++;
-    __on_close_goal = __on_close_goal->next;
 }
 
 
-struct mock_piong {
+struct mock_ping {
     const void *data;
     size_t len;
     int seen;
-
-    struct mock_piong *next;
+    int more;
 };
 
-static struct mock_piong *__on_ping_goal = NULL;
+static struct mock_ping *__on_ping_goal = NULL;
 static void on_ping(void *data, CWS *handle, const void *buffer, size_t len)
 {
     (void) data;
 
     //printf( "on_ping( ... buffer: 0x%p, len: %ld )\n", buffer, len );
 
-    CU_ASSERT_FATAL(NULL != __on_ping_goal);
-    CU_ASSERT(NULL != handle);
-    CU_ASSERT(__on_ping_goal->len == len);
-    if (NULL != __on_ping_goal->data) {
-        for (size_t i = 0; i < len; i++) {
-            CU_ASSERT(((uint8_t*)__on_ping_goal->data)[i] == ((uint8_t*)buffer)[i]);
+    if (__on_ping_goal) {
+        CU_ASSERT(NULL != handle);
+        CU_ASSERT(__on_ping_goal->len == len);
+        if (NULL != __on_ping_goal->data) {
+            for (size_t i = 0; i < len; i++) {
+                CU_ASSERT(((uint8_t*)__on_ping_goal->data)[i] == ((uint8_t*)buffer)[i]);
+            }
+        }
+        __on_ping_goal->seen++;
+        if (0 != __on_ping_goal->more) {
+            __on_ping_goal = &__on_ping_goal[1];
+        } else {
+            __on_ping_goal = NULL;
         }
     }
-    __on_ping_goal->seen++;
-    __on_ping_goal = __on_ping_goal->next;
 }
 
 
-static struct mock_piong *__on_pong_goal = NULL;
+struct mock_pong {
+    const void *data;
+    size_t len;
+    int seen;
+    int more;
+};
+
+static struct mock_pong *__on_pong_goal = NULL;
 static void on_pong(void *data, CWS *handle, const void *buffer, size_t len)
 {
     (void) data;
 
     //printf( "on_pong( ... buffer: 0x%p, len: %ld )\n", buffer, len );
 
-    CU_ASSERT_FATAL(NULL != __on_pong_goal);
-    CU_ASSERT(NULL != handle);
-    CU_ASSERT(__on_pong_goal->len == len);
-    if (NULL != __on_pong_goal->data) {
-        for (size_t i = 0; i < len; i++) {
-            CU_ASSERT(((uint8_t*)__on_pong_goal->data)[i] == ((uint8_t*)buffer)[i]);
+    if (__on_pong_goal) {
+        CU_ASSERT(NULL != handle);
+        CU_ASSERT(__on_pong_goal->len == len);
+        if (NULL != __on_pong_goal->data) {
+            for (size_t i = 0; i < len; i++) {
+                CU_ASSERT(((uint8_t*)__on_pong_goal->data)[i] == ((uint8_t*)buffer)[i]);
+            }
+        }
+        __on_pong_goal->seen++;
+        if (0 != __on_pong_goal->more) {
+            __on_pong_goal = &__on_pong_goal[1];
+        } else {
+            __on_pong_goal = NULL;
         }
     }
-    __on_pong_goal->seen++;
-    __on_pong_goal = __on_pong_goal->next;
 }
 
-void setup_test(CWS *priv)
+
+static void on_debug(CWS *priv, const char *format, ...)
 {
-    memset(priv, 0, sizeof(CWS));
-    receive_init(priv);
-    priv->on_stream_fn = on_stream;
-    priv->on_close_fn = on_close;
-    priv->on_ping_fn = on_ping;
-    priv->on_pong_fn = on_pong;
+    //va_list args;
+
+    IGNORE_UNUSED(priv);
+    IGNORE_UNUSED(format);
+
+    //va_start(args, format);
+    //vfprintf(stderr, format, args);
+    //va_end(args);
 }
 
+
+struct test_vector {
+    const char *test_name;
+    const char *in;
+    const int *blocks;
+    const size_t *rv;
+    size_t block_count;
+
+    struct mock_ping *ping;
+    struct mock_pong *pong;
+    struct mock_stream *stream;
+    struct mock_close *close;
+};
+
+
+void run_test( struct test_vector *v )
+{
+    CWS priv;
+    const char *p;
+    struct mock_ping *ping;
+    struct mock_pong *pong;
+    struct mock_stream *stream;
+    struct mock_close *close;
+
+    memset(&priv, 0, sizeof(CWS));
+
+    receive_init(&priv);
+    priv.on_stream_fn = on_stream;
+    priv.on_close_fn = on_close;
+    priv.on_ping_fn = on_ping;
+    priv.on_pong_fn = on_pong;
+    priv.debug_fn = on_debug;
+
+    __on_ping_goal = v->ping;
+    __on_pong_goal = v->pong;
+    __on_stream_goal = v->stream;
+    __on_close_goal = v->close;
+
+    p = v->in;
+    for (size_t i = 0; i < v->block_count; i++) {
+        size_t rv = _writefunction_cb(p, v->blocks[i], 1, &priv);
+
+        if (rv != v->rv[i]) {
+            printf("%s - '%.*s' byte count: %d got: %zd\n", v->test_name,
+                   (int) v->blocks[i], p, v->blocks[i], rv);
+        }
+        CU_ASSERT_FATAL(v->rv[i] == rv);
+
+        p += v->blocks[i];
+    }
+
+    ping = v->ping;
+    while (ping) {
+        CU_ASSERT_FATAL(1 == ping->seen);
+        ping->seen = 0;    /* reset the test */
+        if (ping->more) {
+            ping = &ping[1];
+        } else {
+            ping = NULL;
+        }
+    }
+
+    pong = v->pong;
+    while (pong) {
+        CU_ASSERT_FATAL(1 == pong->seen);
+        pong->seen = 0;    /* reset the test */
+        if (pong->more) {
+            pong = &pong[1];
+        } else {
+            pong = NULL;
+        }
+    }
+
+    stream = v->stream;
+    while (stream) {
+        CU_ASSERT_FATAL(1 == stream->seen);
+        stream->seen = 0;    /* reset the test */
+        if (stream->more) {
+            stream = &stream[1];
+        } else {
+            stream = NULL;
+        }
+    }
+
+    close = v->close;
+    while (close) {
+        CU_ASSERT_FATAL(1 == close->seen);
+        close->seen = 0;    /* reset the test */
+        if (close->more) {
+            close = &close[1];
+        } else {
+            close = NULL;
+        }
+    }
+}
 
 void test_simple()
 {
-    CWS priv;
-    uint8_t test[] = { 0x81, 0x00 };
-    struct mock_stream vector[] = {
-        {
-            .info = CWS_TEXT | CWS_FIRST | CWS_LAST,
-            .len = 0,
-            .data = NULL,
-            .seen = 0,
-            .next = NULL,
-        }
-    };
+    struct test_vector test = {
+        .test_name = "Test 1",
+        .in = "\x01\x00"                /* TEXT with no payload. */
+              "\x00\x05hello"           /* CONT with 5 bytes of text */
+              "\x89\x04ping"            /* PING with payload 'ping' */
+              "\x8a\x04pong"            /* PONG with payload 'pong' */
+              "\x80\x03ᚅ"               /* Final CONT with 3 bytes of text */
+              "\x82\x05-_/-|"           /* BIN as a single packet */
+              "\x82\x00"                /* BIN as a single packet */
+              "\x81\x02hi"              /* TEXT as a single packet */
+              "\x82\x05-_/-|"           /* BIN as a single packet */
+              "\x88\x06\x03\xe8|bye"    /* Close as a single packet */
+              "\x01\x07ignored",        /* Close as a single packet */
+        .blocks = (int[11]){ 2, 7, 6, 6, 5, 7, 2, 4, 7, 8, 9 },
+        .rv = (size_t[11]){ 2, 7, 6, 6, 5, 7, 2, 4, 7, 8, 9 },
+        .block_count = 11,
 
-    setup_test(&priv);
-
-    __on_stream_goal = vector;
-    CU_ASSERT(2 == _writefunction_cb((const char*) test, 2, 1, &priv));
-    CU_ASSERT(1 == vector[0].seen);
-}
-
-
-void test_simple_one_byte()
-{
-    CWS priv;
-    uint8_t test[] = { 0x81, 0x01, 'a' };
-    struct mock_stream vector[] = {
-        {
-            .info = CWS_TEXT | CWS_FIRST | CWS_LAST,
-            .len = 1,
-            .data = "a",
-            .seen = 0,
-            .next = NULL,
-        }
-    };
-
-    setup_test(&priv);
-
-    __on_stream_goal = vector;
-    CU_ASSERT(3 == _writefunction_cb((const char*) test, 3, 1, &priv));
-    CU_ASSERT(1 == vector[0].seen);
-}
-
-
-void test_simple_one_byte_binary()
-{
-    CWS priv;
-    uint8_t test[] = { 0x82, 0x01, 'a' };
-    struct mock_stream vector[] = {
-        {
-            .info = CWS_BINARY | CWS_FIRST | CWS_LAST,
-            .len = 1,
-            .data = "a",
-            .seen = 0,
-            .next = NULL,
-        }
-    };
-
-    setup_test(&priv);
-
-    __on_stream_goal = vector;
-    CU_ASSERT(3 == _writefunction_cb((const char*) test, 3, 1, &priv));
-    CU_ASSERT(1 == vector[0].seen);
-}
-
-
-void test_invalid_frame_test()
-{
-    CWS priv;
-    uint8_t test[] = { 0x72, 0x01, 'a' };
-    struct mock_cws_close cws_close_vector[] = {
-        {
-            .code = 1002,
-            .reason = NULL,
-            .len = 0,
-            .seen = 0,
-            .next = NULL,
-        }
-    };
-
-
-    setup_test(&priv);
-
-    __cws_close_goal = cws_close_vector;
-    CU_ASSERT(0 == _writefunction_cb((const char*) test, 3, 1, &priv));
-    CU_ASSERT(1 == cws_close_vector[0].seen);
-}
-
-
-void test_simple_stream()
-{
-    CWS priv;
-    uint8_t test[] = { 0x81, 0x1f, '0', '1', '2', '3', '4', '5', '6', '7',
-                                   '8', '9', '0', '1', '2', '3', '4', '5', '6', '7',
-                                   '8', '9', '0', '1', '2', '3', '4', '5', '6', '7',
-                                   '8', '9', '8' };
-    const char *p;
-
-    struct mock_stream vector[] = {
-        {
-            .info = CWS_TEXT | CWS_FIRST,
-            .len = 8,
-            .data = "01234567",
-            .seen = 0,
-            .next = NULL,
+        .ping = (struct mock_ping[1]) {
+            {
+                .data = "ping",
+                .len = 4,
+                .seen = 0,
+                .more = 0,
+            },
         },
-        {
-            .info = CWS_CONT,
-            .len = 10,
-            .data = "8901234567",
-            .seen = 0,
-            .next = NULL,
+        .pong = (struct mock_pong[1]) {
+            {
+                .data = "pong",
+                .len = 4,
+                .seen = 0,
+                .more = 0,
+            },
         },
-        {
-            .info = CWS_CONT,
-            .len = 10,
-            .data = "8901234567",
-            .seen = 0,
-            .next = NULL,
+        .stream = (struct mock_stream[7]) {
+            {
+                .info = CWS_TEXT | CWS_FIRST,
+                .len = 0,
+                .data = NULL,
+                .seen = 0,
+                .more = 1,
+            },
+            {
+                .info = CWS_CONT,
+                .len = 5,
+                .data = "hello",
+                .seen = 0,
+                .more = 1,
+            },
+            {
+                .info = CWS_CONT | CWS_LAST,
+                .len = 3,
+                .data = "ᚅ",
+                .seen = 0,
+                .more = 1,
+            },
+            {
+                .info = CWS_BINARY | CWS_FIRST | CWS_LAST,
+                .len = 5,
+                .data = "-_/-|",
+                .seen = 0,
+                .more = 1,
+            },
+            {
+                .info = CWS_BINARY | CWS_FIRST | CWS_LAST,
+                .len = 0,
+                .data = 0,
+                .seen = 0,
+                .more = 1,
+            },
+            {
+                .info = CWS_TEXT | CWS_FIRST | CWS_LAST,
+                .len = 2,
+                .data = "hi",
+                .seen = 0,
+                .more = 1,
+            },
+            {
+                .info = CWS_BINARY | CWS_FIRST | CWS_LAST,
+                .len = 5,
+                .data = "-_/-|",
+                .seen = 0,
+                .more = 0,
+            },
         },
-        {
-            .info = CWS_CONT | CWS_LAST,
-            .len = 3,
-            .data = "898",
-            .seen = 0,
-            .next = NULL,
-        }
+        .close = NULL,
     };
 
-    setup_test(&priv);
-
-    vector[0].next = &vector[1];
-    vector[1].next = &vector[2];
-    vector[2].next = &vector[3];
-
-    __on_stream_goal = vector;
-    p = (const char*) test;
-    CU_ASSERT(1 == _cws_process_frame(&priv, &p[0], 1));
-    CU_ASSERT(1 == _cws_process_frame(&priv, &p[1], 1));
-    CU_ASSERT(8 == _cws_process_frame(&priv, &p[2], 8));
-    CU_ASSERT(10 == _cws_process_frame(&priv, &p[10], 10));
-    CU_ASSERT(10 == _cws_process_frame(&priv, &p[20], 10));
-    CU_ASSERT(3 == _cws_process_frame(&priv, &p[30], 3));
-    CU_ASSERT(1 == vector[0].seen);
-    CU_ASSERT(1 == vector[1].seen);
-    CU_ASSERT(1 == vector[2].seen);
-    CU_ASSERT(1 == vector[3].seen);
+    run_test( &test );
 }
 
-
-void test_simple_close()
+void test_more_complex()
 {
-    CWS priv;
-    uint8_t test[] = { 0x88, 0x0c, 0x03, 0xe9, 'G', 'o', 'i', 'n', 'g', ' ', 'A', 'w', 'a', 'y' };
-    struct mock_close vector[] = {
-        {
-            .len = 10,
-            .code = 1001,
-            .reason = "Going Away",
-            .seen = 0,
-            .next = NULL,
-        }
-    };
-    struct mock_cws_close cws_close_vector[] = {
-        {
-            .code = 1001,
-            .reason = NULL,
-            .len = 0,
-            .seen = 0,
-            .next = NULL,
-        }
+    struct test_vector test = {
+        .test_name = "Test 2",
+        .in = "\x01\x00"                /* TEXT with no payload. */
+              "\x00\x05hello"           /* CONT with 5 bytes of text */
+              "\x89\x04ping"            /* PING with payload 'ping' */
+              "\x8a\x04pong"            /* PONG with payload 'pong' */
+              "\x80\x03ᚅ"               /* Final CONT with 3 bytes of UTF8 text */
+              "\x82\x05-_/-|"           /* BIN as a single packet */
+              "\x82\x00"                /* BIN as a single packet */
+              "\x81\x02hi"              /* TEXT as a single packet */
+              "\x82\x05-_/-|"           /* BIN as a single packet */
+              "\x88\x06\x03\xe8|bye"    /* Close as a single packet */
+              "\x01\x07ignored",        /* Close as a single packet */
+        .blocks = (int[63]){ 1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,
+                             1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,
+                             1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,
+                             1,1,1 },
+        .rv = (size_t[63]){ 1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,
+                            1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,
+                            1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,
+                            1,1,1 },
+        .block_count = 63,
+
+        .ping = (struct mock_ping[1]) {
+            { .data = "ping", .len = 4, .seen = 0, .more = 0, },
+        },
+        .pong = (struct mock_pong[1]) {
+            { .data = "pong", .len = 4, .seen = 0, .more = 0, },
+        },
+        .stream = (struct mock_stream[23]) {
+            { .info = CWS_TEXT   | CWS_FIRST,            .len = 0, .data = NULL, .seen = 0, .more = 1, },
+            { .info = CWS_CONT,                          .len = 1, .data = "h",  .seen = 0, .more = 1, },
+            { .info = CWS_CONT,                          .len = 1, .data = "e",  .seen = 0, .more = 1, },
+            { .info = CWS_CONT,                          .len = 1, .data = "l",  .seen = 0, .more = 1, },
+            { .info = CWS_CONT,                          .len = 1, .data = "l",  .seen = 0, .more = 1, },
+            { .info = CWS_CONT,                          .len = 1, .data = "o",  .seen = 0, .more = 1, },
+            { .info = CWS_CONT               | CWS_LAST, .len = 3, .data = "ᚅ",  .seen = 0, .more = 1, },
+            { .info = CWS_BINARY | CWS_FIRST,            .len = 0, .data = NULL, .seen = 0, .more = 1, },
+            { .info = CWS_CONT,                          .len = 1, .data = "-",  .seen = 0, .more = 1, },
+            { .info = CWS_CONT,                          .len = 1, .data = "_",  .seen = 0, .more = 1, },
+            { .info = CWS_CONT,                          .len = 1, .data = "/",  .seen = 0, .more = 1, },
+            { .info = CWS_CONT,                          .len = 1, .data = "-",  .seen = 0, .more = 1, },
+            { .info = CWS_CONT               | CWS_LAST, .len = 1, .data = "|",  .seen = 0, .more = 1, },
+            { .info = CWS_BINARY | CWS_FIRST | CWS_LAST, .len = 0, .data = NULL, .seen = 0, .more = 1, },
+            { .info = CWS_TEXT   | CWS_FIRST,            .len = 0, .data = NULL, .seen = 0, .more = 1, },
+            { .info = CWS_CONT,                          .len = 1, .data = "h",  .seen = 0, .more = 1, },
+            { .info = CWS_CONT               | CWS_LAST, .len = 1, .data = "i",  .seen = 0, .more = 1, },
+            { .info = CWS_BINARY | CWS_FIRST,            .len = 0, .data = NULL, .seen = 0, .more = 1, },
+            { .info = CWS_CONT,                          .len = 1, .data = "-",  .seen = 0, .more = 1, },
+            { .info = CWS_CONT,                          .len = 1, .data = "_",  .seen = 0, .more = 1, },
+            { .info = CWS_CONT,                          .len = 1, .data = "/",  .seen = 0, .more = 1, },
+            { .info = CWS_CONT,                          .len = 1, .data = "-",  .seen = 0, .more = 1, },
+            { .info = CWS_CONT               | CWS_LAST, .len = 1, .data = "|",  .seen = 0, .more = 0, },
+        },
+        .close = NULL,
     };
 
-    setup_test(&priv);
-
-    __on_close_goal = vector;
-    __cws_close_goal = cws_close_vector;
-    CU_ASSERT(2 == _cws_process_frame(&priv, (const char*) &test[0], 2));
-    CU_ASSERT(6 == _cws_process_frame(&priv, (const char*) &test[2], 6));
-    CU_ASSERT(6 == _cws_process_frame(&priv, (const char*) &test[8], 6));
-    CU_ASSERT(1 == vector[0].seen);
-    CU_ASSERT(1 == cws_close_vector[0].seen);
+    run_test( &test );
 }
-
-void test_empty_close()
-{
-    CWS priv;
-    uint8_t test[] = { 0x88, 0x00 };
-    struct mock_close vector[] = {
-        {
-            .len = 0,
-            .code = 1005,
-            .reason = NULL,
-            .seen = 0,
-            .next = NULL,
-        }
-    };
-    struct mock_cws_close cws_close_vector[] = {
-        {
-            .code = 0,
-            .reason = NULL,
-            .len = 0,
-            .seen = 0,
-            .next = NULL,
-        }
-    };
-
-    setup_test(&priv);
-
-    __on_close_goal = vector;
-    __cws_close_goal = cws_close_vector;
-    CU_ASSERT(2 == _cws_process_frame(&priv, (const char*) &test[0], 2));
-    CU_ASSERT(1 == vector[0].seen);
-    CU_ASSERT(1 == cws_close_vector[0].seen);
-}
-
-void test_bad_length_close()
-{
-    CWS priv;
-    uint8_t test[] = { 0x88, 0x01, 0x12 };
-    struct mock_close vector[] = {
-        {
-            .len = 0,
-            .code = 1002,
-            .reason = NULL,
-            .seen = 0,
-            .next = NULL,
-        }
-    };
-    struct mock_cws_close cws_close_vector[] = {
-        {
-            .code = 1002,
-            .reason = "invalid close payload length",
-            .len = SIZE_MAX,
-            .seen = 0,
-            .next = NULL,
-        }
-    };
-
-    setup_test(&priv);
-
-    __on_close_goal = vector;
-    __cws_close_goal = cws_close_vector;
-    CU_ASSERT(3 == _cws_process_frame(&priv, (const char*) &test[0], 3));
-    CU_ASSERT(1 == vector[0].seen);
-    CU_ASSERT(1 == cws_close_vector[0].seen);
-}
-
-void test_bad_reason_close()
-{
-    CWS priv;
-    uint8_t test[] = { 0x88, 0x02, 0x00, 0xff };
-    struct mock_close vector[] = {
-        {
-            .len = 0,
-            .code = 1002,
-            .reason = NULL,
-            .seen = 0,
-            .next = NULL,
-        }
-    };
-    struct mock_cws_close cws_close_vector[] = {
-        {
-            .code = 1002,
-            .reason = "invalid close reason",
-            .len = SIZE_MAX,
-            .seen = 0,
-            .next = NULL,
-        }
-    };
-
-
-    setup_test(&priv);
-
-    __on_close_goal = vector;
-    __cws_close_goal = cws_close_vector;
-    CU_ASSERT(4 == _cws_process_frame(&priv, (const char*) &test[0], 4));
-    CU_ASSERT(1 == vector[0].seen);
-    CU_ASSERT(1 == cws_close_vector[0].seen);
-}
-
-
-void test_ping()
-{
-    CWS priv;
-    uint8_t test[] = { 0x89, 0x00 };
-    struct mock_piong vector[] = {
-        {
-            .len = 0,
-            .data = NULL,
-            .seen = 0,
-            .next = NULL,
-        }
-    };
-
-    setup_test(&priv);
-
-    __on_ping_goal = vector;
-    CU_ASSERT(2 == _cws_process_frame(&priv, (const char*) &test[0], 2));
-    CU_ASSERT(1 == vector[0].seen);
-}
-
-void test_pong()
-{
-    CWS priv;
-    uint8_t test[] = { 0x8a, 0x00 };
-    struct mock_piong vector[] = {
-        {
-            .len = 0,
-            .data = NULL,
-            .seen = 0,
-            .next = NULL,
-        }
-    };
-
-    setup_test(&priv);
-
-    __on_pong_goal = vector;
-    CU_ASSERT(2 == _cws_process_frame(&priv, (const char*) &test[0], 2));
-    CU_ASSERT(1 == vector[0].seen);
-}
-
-void test_close_codes()
-{
-    CU_ASSERT(false == _is_valid_close_from_server( 999));
-    CU_ASSERT(true  == _is_valid_close_from_server(1000));
-    CU_ASSERT(true  == _is_valid_close_from_server(1001));
-    CU_ASSERT(true  == _is_valid_close_from_server(1002));
-    CU_ASSERT(true  == _is_valid_close_from_server(1003));
-    CU_ASSERT(false == _is_valid_close_from_server(1004));
-    CU_ASSERT(false == _is_valid_close_from_server(1005));
-    CU_ASSERT(false == _is_valid_close_from_server(1006));
-    CU_ASSERT(true  == _is_valid_close_from_server(1007));
-    CU_ASSERT(true  == _is_valid_close_from_server(1008));
-    CU_ASSERT(true  == _is_valid_close_from_server(1009));
-    CU_ASSERT(false == _is_valid_close_from_server(1010));
-    CU_ASSERT(true  == _is_valid_close_from_server(1011));
-    CU_ASSERT(false == _is_valid_close_from_server(1012));
-    CU_ASSERT(false == _is_valid_close_from_server(1013));
-    CU_ASSERT(false == _is_valid_close_from_server(1014));
-    CU_ASSERT(false == _is_valid_close_from_server(1015));
-    CU_ASSERT(false == _is_valid_close_from_server(1016));
-    CU_ASSERT(false == _is_valid_close_from_server(2999));
-    CU_ASSERT(true  == _is_valid_close_from_server(3000));
-    CU_ASSERT(true  == _is_valid_close_from_server(3999));
-    CU_ASSERT(true  == _is_valid_close_from_server(4000));
-    CU_ASSERT(true  == _is_valid_close_from_server(4999));
-    CU_ASSERT(false == _is_valid_close_from_server(5000));
-}
-
-void test_exit_cases_for_writefunction()
-{
-    CWS priv;
-    uint8_t test[] = { 0x89, 0x00 };
-    struct mock_piong vector[] = {
-        {
-            .len = 0,
-            .data = NULL,
-            .seen = 0,
-            .next = NULL,
-        }
-    };
-
-    setup_test(&priv);
-
-    __on_ping_goal = vector;
-
-
-    /* Redirecting ... we just ignore that data. */
-    priv.redirection = true;
-    CU_ASSERT(2 == _writefunction_cb((const char*) test, 2, 1, &priv));
-    priv.redirection = false;
-
-    /* closed ... we consume it all and exit. */
-    priv.closed = true;
-    CU_ASSERT(2 == _writefunction_cb((const char*) test, 2, 1, &priv));
-    priv.closed = false;
-
-    CU_ASSERT(0 == vector[0].seen);
-}
-
 
 void add_suites( CU_pSuite *suite )
 {
@@ -623,19 +523,8 @@ void add_suites( CU_pSuite *suite )
         const char *label;
         void (*fn)(void);
     } tests[] = {
-        { .label = "simple text Tests        ", .fn = test_simple        },
-        { .label = "simple text 1 byte Test  ", .fn = test_simple_one_byte },
-        { .label = "simple binary 1 byte Test", .fn = test_simple_one_byte_binary },
-        { .label = "simple text stream Tests ", .fn = test_simple_stream },
-        { .label = "simple close Tests       ", .fn = test_simple_close },
-        { .label = "empty close Tests        ", .fn = test_empty_close  },
-        { .label = "bad length close Tests   ", .fn = test_bad_length_close  },
-        { .label = "bad reason close Tests   ", .fn = test_bad_reason_close  },
-        { .label = "test ping                ", .fn = test_ping  },
-        { .label = "test pong                ", .fn = test_pong  },
-        { .label = "test close codes         ", .fn = test_close_codes  },
-        { .label = "invalid frame Test       ", .fn = test_invalid_frame_test },
-        { .label = "exit cases for _writefn  ", .fn = test_exit_cases_for_writefunction },
+        { .label = "simple Tests",       .fn = test_simple       },
+        { .label = "more complex Tests", .fn = test_more_complex },
         { .label = NULL, .fn = NULL }
     };
     int i;
