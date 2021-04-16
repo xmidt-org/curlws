@@ -34,7 +34,8 @@ add_library(curlws SHARED cb.c
                           receive.c
                           send.c
                           sha1_openssl.c
-                          utils.c)
+                          utils.c
+                          ws.c)
 
 install (FILES
          ${CMAKE_CURRENT_SOURCE_DIR}/curlws.h

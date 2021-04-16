@@ -106,19 +106,6 @@ static size_t _writefunction_cb(const char *buffer, size_t count, size_t nitems,
 }
 
 
-static bool _is_valid_close_from_server(int code)
-{
-    if (((3000 <= code) && (code <= 4999)) ||
-        ((1000 <= code) && (code <= 1003)) ||
-        ((1007 <= code) && (code <= 1011)))
-    {
-        return true;
-    }
-
-    return false;
-}
-
-
 static void _handle_close(CWS *priv, struct recv *r)
 {
     int status = 1005;
@@ -136,7 +123,7 @@ static void _handle_close(CWS *priv, struct recv *r)
         ssize_t rv;
 
         status = r->control.buf[0] << 8 | r->control.buf[1];
-        if (!_is_valid_close_from_server(status)) {
+        if (!is_close_code_valid(status)) {
             status = 1002;
             cws_close(priv, status, "invalid close reason", SIZE_MAX);
             return;

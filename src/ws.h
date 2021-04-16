@@ -27,6 +27,8 @@
 #ifndef __WS_H__
 #define __WS_H__
 
+#include <stdbool.h>
+
 /*----------------------------------------------------------------------------*/
 /*                     Websocket based macros/definitions                     */
 /*----------------------------------------------------------------------------*/
@@ -96,24 +98,9 @@
 #define WS_OPCODE_PING          0x9
 #define WS_OPCODE_PONG          0xa
 
-/* Close defined status codes
- *
- * https://tools.ietf.org/html/rfc6455#section-7.4.1
- *
- * TODO: I'm not sure the macros make these codes better... just one more lookup
+/**
+ * Returns if the close code is valid.
  */
-#define WS_CLOSE_STATUS_NORMAL_CLOSE            1000
-#define WS_CLOSE_STATUS_GOING_AWAY              1001
-#define WS_CLOSE_STATUS_PROTOCOL_ERROR          1002
-#define WS_CLOSE_STATUS_UNACCEPTED_OPCODE       1003
-#define WS_CLOSE_STATUS_NONE                    1005
-#define WS_CLOSE_STATUS_ABNORMAL_CLOSE          1006
-#define WS_CLOSE_STATUS_INVALID_PAYLOAD         1007
-#define WS_CLOSE_STATUS_POLICTY_VIOLATION       1008
-#define WS_CLOSE_STATUS_MESSAGE_TOO_LARGE       1009
-#define WS_CLOSE_STATUS_EXTENSION_REQUIRED      1010
-#define WS_CLOSE_STATUS_UNEXPECTED_CONDITION    1011
-#define WS_CLOSE_STATUS_TLS_FAILURE             1015
+bool is_close_code_valid(int code);
 
 #endif
-

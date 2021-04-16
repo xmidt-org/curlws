@@ -124,7 +124,8 @@ add_test(NAME Test_Receive COMMAND ${MEMORY_CHECK} ./test_receive)
 add_executable(test_receive test_receive.c
                            ../src/cb.c
                            ../src/frame.c
-                           ../src/utf8.c)
+                           ../src/utf8.c
+                           ../src/ws.c)
 
 if (${CMAKE_SYSTEM_NAME} MATCHES "Linux")
 target_link_libraries (test_receive gcov)
@@ -140,7 +141,8 @@ add_test(NAME Test_Autobahn_27 COMMAND ${MEMORY_CHECK} ./test_autobahn_27)
 add_executable(test_autobahn_27 test_autobahn_27.c
                                 ../src/cb.c
                                 ../src/frame.c
-                                ../src/utf8.c)
+                                ../src/utf8.c
+                                ../src/ws.c)
 
 if (${CMAKE_SYSTEM_NAME} MATCHES "Linux")
 target_link_libraries (test_autobahn_27 gcov)
@@ -208,7 +210,8 @@ add_executable(test_curlws test_curlws.c
                            ../src/send.c
                            ../src/sha1_openssl.c
                            ../src/utf8.c
-                           ../src/utils.c)
+                           ../src/utils.c
+                           ../src/ws.c)
 
 if (${CMAKE_SYSTEM_NAME} MATCHES "Linux")
 target_link_libraries (test_curlws gcov)
@@ -278,7 +281,8 @@ add_executable(test_autobahn autobahn-testee.c
                              ../src/send.c
                              ../src/sha1_openssl.c
                              ../src/utf8.c
-                             ../src/utils.c)
+                             ../src/utils.c
+                             ../src/ws.c)
 
 
 if (${CMAKE_SYSTEM_NAME} MATCHES "Linux")
@@ -289,7 +293,7 @@ target_link_libraries (test_autobahn ${OPENSSL_LIBRARIES} ${CURL_LIBRARIES})
 
 
 # ---------------------------------------------------------------------------- #
-add_test(NAME Test_Autobahn_parallel  COMMAND ./test_autobahn_parallel ws://localhost:9001 1 303)
+#add_test(NAME Test_Autobahn_parallel  COMMAND ./test_autobahn_parallel ws://localhost:9001 1 303)
 
 add_executable(test_autobahn_parallel autobahn-testee-parallel.c
                                       ../src/cb.c
@@ -305,7 +309,8 @@ add_executable(test_autobahn_parallel autobahn-testee-parallel.c
                                       ../src/send.c
                                       ../src/sha1_openssl.c
                                       ../src/utf8.c
-                                      ../src/utils.c)
+                                      ../src/utils.c
+                                      ../src/ws.c)
 
 
 if (${CMAKE_SYSTEM_NAME} MATCHES "Linux")

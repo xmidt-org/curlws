@@ -65,7 +65,6 @@
 /*----------------------------------------------------------------------------*/
 /*                             Function Prototypes                            */
 /*----------------------------------------------------------------------------*/
-static int _is_valid_close_to_server(int);
 static CWScode _close(CWS*, int, int, const char*, size_t);
 
 static bool _validate_config(const struct cws_config*);
@@ -363,18 +362,6 @@ void _cws_cleanup(CWS *priv)
 }
 
 
-static int _is_valid_close_to_server(int code)
-{
-    if (((3000 <= code) && (code <= 4999)) ||
-        ((1000 <= code) && (code <= 1003)) ||
-        ((1007 <= code) && (code <= 1011)))
-    {
-        return 0;
-    }
-
-    return -1;
-}
-
 static CWScode _close(CWS *priv, int options, int code, const char *reason, size_t len)
 {
     CWScode ret;
@@ -387,7 +374,7 @@ static CWScode _close(CWS *priv, int options, int code, const char *reason, size
         return ret;
     }
 
-    if (0 != _is_valid_close_to_server(code)) {
+    if (false == is_close_code_valid(code)) {
         return CWSE_INVALID_CLOSE_REASON_CODE;
     }
 
