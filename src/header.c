@@ -82,7 +82,7 @@ static size_t _header_cb(const char *buffer, size_t count, size_t nitems, void *
     const struct header_checker {
         const char *prefix;
         void (*check)(CWS *priv, const char *suffix, size_t suffixlen);
-    } *itr, header_checkers[] = {
+    } header_checkers[] = {
         {"Sec-WebSocket-Accept:",   _check_accept},
         {"Sec-WebSocket-Protocol:", _check_protocol},
         {"Connection:",             _check_connection},
@@ -134,7 +134,7 @@ static size_t _header_cb(const char *buffer, size_t count, size_t nitems, void *
         return len;
     }
 
-    for (itr = header_checkers; itr->prefix != NULL; itr++) {
+    for (const struct header_checker *itr = header_checkers; itr->prefix != NULL; itr++) {
         if (cws_has_prefix(buffer, len, itr->prefix)) {
             size_t prefixlen = strlen(itr->prefix);
             size_t valuelen = len - prefixlen;
