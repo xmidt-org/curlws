@@ -156,6 +156,7 @@ CWS *cws_create(const struct cws_config *config)
     if (!priv->cfg.url) { goto error; }
     curl_easy_setopt(priv->easy, CURLOPT_URL, priv->cfg.url);
 
+    priv->cfg.verbose = config->verbose;
     if (0 != (2 & config->verbose)) {
         curl_easy_setopt(priv->easy, CURLOPT_VERBOSE, 1L);
     }
