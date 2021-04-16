@@ -152,20 +152,16 @@ struct cws_config {
      * Called upon connection, websocket_protocols contains what
      * server reported as 'Sec-WebSocket-Protocol:'.
      *
-     * TODO Review and test.
-     *
      * @note It is not validated if matches the proposed protocols.
      *
-     * @param user   the user data specified in this configuration
-     * @param handle handle for this websocket
-     * @param text   the text string being returned
+     * @param user      the user data specified in this configuration
+     * @param handle    handle for this websocket
+     * @param protocols the websocket protocols from the server
      */
-    void (*on_connect)(void *user, CWS *handle, const char *websocket_protocols);
+    void (*on_connect)(void *user, CWS *handle, const char *protocols);
 
     /**
      * Reports UTF-8 text messages.
-     *
-     * TODO Review and test.
      *
      * @note The text field is guaranteed to be NULL (\0) terminated, but the
      *       UTF-8 is not validated. If it's invalid, consider closing the
@@ -182,8 +178,6 @@ struct cws_config {
 
     /**
      * Reports binary data.
-     *
-     * TODO Review and test.
      *
      * @note If (*on_stream) is set, this callback behavior is disabled.
      *
