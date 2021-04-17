@@ -73,6 +73,19 @@ void send_init(CWS *priv)
     curl_easy_setopt(priv->easy, CURLOPT_READDATA, priv);
 }
 
+
+void send_destroy(CWS *priv)
+{
+    while (priv->send) {
+        struct cws_buf_queue *tmp;
+
+        tmp = priv->send->next;
+        mem_free(priv->send);
+        priv->send = tmp;
+    }
+}
+
+
 size_t send_get_memory_needed(size_t payload_size)
 {
     return sizeof(struct cws_buf_queue) + payload_size;
@@ -156,6 +169,64 @@ CWScode send_frame(CWS *priv, const struct cws_frame *f)
 /*                             Internal functions                             */
 /*----------------------------------------------------------------------------*/
 
+
+/**
+ * Fills the specified buffer with as much data as is available.
+ *
+ * @param priv   the curlws object of reference
+ * @param buffer the buffer to fill
+ * @param len    the number of bytes available in the buffer
+ *
+ * @return the number of bytes written into the buffer
+ */
+static size_t _fill_outgoing_buffer(CWS *priv, char *buffer, size_t len)
+{
+    size_t data_to_send;
+    size_t sent = 0;
+
+    data_to_send = priv->send->written - priv->send->sent;
+
+    /* Fill up the buffer with whatever frames we have queued. */
+    while ((0 < len) && (0 < data_to_send)) {
+        const uint8_t *p;
+        size_t lesser = len;
+        p = &priv->send->buffer[priv->send->sent];
+
+        if (data_to_send < lesser) {
+            lesser = data_to_send;
+        }
+        memcpy(buffer, p, lesser);
+
+        buffer += lesser;
+        sent += lesser;
+        len -= lesser;
+        data_to_send -= lesser;
+        priv->send->sent += lesser;
+
+        /* If we've sent a buffer, recycle it. */
+        if (priv->send->sent == priv->send->written) {
+            struct cws_buf_queue *tmp = priv->send;
+            bool is_close = tmp->is_close_frame;
+
+            priv->send = priv->send->next;
+            if (priv->send) {
+                priv->send->prev = NULL;
+                data_to_send += priv->send->written;
+            }
+            mem_free(tmp);
+
+            /* Don't send any more data after we send a close frame. */
+            if (is_close) {
+                data_to_send = 0;
+                send_destroy(priv);
+            }
+        }
+    }
+
+    return sent;
+}
+
+
 /**
  * The function provided to curl when it wants to read data from this library.
  *
@@ -169,15 +240,14 @@ CWScode send_frame(CWS *priv, const struct cws_frame *f)
 static size_t _readfunction_cb(char *buffer, size_t count, size_t n, void *data)
 {
     CWS *priv = data;
-    size_t space_left = count * n;
+    size_t len = count * n;
     size_t sent = 0;
-    size_t data_to_send;
 
     if (priv->header_state.redirection) {
         if (priv->cfg.verbose) {
-            fprintf(stderr, "> websocket %zd bytes ignored due to redirection\n", space_left);
+            fprintf(stderr, "> websocket %zd bytes ignored due to redirection\n", len);
         }
-        return space_left;
+        return len;
     }
 
     if (NULL == priv->send) {
@@ -199,51 +269,11 @@ static size_t _readfunction_cb(char *buffer, size_t count, size_t n, void *data)
         return CURL_READFUNC_PAUSE;
     }
 
-    data_to_send = priv->send->written - priv->send->sent;
-
-    /* Fill up the buffer with whatever frames we have queued. */
-    while ((0 < space_left) && (0 < data_to_send)) {
-        const uint8_t *p;
-        size_t lesser = space_left;
-        p = &priv->send->buffer[priv->send->sent];
-
-        if (data_to_send < lesser) {
-            lesser = data_to_send;
-        }
-        memcpy(buffer, p, lesser);
-
-        buffer += lesser;
-        sent += lesser;
-        space_left -= lesser;
-        data_to_send -= lesser;
-        priv->send->sent += lesser;
-
-        /* If we've sent a buffer, recycle it. */
-        if (priv->send->sent == priv->send->written) {
-            struct cws_buf_queue *tmp = priv->send;
-            bool is_close = tmp->is_close_frame;
-
-            priv->send = priv->send->next;
-            if (priv->send) {
-                priv->send->prev = NULL;
-                data_to_send += priv->send->written;
-            }
-            mem_free(tmp);
-
-            /* Don't send any more data after we send a close frame. */
-            if (is_close) {
-                data_to_send = 0;
-                while (priv->send) {
-                    tmp = priv->send->next;
-                    mem_free(priv->send);
-                    priv->send = tmp;
-                }
-            }
-        }
-    }
+    sent = _fill_outgoing_buffer(priv, buffer, len);
 
     if (priv->cfg.verbose) {
         fprintf(stderr, "> websocket sent: %ld\n", sent);
     }
+
     return sent;
 }

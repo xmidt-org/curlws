@@ -37,10 +37,17 @@
 /**
  * Initializes the curl connection to be able to send data.
  *
- * @param priv the curlws object configure
+ * @param priv the curlws object to configure
  */
 void send_init(CWS *priv);
 
+
+/**
+ * Cleans up the buffers that are presently in use and discards the data.
+ *
+ * @param priv the curlws object to operate on
+ */
+void send_destroy(CWS *priv);
 
 /**
  * Return the buffer size needed for a specified payload size.

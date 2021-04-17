@@ -350,6 +350,9 @@ void _cws_cleanup(CWS *priv)
         if (priv->header_state.ws_protocols_received) {
             free(priv->header_state.ws_protocols_received);
         }
+
+        send_destroy(priv);
+
         if (priv->mem) {
             mem_cleanup_pool(priv->mem);
         }
