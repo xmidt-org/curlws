@@ -224,7 +224,7 @@ static struct cws_frame* _process_frame_header(CWS *priv, const char **buf, size
  * @retval  0 if the control frame was processed
  * @retval -1 if there was an error & the frame was closed
  */
-static ssize_t _process_control_frame(CWS *priv, const char **buf, size_t *len)
+static void _process_control_frame(CWS *priv, const char **buf, size_t *len)
 {
     struct recv *r = &priv->recv;
     const char *buffer = *buf;
@@ -255,7 +255,7 @@ static ssize_t _process_control_frame(CWS *priv, const char **buf, size_t *len)
             r->frame = NULL;
             *len = _len;
             *buf = buffer;
-            return -1;
+            return;
         }
 
         r->header.needed = WS_FRAME_HEADER_MIN;
@@ -265,7 +265,6 @@ static ssize_t _process_control_frame(CWS *priv, const char **buf, size_t *len)
 
     *len = _len;
     *buf = buffer;
-    return 0;
 }
 
 static ssize_t _process_text_stream(CWS *priv, const char *buf, size_t len,
@@ -462,8 +461,6 @@ static void _cws_process_frame(CWS *priv, const char **buffer, size_t *len)
             _process_data_frame(priv, buffer, len);
         }
     }
-
-    return;
 }
 
 
