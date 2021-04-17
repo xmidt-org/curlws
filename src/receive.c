@@ -279,8 +279,7 @@ static ssize_t _process_data_frame(CWS *priv, const char **buf, size_t *len)
     struct recv *r = &priv->recv;
     const char *buffer = *buf;
     const char *buf_to_send = buffer;
-    size_t _len = *len;
-    size_t min = _min_size_t(r->frame->payload_len, _len);
+    size_t min = _min_size_t(r->frame->payload_len, *len);
     size_t len_to_send = min;
 
     if ((CWS_TEXT == r->stream_type) && (0 < r->utf8.needed)) {
@@ -381,12 +380,9 @@ static ssize_t _process_data_frame(CWS *priv, const char **buf, size_t *len)
         r->stream_type = 0;
     }
 
-    buffer += min;
-    _len -= min;
+    *buf += min;
+    *len -= min;
 
-
-    *buf = buffer;
-    *len = _len;
     return 0;
 }
 
