@@ -31,18 +31,6 @@
 #include <stdint.h>
 
 /**
- * Calculates the SHA-1 value for a buffer of a specified length.
- * Expects an output buffer of at least 20 bytes or a buffer overflow will
- * occur.
- *
- * @param in    the buffer to SHA-1 over
- * @param len   the length of the in buffer in bytes
- * @param out   the pointer to the preallocated buffer that holds the output
- */
-void cws_sha1(const void *in, size_t len, void *out);
-
-
-/**
  * Encodes a buffer of a specified length as a base64 encoded string.
  *
  * @note: The output buffer provided MUST be at least large enough to contain
@@ -132,21 +120,5 @@ int cws_strncasecmp(const char *s1, const char *s2, size_t n);
  */
 char* cws_strmerge(const char *s1, const char *s2);
 
-/**
- * Change the byte ordering from the host to network (big) endian.
- *
- * @param mem   the buffer to reorder
- * @param len   the size of the buffer to reorder
- */
-void cws_hton(void *mem, uint8_t len);
-
-
-/**
- * Change the byte ordering from the network (big) to host endian.
- *
- * @param mem   the buffer to reorder
- * @param len   the size of the buffer to reorder
- */
-void cws_ntoh(void *mem, uint8_t len);
 
 #endif

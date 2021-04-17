@@ -23,131 +23,79 @@
  * https://opensource.org/licenses/MIT
  */
 #include <stdarg.h>
-#include <stdlib.h>
-#include <stdio.h>
-#include <string.h>
-#include <CUnit/Basic.h>
 #include <stdbool.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+
+#include <CUnit/Basic.h>
+#include <curl/curl.h>
 
 #include "../src/curlws.h"
 #include "../src/curlws.c"
 
+void cws_random(CWS *priv, void *buffer, size_t len)
+{
+    uint8_t *bytes = buffer;
+    size_t i;
+
+    IGNORE_UNUSED(priv);
+
+    /* Note that this does NOT need to be a crypto level randomization function
+     * but is simply used to prevent intermediary caches from causing issues. */
+    for (i = 0; i < len; i++) {
+        bytes[i] = (0x0ff & rand());
+    }
+}
 
 void test_cws_add_websocket_protocols()
 {
     CWS obj;
+    struct curl_slist *headers = NULL;
+    struct curl_slist *rv = NULL;
 
     memset(&obj, 0, sizeof(obj));
 
-    CU_ASSERT(true == _cws_add_websocket_protocols(&obj, NULL));
-    CU_ASSERT(NULL == obj.headers);
+    rv = _cws_add_websocket_protocols(&obj, headers, NULL);
+    CU_ASSERT(NULL == rv);
 
-    CU_ASSERT(true == _cws_add_websocket_protocols(&obj, "chat"));
-    CU_ASSERT(NULL != obj.headers);
-    CU_ASSERT_STRING_EQUAL(obj.websocket_protocols.requested, "chat");
-    free(obj.websocket_protocols.requested);
-    obj.websocket_protocols.requested = NULL;
+    rv = _cws_add_websocket_protocols(&obj, headers, "chat");
+    CU_ASSERT(NULL != rv);
+    CU_ASSERT_STRING_EQUAL(obj.cfg.ws_protocols_requested, "chat");
+    free(obj.cfg.ws_protocols_requested);
+    obj.cfg.ws_protocols_requested = NULL;
 
-    CU_ASSERT_STRING_EQUAL(obj.headers->data, "Sec-WebSocket-Protocol: chat");
-    CU_ASSERT(NULL == obj.headers->next);
+    CU_ASSERT_STRING_EQUAL(rv->data, "Sec-WebSocket-Protocol: chat");
+    CU_ASSERT(NULL == rv->next);
 
-    curl_slist_free_all(obj.headers);
-    obj.headers = NULL;
-}
-
-
-void test_populate_callbacks()
-{
-    CWS obj;
-    struct cws_config src;
-
-    memset(&obj, 0, sizeof(obj));
-    memset(&src, 0, sizeof(src));
-
-    _populate_callbacks(&obj, &src);
-    CU_ASSERT(obj.on_connect_fn == _default_on_connect);
-    CU_ASSERT(obj.on_text_fn    == _default_on_text);
-    CU_ASSERT(obj.on_binary_fn  == _default_on_binary);
-    CU_ASSERT(obj.on_ping_fn    == _default_on_ping);
-    CU_ASSERT(obj.on_pong_fn    == _default_on_pong);
-    CU_ASSERT(obj.on_close_fn   == _default_on_close);
-    CU_ASSERT(obj.get_random_fn == _default_get_random);
-    CU_ASSERT(obj.debug_fn      == _default_debug);
-    CU_ASSERT(obj.configure_fn  == _default_configure);
-
-    src.verbose = true;
-    _populate_callbacks(&obj, &src);
-    CU_ASSERT(obj.debug_fn == _default_verbose_debug);
-
-    src.on_connect = (void*) 1;
-    src.on_text    = (void*) 2;
-    src.on_binary  = (void*) 3;
-    src.on_ping    = (void*) 4;
-    src.on_pong    = (void*) 5;
-    src.on_close   = (void*) 6;
-    src.get_random = (void*) 7;
-    src.debug      = (void*) 8;
-    src.configure  = (void*) 9;
-
-    _populate_callbacks(&obj, &src);
-    CU_ASSERT(obj.on_connect_fn == (void*) 1);
-    CU_ASSERT(obj.on_text_fn    == (void*) 2);
-    CU_ASSERT(obj.on_binary_fn  == (void*) 3);
-    CU_ASSERT(obj.on_ping_fn    == (void*) 4);
-    CU_ASSERT(obj.on_pong_fn    == (void*) 5);
-    CU_ASSERT(obj.on_close_fn   == (void*) 6);
-    CU_ASSERT(obj.get_random_fn == (void*) 7);
-    CU_ASSERT(obj.debug_fn      == (void*) 8);
-    CU_ASSERT(obj.configure_fn  == (void*) 9);
-
-}
-
-
-void test_default_random()
-{
-    uint8_t buf[10];
-    size_t i;
-    uint8_t expect[10] = { 0xb6, 0x5b, 0x89, 0x9e, 0x74, 0x25, 0xbb, 0x72, 0, 0 };
-
-    memset(buf, 0, sizeof(buf));
-    srand( 1000 );
-
-    _default_get_random(NULL, NULL, buf, sizeof(buf) - 2);
-
-    for (i = 0; i < sizeof(buf); i++ ) {
-        //printf( "%ld = 0x%02x ? 0x%02x\n", i, expect[i], buf[i] );
-        CU_ASSERT(buf[i] == expect[i]);
-    }
+    curl_slist_free_all(rv);
 }
 
 
 void test_calculate_websocket_key()
 {
     CWS obj;
+    struct curl_slist *headers = NULL;
+    struct curl_slist *rv = NULL;
 
     memset(&obj, 0, sizeof(obj));
 
     srand( 1000 );
-    obj.get_random_fn = _default_get_random;
 
-    CU_ASSERT(true == _cws_calculate_websocket_key(&obj));
+    rv = _cws_calculate_websocket_key(&obj, headers);
+    CU_ASSERT(NULL != rv);
 
-    /* Only works once. */
-    CU_ASSERT(false == _cws_calculate_websocket_key(&obj));
-
-    //printf("\n\nGot: '%s'\n", obj.headers->data);
+    //printf("\n\nGot: '%s'\n", headers->data);
     //printf("Got: '%s'\n", obj.expected_key_header);
 
-    CU_ASSERT_STRING_EQUAL(obj.headers->data, "Sec-WebSocket-Key: tluJnnQlu3K8f3LD4vsxcQ==");
-    CU_ASSERT(NULL == obj.headers->next);
+    CU_ASSERT_STRING_EQUAL(rv->data, "Sec-WebSocket-Key: tluJnnQlu3K8f3LD4vsxcQ==");
+    CU_ASSERT(NULL == rv->next);
 
     /* TODO: Validate this pair is correct. */
     CU_ASSERT_STRING_EQUAL(obj.expected_key_header, "4522FSSIYHASSkUaUouiInl8Cvk=");
 
 
-    free(obj.expected_key_header);
-    curl_slist_free_all(obj.headers);
-    obj.headers = NULL;
+    curl_slist_free_all(rv);
 }
 
 
@@ -176,35 +124,46 @@ void test_validate_config()
 }
 
 
-void test_add_extra_headers()
+void test_add_headers()
 {
-    CWS obj;
     struct cws_config src;
     int found;
-    struct curl_slist *p;
+    struct curl_slist *rv = NULL;
+    struct curl_slist *headers = NULL;
+    const char *list[] = {
+        "cat: 1",
+        "dog: 2"
+    };
 
-    memset(&obj, 0, sizeof(obj));
     memset(&src, 0, sizeof(src));
 
-    CU_ASSERT(true == _cws_add_extra_headers(&obj, &src));
+    rv = _cws_add_headers(headers, &src, NULL, 0);
+    CU_ASSERT(NULL == rv);
 
     src.extra_headers = curl_slist_append(src.extra_headers, "Header-A: 123");
     src.extra_headers = curl_slist_append(src.extra_headers, "Header-B: 654");
-    CU_ASSERT(true == _cws_add_extra_headers(&obj, &src));
+    rv = _cws_add_headers(headers, &src, list, sizeof(list)/sizeof(char*));
+    CU_ASSERT(NULL != rv);
 
-    p = obj.headers;
+    headers = rv;
     found = 0;
-    while (p) {
-        if (0 == strcmp(p->data, "Header-A: 123")) {
+    while (rv) {
+        if (0 == strcmp(rv->data, "Header-A: 123")) {
             found |= 1;
         }
-        if (0 == strcmp(p->data, "Header-B: 654")) {
+        if (0 == strcmp(rv->data, "Header-B: 654")) {
             found |= 2;
         }
-        p = p->next;
+        if (0 == strcmp(rv->data, "cat: 1")) {
+            found |= 4;
+        }
+        if (0 == strcmp(rv->data, "dog: 2")) {
+            found |= 8;
+        }
+        rv = rv->next;
     }
-    CU_ASSERT(3 == found);
-    curl_slist_free_all(obj.headers);
+    CU_ASSERT(0x0f == found);
+    curl_slist_free_all(headers);
     curl_slist_free_all(src.extra_headers);
 }
 
@@ -238,11 +197,9 @@ void add_suites( CU_pSuite *suite )
         void (*fn)(void);
     } tests[] = {
         { .label = "_cws_add_websocket_protocols() Tests", .fn = test_cws_add_websocket_protocols },
-        { .label = "_populate_callbacks() Tests",          .fn = test_populate_callbacks          },
-        { .label = "_default_get_random() Tests",          .fn = test_default_random              },
         { .label = "_cws_calculate_websocket_key() Tests", .fn = test_calculate_websocket_key     },
         { .label = "_validate_config() Tests",             .fn = test_validate_config             },
-        { .label = "_cws_add_extra_headers() Tests",       .fn = test_add_extra_headers           },
+        { .label = "_cws_add_headers() Tests",             .fn = test_add_headers                 },
         { .label = "create/destroy Tests",                 .fn = test_create_destroy              },
         { .label = NULL, .fn = NULL }
     };

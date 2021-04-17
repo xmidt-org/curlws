@@ -25,9 +25,9 @@
  * https://opensource.org/licenses/MIT
  */
 #include <ctype.h>
+#include <stdlib.h>
+#include <stdio.h>
 #include <string.h>
-
-#include <openssl/evp.h>
 
 #include "utils.h"
 
@@ -54,24 +54,6 @@
 /*----------------------------------------------------------------------------*/
 /*                             External Functions                             */
 /*----------------------------------------------------------------------------*/
-void cws_sha1(const void *in, size_t len, void *out)
-{
-    static const EVP_MD *md = NULL;
-    EVP_MD_CTX *ctx = NULL;
-
-    if (!md) {
-        OpenSSL_add_all_digests();
-        md = EVP_get_digestbyname("sha1");
-    }
-
-    ctx = EVP_MD_CTX_create();
-    EVP_DigestInit_ex(ctx, md, NULL);
-    EVP_DigestUpdate(ctx, in, len);
-    EVP_DigestFinal_ex(ctx, out, NULL);
-    EVP_MD_CTX_destroy(ctx);
-}
-
-
 void cws_encode_base64(const void *in, const size_t len, char *out)
 {
     static const char base64_map[65] = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/=";
@@ -201,7 +183,7 @@ char* cws_strndup(const char *s, size_t n)
 {
     char *rv = NULL;
 
-    if (s) {
+    if ((NULL != s) && (0 < n)) {
         size_t len;
 
         len = strlen(s);
@@ -256,42 +238,6 @@ char* cws_strmerge(const char *s1, const char *s2)
     return p;
 }
 
-void cws_hton(void *mem, uint8_t len)
-{
-#if __BYTE_ORDER__ != __BIG_ENDIAN
-    uint8_t *bytes;
-    uint8_t i, mid;
-
-    if (len % 2) return;
-
-    mid = len / 2;
-    bytes = mem;
-    for (i = 0; i < mid; i++) {
-        uint8_t tmp = bytes[i];
-        bytes[i] = bytes[len - i - 1];
-        bytes[len - i - 1] = tmp;
-    }
-#endif
-}
-
-
-void cws_ntoh(void *mem, uint8_t len)
-{
-#if __BYTE_ORDER__ != __BIG_ENDIAN
-    uint8_t *bytes;
-    uint8_t i, mid;
-
-    if (len % 2) return;
-
-    mid = len / 2;
-    bytes = mem;
-    for (i = 0; i < mid; i++) {
-        uint8_t tmp = bytes[i];
-        bytes[i] = bytes[len - i - 1];
-        bytes[len - i - 1] = tmp;
-    }
-#endif
-}
 
 /*----------------------------------------------------------------------------*/
 /*                             Internal functions                             */

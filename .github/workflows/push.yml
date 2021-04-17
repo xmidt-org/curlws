@@ -19,12 +19,13 @@ jobs:
 
       - name: Start Autobahn Docker
         run: |
-          docker run --rm -v "$GITHUB_WORKSPACE/tests:/config" -v "reports:/reports" -p 9001:9001 --name fuzzingserver crossbario/autobahn-testsuite &
+          docker run --rm -v "$GITHUB_WORKSPACE/tests:/config" -v "$GITHUB_WORKSPACE/reports:/reports" -p 9001:9001 --name fuzzingserver crossbario/autobahn-testsuite &
 
       # Install the dependent packages
       - name: Install packages
         run: |
-          sudo apt-get -y install valgrind libcunit1 libcunit1-doc libcunit1-dev libcurl4-openssl-dev
+          sudo apt update
+          sudo apt-get -y install valgrind libcunit1 libcunit1-doc libcunit1-dev libcurl4-openssl-dev jq
           pip install codecov
 
       - name: Make Build Directory
@@ -47,6 +48,12 @@ jobs:
         working-directory: build
         run: |
           build-wrapper-linux-x86/build-wrapper-linux-x86-64 --out-dir bw-output make all test
+
+      - name: Check Autobahn Tests
+        working-directory: build
+        run: |
+          ./tests/autobahn_report ws://localhost:9001
+          ../tests/check_autobahn_results.sh -f $GITHUB_WORKSPACE/reports/clients/index.json
 
       - name: Upload SonarCloud
         run: |

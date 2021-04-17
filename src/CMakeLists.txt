@@ -22,7 +22,20 @@
 #   https://opensource.org/licenses/MIT
 
 
-add_library(curlws SHARED curlws.c utils.c)
+add_library(curlws SHARED cb.c
+                          curlws.c
+                          data_block_sender.c
+                          frame.c
+                          frame_senders.c
+                          handlers.c
+                          header.c
+                          memory.c
+                          random.c
+                          receive.c
+                          send.c
+                          sha1_openssl.c
+                          utils.c
+                          ws.c)
 
 install (FILES
          ${CMAKE_CURRENT_SOURCE_DIR}/curlws.h

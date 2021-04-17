@@ -36,20 +36,13 @@
 extern "C" {
 #endif
 
-/* WTS: I wonder if we should be silent on the reason codes... */
-/* see https://tools.ietf.org/html/rfc6455#section-7.4.1 */
-#define CWS_CLOSE_REASON_NORMAL                 1000
-#define CWS_CLOSE_REASON_GOING_AWAY             1001
-#define CWS_CLOSE_REASON_PROTOCOL_ERROR         1002
-#define CWS_CLOSE_REASON_UNEXPECTED_DATA        1003
-#define CWS_CLOSE_REASON_NO_REASON              1005
-#define CWS_CLOSE_REASON_ABNORMALLY             1006
-#define CWS_CLOSE_REASON_INCONSISTENT_DATA      1007
-#define CWS_CLOSE_REASON_POLICY_VIOLATION       1008
-#define CWS_CLOSE_REASON_TOO_BIG                1009
-#define CWS_CLOSE_REASON_MISSING_EXTENSION      1010
-#define CWS_CLOSE_REASON_SERVER_ERROR           1011
-#define CWS_CLOSE_REASON_TLS_HANDSHAKE_ERROR    1015
+/* Used to define the location in the stream this frame is by (*on_stream) */
+#define CWS_CONT        0x00000100
+#define CWS_BINARY      0x00000200
+#define CWS_TEXT        0x00000400
+
+#define CWS_FIRST       0x01000000
+#define CWS_LAST        0x02000000
 
 /* All possible error codes from all the curlws functions. Future versions
  * may return other values.
@@ -59,11 +52,16 @@ extern "C" {
  */
 typedef enum {
     CWSE_OK = 0,
-    CWSE_OUT_OF_MEMORY,                 /* 1 */
-    CWSE_CLOSED_CONNECTION,             /* 2 */
-    CWSE_INVALID_CLOSE_REASON_CODE,     /* 3 */
-    CWSE_APP_DATA_LENGTH_TOO_LONG,      /* 4 */
-    CWSE_UNSUPPORTED_INTEGER_SIZE,      /* 5 */
+    CWSE_OUT_OF_MEMORY,                 /*  1 */
+    CWSE_CLOSED_CONNECTION,             /*  2 */
+    CWSE_INVALID_CLOSE_REASON_CODE,     /*  3 */
+    CWSE_APP_DATA_LENGTH_TOO_LONG,      /*  4 */
+    CWSE_UNSUPPORTED_INTEGER_SIZE,      /*  5 */
+    CWSE_INTERNAL_ERROR,                /*  6 */
+    CWSE_INVALID_OPCODE,                /*  7 */
+    CWSE_STREAM_CONTINUITY_ISSUE,       /*  8 */
+    CWSE_INVALID_OPTIONS,               /*  9 */
+    CWSE_INVALID_UTF8,                  /* 10 */
 
     CWSE_LAST /* never use! */
 } CWScode;
@@ -92,6 +90,7 @@ struct cws_config {
      *      Connection
      *      Expect
      *      Sec-WebSocket-Accept
+     *      Sec-WebSocket-Extensions
      *      Sec-WebSocket-Key
      *      Sec-WebSocket-Protocol
      *      Sec-WebSocket-Version
@@ -108,7 +107,7 @@ struct cws_config {
      * Follows these rules if not NULL:
      *      https://curl.se/libcurl/c/CURLOPT_INTERFACE.html
      */
-    const char *network_interface;
+    const char *interface;
 
     /* Set the verbosity level.  You hardly ever want this set in production
      * use, you will almost always want this when you debug/report problems.
@@ -144,63 +143,121 @@ struct cws_config {
      */
     int explicit_expect;
 
+    /* The largest amount of payload data sent as one websocket frame.
+     * If set to 0 the library default of 1024 will be used.
+     */
+    size_t max_payload_size;
+
     /**
      * Called upon connection, websocket_protocols contains what
      * server reported as 'Sec-WebSocket-Protocol:'.
      *
      * @note It is not validated if matches the proposed protocols.
+     *
+     * @param user      the user data specified in this configuration
+     * @param handle    handle for this websocket
+     * @param protocols the websocket protocols from the server
      */
-    void (*on_connect)(void *data, CWS *handle, const char *websocket_protocols);
+    void (*on_connect)(void *user, CWS *handle, const char *protocols);
 
     /**
      * Reports UTF-8 text messages.
      *
-     * @note it's guaranteed to be NULL (\0) terminated, but the UTF-8 is
-     * not validated. If it's invalid, consider closing the connection
-     * with #CWS_CLOSE_REASON_INCONSISTENT_DATA.
+     * @note The text field is guaranteed to be NULL (\0) terminated, but the
+     *       UTF-8 is not validated. If it's invalid, consider closing the
+     *       connection with code = 1007.
+     *
+     * @note If (*on_stream) is set, this callback behavior is disabled.
+     *
+     * @param user   the user data specified in this configuration
+     * @param handle handle for this websocket
+     * @param text   the text string being returned
+     * @param len    the length of the text string (include trailing '\0')
      */
-    void (*on_text)(void *data, CWS *handle, const char *text, size_t len);
+    void (*on_text)(void *user, CWS *handle, const char *text, size_t len);
 
     /**
      * Reports binary data.
+     *
+     * @note If (*on_stream) is set, this callback behavior is disabled.
+     *
+     * @param user   the user data specified in this configuration
+     * @param handle handle for this websocket
+     * @param buffer the data being returned
+     * @param len    the length of the data
      */
-    void (*on_binary)(void *data, CWS *handle, const void *mem, size_t len);
+    void (*on_binary)(void *user, CWS *handle, const void *buffer, size_t len);
+
+    /**
+     * Reports data in a steaming style of interface for the non-control
+     * messages.
+     *
+     * @note Control messages may be interleved with the data messages as this
+     *       is part of the websocket specification.
+     *       https://tools.ietf.org/html/rfc6455#section-5.4
+     *
+     * @note No control message data will be reported using this function call.
+     *
+     * @note The info parameter describes where this frame is in the stream,
+     *       and the type of the frame (Binary/Text).  For a stream with a
+     *       single frame, both CWS_FIRST and CWS_LAST will be set.  It is
+     *       reasonable for a frame to not be either the first or last
+     *       frame.
+     *
+     * @note If this callback is set to a non-NULL value, then the callbacks
+     *       (*on_text) and (*on_binary) are disabled.
+     *
+     * @param user   the user data specified in this configuration
+     * @param handle handle for this websocket
+     * @param info   information about the frame of date presented
+     *                  Either CWS_BINARY or CWS_TEXT will be set indicating
+     *                  the type of the payload.
+     *                  CWS_FIRST will be set if this is the first frame in a
+     *                  sequence.
+     *                  CWS_LAST will be set if this is the last frame in a
+     *                  sequence.
+     * @param buffer the data being returned
+     * @param len    the length of the data
+     */
+    void (*on_stream)(void *user, CWS *handle, int info, const void *buffer, size_t len);
 
     /**
      * Reports PING.
      *
-     * @note if provided you should reply with cws_pong(). If not
-     * provided, pong is sent with the same message payload.
+     * @note If provided you MUST reply with cws_pong(). The default behavior
+     *       automatically sends a PONG message.
+     *
+     * @param user   the user data specified in this configuration
+     * @param handle handle for this websocket
+     * @param buffer the data provided in the ping message
+     * @param len    the length of the data
      */
-    void (*on_ping)(void *data, CWS *handle, const char *reason, size_t len);
+    void (*on_ping)(void *user, CWS *handle, const void *buffer, size_t len);
 
     /**
      * Reports PONG.
+     *
+     * @param user   the user data specified in this configuration
+     * @param handle handle for this websocket
+     * @param buffer the data provided in the pong message
+     * @param len    the length of the data
      */
-    void (*on_pong)(void *data, CWS *handle, const char *reason, size_t len);
+    void (*on_pong)(void *user, CWS *handle, const void *buffer, size_t len);
 
     /**
      * Reports server closed the connection with the given reason.
      *
-     * Clients should not transmit any more data after the server is
-     * closed, just call cws_free().
-     */
-    void (*on_close)(void *data, CWS *handle, int code, const char *reason, size_t len);
-
-    /**
-     * Provides a way to specifiy a custom random generator instead of the
-     * default provided one.
+     * @note Clients should not transmit any more data after the server is
+     *       closed.
      *
-     * Fill the 'buffer' of length 'len' bytes with random data & return.
+     * @param user   the user data specified in this configuration
+     * @param handle handle for this websocket
+     * @param code   the websocket close code.  See for details:
+     *               https://tools.ietf.org/html/rfc6455#section-7.4.1
+     * @param reason the optional reason text (could be NULL)
+     * @param len    the length of the optional reason (could be 0)
      */
-    void (*get_random)(void *data, CWS *handle, void *buffer, size_t len);
-
-    /**
-     * Provides a way to specifiy a custom debug handler.
-     *
-     * WTS TODO XXX.. usure if I need or want this.
-     */
-    void (*debug)(void *data, CWS *handle, const char *format, ...);
+    void (*on_close)(void *user, CWS *handle, int code, const char *reason, size_t len);
 
     /**
      * ----------------------------------------------------------------------
@@ -232,11 +289,16 @@ struct cws_config {
      * specified via this interface!  You have been warned!
      * ----------------------------------------------------------------------
      */
-    void (*configure)(void *data, CWS *handle, CURL *easy);
+    void (*configure)(void *user, CWS *handle, CURL *easy);
 
     /* User provided data that is passed into the callbacks via the data arg. */
-    void *data;
+    void *user;
 };
+
+
+/*----------------------------------------------------------------------------*/
+/*                               Lifecycle APIs                               */
+/*----------------------------------------------------------------------------*/
 
 
 /**
@@ -265,118 +327,6 @@ CWS *cws_create(const struct cws_config *config);
 
 
 /**
- * Frees a handle and all resources created with cws_create()
- *
- * @param handle the websocket handle to destroy
- */
-void cws_destroy(CWS *handle);
-
-
-/**
- * Send a binary (opcode 0x2) message of a given size.
- *
- * @param handle the websocket handle to interact with
- * @param data   the buffer to send
- * @param len    the number of bytes in the buffer
- *
- * @returnval CWSE_OK
- * @returnval CWSE_OUT_OF_MEMORY
- * @returnval CWSE_CLOSED_CONNECTION
- */
-CWScode cws_send_binary(CWS *handle, const void *data, size_t len);
-
-
-/**
- * Send a text (opcode 0x1) message of a given size.
- *
- * @note If the len is specified as something other than SIZE_MAX then no
- *       terminating '\0' is needed.  If SIZE_MAX is used then strlen() is
- *       used to determine the string length and a terminating '\0' is required.
- *
- * @param handle the websocket handle to interact with
- * @param s      the text (UTF-8) to send.  If len = SIZE_MAX then strlen(s) is
- *               used to determine the length of the string.
- * @param len    the number of bytes in the buffer
- *
- * @returnval CWSE_OK
- * @returnval CWSE_OUT_OF_MEMORY
- * @returnval CWSE_CLOSED_CONNECTION
- */
-CWScode cws_send_text(CWS *handle, const char *s, size_t len);
-
-
-/**
- * Send a PING (opcode 0x9) frame with an optional reason as payload.
- *
- * @note The application data is limited to 125 bytes or less.
- *       See https://tools.ietf.org/html/rfc6455#section-5.5 for details.
- *
- * @param handle the websocket handle to interact with
- * @param data   Application data to send back.  Limited to 125 or less.
- * @param len    the length of data in bytes
- *
- * @returnval CWSE_OK
- * @returnval CWSE_OUT_OF_MEMORY
- * @returnval CWSE_CLOSED_CONNECTION
- * @returnval CWSE_APP_DATA_LENGTH_TOO_LONG
- */
-CWScode cws_ping(CWS *handle, const void *data, size_t len);
-
-
-/**
- * Send a PONG (opcode 0xA) frame with an optional reason as payload.
- *
- * @note A pong is sent automatically if no "on_ping" callback is defined.
- *       If one is defined you must send pong manually.
- *
- * @note The response for a PING frame MUST contain identical application data.
- *       See https://tools.ietf.org/html/rfc6455#section-5.5.2 for details.
- *
- * @note The application data is limited to 125 bytes or less.
- *       See https://tools.ietf.org/html/rfc6455#section-5.5 for details.
- *
- * @param handle the websocket handle to interact with
- * @param data   Application data to send back.  Limited to 125 or less.
- * @param len    the length of data in bytes
- *
- * @returnval CWSE_OK
- * @returnval CWSE_OUT_OF_MEMORY
- * @returnval CWSE_CLOSED_CONNECTION
- * @returnval CWSE_APP_DATA_LENGTH_TOO_LONG
- */
-CWScode cws_pong(CWS *handle, const void *data, size_t len);
-
-
-/**
- * Send a CLOSE (opcode 0x8) frame with an optional reason as payload.
- *
- * @note If code == 0 && reason == NULL && len = 0 then no code is sent.
- *       Otherwise the code must be valid and is sent.
- *
- * @note The application data is limited to 125 bytes or less.  The CLOSE
- *       opcode requires that the first 2 bytes of application data be the
- *       close reason code.  This means the reason string is limited to 123
- *       bytes.
- *       See https://tools.ietf.org/html/rfc6455#section-5.5 for details.
- *       See https://tools.ietf.org/html/rfc6455#section-5.5.1 for details.
- *
- * @param handle the websocket handle to interact with
- * @param code   the reason code why it was closed, see the well-known numbers.
- * @param reason #NULL or some UTF-8 string null ('\0') terminated.
- * @param len    the length of reason in bytes. If SIZE_MAX is used,
- *               strlen() is used on reason (if not NULL).  Limited to 123 or
- *               less.
- *
- * @returnval CWSE_OK
- * @returnval CWSE_OUT_OF_MEMORY
- * @returnval CWSE_CLOSED_CONNECTION
- * @returnval CWSE_INVALID_CLOSE_REASON_CODE
- * @returnval CWSE_APP_DATA_LENGTH_TOO_LONG
- */
-CWScode cws_close(CWS *handle, int code, const char *reason, size_t len);
-
-
-/**
  * Provides a way to add the WebSocket easy handle to a multi session without
  * exposing the easy handle.
  *
@@ -398,6 +348,200 @@ CURLMcode cws_multi_add_handle(CWS *cws_handle, CURLM *multi_handle);
  * @return the response from libcurl
  */
 CURLMcode cws_multi_remove_handle(CWS *cws_handle, CURLM *multi_handle);
+
+
+/**
+ * Frees a handle and all resources created with cws_create()
+ *
+ * @param handle the websocket handle to destroy
+ */
+void cws_destroy(CWS *handle);
+
+
+/*----------------------------------------------------------------------------*/
+/*                                 Control APIs                               */
+/*----------------------------------------------------------------------------*/
+
+
+/**
+ * Send a PING (opcode 0x9) frame with an optional reason as payload.
+ *
+ * @note The application data is limited to 125 bytes or less.
+ *       See https://tools.ietf.org/html/rfc6455#section-5.5 for details.
+ *
+ * @param handle the websocket handle to interact with
+ * @param data   Application data to send back.  Limited to 125 or less.
+ * @param len    the length of data in bytes
+ *
+ * @retval CWSE_OK
+ * @retval CWSE_OUT_OF_MEMORY
+ * @retval CWSE_CLOSED_CONNECTION
+ * @retval CWSE_APP_DATA_LENGTH_TOO_LONG
+ */
+CWScode cws_ping(CWS *handle, const void *data, size_t len);
+
+
+/**
+ * Send a PONG (opcode 0xA) frame with an optional reason as payload.
+ *
+ * @note A pong is sent automatically if no "on_ping" callback is defined.
+ *       If one is defined you must send pong manually.
+ *
+ * @note The response for a PING frame MUST contain identical application data.
+ *       See https://tools.ietf.org/html/rfc6455#section-5.5.2 for details.
+ *
+ * @note The application data is limited to 125 bytes or less.
+ *       See https://tools.ietf.org/html/rfc6455#section-5.5 for details.
+ *
+ * @param handle the websocket handle to interact with
+ * @param data   Application data to send back.  Limited to 125 or less.
+ * @param len    the length of data in bytes
+ *
+ * @retval CWSE_OK
+ * @retval CWSE_OUT_OF_MEMORY
+ * @retval CWSE_CLOSED_CONNECTION
+ * @retval CWSE_APP_DATA_LENGTH_TOO_LONG
+ */
+CWScode cws_pong(CWS *handle, const void *data, size_t len);
+
+
+/**
+ * Send a CLOSE (opcode 0x8) frame with an optional reason as payload.
+ *
+ * @note If code == 0 && reason == NULL && len = 0 then no code is sent.
+ *       Otherwise the code must be valid and is sent.
+ *
+ * @note The application data is limited to 125 bytes or less.  The CLOSE
+ *       opcode requires that the first 2 bytes of application data be the
+ *       close reason code.  This means the reason string is limited to 123
+ *       bytes.
+ *       See https://tools.ietf.org/html/rfc6455#section-5.5 for details.
+ *       See https://tools.ietf.org/html/rfc6455#section-5.5.1 for details.
+ *
+ * @note This call appends the close frame to whatever existing transactions
+ *       are queued and closes the connection after the close frame is sent.
+ *
+ * @param handle the websocket handle to interact with
+ * @param code   the reason code why it was closed, see the well-known numbers
+ *               at: https://tools.ietf.org/html/rfc6455#section-7.4.1
+ * @param reason #NULL or some UTF-8 string null ('\0') terminated.
+ * @param len    the length of reason in bytes. If SIZE_MAX is used,
+ *               strlen() is used on reason (if not NULL).  Limited to 123 or
+ *               less.
+ *
+ * @retval CWSE_OK
+ * @retval CWSE_OUT_OF_MEMORY
+ * @retval CWSE_CLOSED_CONNECTION
+ * @retval CWSE_INVALID_CLOSE_REASON_CODE
+ * @retval CWSE_APP_DATA_LENGTH_TOO_LONG
+ */
+CWScode cws_close(CWS *handle, int code, const char *reason, size_t len);
+
+
+/**
+ * Similar to cws_close() except that all queued transactions are cancelled.
+ *
+ * @param handle the websocket handle to interact with
+ * @param code   the reason code why it was closed, see the well-known numbers
+ *               at: https://tools.ietf.org/html/rfc6455#section-7.4.1
+ * @param reason #NULL or some UTF-8 string null ('\0') terminated.
+ * @param len    the length of reason in bytes. If SIZE_MAX is used,
+ *               strlen() is used on reason (if not NULL).  Limited to 123 or
+ *               less.
+ *
+ * @retval CWSE_OK
+ * @retval CWSE_OUT_OF_MEMORY
+ * @retval CWSE_CLOSED_CONNECTION
+ * @retval CWSE_INVALID_CLOSE_REASON_CODE
+ * @retval CWSE_APP_DATA_LENGTH_TOO_LONG
+ */
+CWScode cws_close_urgent(CWS *handle, int code, const char *reason, size_t len);
+
+
+/*----------------------------------------------------------------------------*/
+/*                              Block Based APIs                              */
+/*----------------------------------------------------------------------------*/
+
+
+/**
+ * Send a binary (opcode 0x2) message of a given size.
+ *
+ * @param handle the websocket handle to interact with
+ * @param data   the buffer to send
+ * @param len    the number of bytes in the buffer
+ *
+ * @retval CWSE_OK
+ * @retval CWSE_OUT_OF_MEMORY
+ * @retval CWSE_CLOSED_CONNECTION
+ */
+CWScode cws_send_blk_binary(CWS *handle, const void *data, size_t len);
+
+
+/**
+ * Send a text (opcode 0x1) message of a given size.
+ *
+ * @note If the len is specified as something other than SIZE_MAX then no
+ *       terminating '\0' is needed.  If SIZE_MAX is used then strlen() is
+ *       used to determine the string length and a terminating '\0' is required.
+ *
+ * @param handle the websocket handle to interact with
+ * @param s      the text (UTF-8) to send.  If len = SIZE_MAX then strlen(s) is
+ *               used to determine the length of the string.
+ * @param len    the number of bytes in the buffer
+ *
+ * @retval CWSE_OK
+ * @retval CWSE_OUT_OF_MEMORY
+ * @retval CWSE_CLOSED_CONNECTION
+ */
+CWScode cws_send_blk_text(CWS *handle, const char *s, size_t len);
+
+
+/*----------------------------------------------------------------------------*/
+/*                              Stream Based APIs                             */
+/*----------------------------------------------------------------------------*/
+
+
+/**
+ * Send a binary (opcode 0x2) message of a given size.
+ *
+ * 
+ * @param handle the websocket handle to interact with
+ * @param info   information about the frame of date presented.  The type
+ *               information is ignored.  Set the CWS_FIRST and/or CWS_LAST to
+ *               indicate if the frame is the first or last in a sequence.
+ * @param data   the buffer to send
+ * @param len    the number of bytes in the buffer
+ *
+ * @retval CWSE_OK
+ * @retval CWSE_OUT_OF_MEMORY
+ * @retval CWSE_CLOSED_CONNECTION
+ * @retval CWSE_STREAM_CONTINUITY_ISSUE
+ */
+CWScode cws_send_strm_binary(CWS *handle, int info, const void *data, size_t len);
+
+
+/**
+ * Send a text (opcode 0x1) message of a given size.
+ *
+ * @note If the len is specified as something other than SIZE_MAX then no
+ *       terminating '\0' is needed.  If SIZE_MAX is used then strlen() is
+ *       used to determine the string length and a terminating '\0' is required.
+ *
+ * @param handle the websocket handle to interact with
+ * @param info   information about the frame of date presented.  The type
+ *               information is ignored.  Set the CWS_FIRST and/or CWS_LAST to
+ *               indicate if the frame is the first or last in a sequence.
+ * @param s      the text (UTF-8) to send.  If len = SIZE_MAX then strlen(s) is
+ *               used to determine the length of the string.
+ * @param len    the number of bytes in the buffer
+ *
+ * @retval CWSE_OK
+ * @retval CWSE_OUT_OF_MEMORY
+ * @retval CWSE_CLOSED_CONNECTION
+ * @retval CWSE_STREAM_CONTINUITY_ISSUE
+ */
+CWScode cws_send_strm_text(CWS *handle, int info, const char *s, size_t len);
+
 
 #ifdef __cplusplus
 }
