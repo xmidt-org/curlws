@@ -50,6 +50,8 @@ jobs:
           build-wrapper-linux-x86/build-wrapper-linux-x86-64 --out-dir bw-output make all test
 
       - name: Check Autobahn Tests
+        working-directory: build
+        run: |
           ./tests/autobahn_report ws://localhost:9001
           ../tests/check_autobahn_results.sh -f ../reports/clients/index.json
 
