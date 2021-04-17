@@ -320,7 +320,7 @@ target_link_libraries (test_autobahn_parallel ${OPENSSL_LIBRARIES} ${CURL_LIBRAR
 # ---------------------------------------------------------------------------- #
 
 # ---------------------------------------------------------------------------- #
-add_test(NAME Test_Autobahn_report  COMMAND ./autobahn_report ws://localhost:9001)
+#add_test(NAME Test_Autobahn_report  COMMAND ./autobahn_report ws://localhost:9001)
 
 add_executable(autobahn_report autobahn_report.c
                                       ../src/cb.c
