@@ -281,45 +281,47 @@ static ssize_t _process_text_stream(CWS *priv, const char *buf, size_t len,
         r->utf8.needed -= len;
 
         if (0 != r->utf8.needed) {
+            /* Fail as soon as we find a UTF8 sequence that isn't valid vs.
+             * waiting for the entire character.  This makes us autobahn
+             * compliant. */
             if (false == utf8_maybe_valid(r->utf8.buf, r->utf8.used)) {
                 cws_close(priv, 1007, NULL, 0);
                 return -1;
             }
 
-            len_to_send = len;
+            /* We used the bytes so to simplify things, deduct them here and
+             * declare we are sending 0 bytes. */
+            r->frame->payload_len -= len;
+
             *buf_to_send = NULL;
+            len_to_send = 0;
         } else {
             ssize_t rv;
 
-            /* We have extra bytes from the previous frame, so we should add
-             * them to this frame to make sure we don't roll over backwards. */
-            r->frame->payload_len += r->utf8.used - len;
-
-            len_to_send = r->utf8.used;
+            /* Consume the utf8 buffer as well as the characters that came in
+             * this call and get ready for the next block of data. */
             *buf_to_send = r->utf8.buf;
+            len_to_send = r->utf8.used;
+            r->utf8.used = 0;
+            r->frame->payload_len -= len;
 
             rv = utf8_validate(*buf_to_send, len_to_send);
             if (rv < 0) {
                 cws_close(priv, 1007, NULL, 0);
                 return -1;
             }
-
-            /* We can reset these because the buffer is ready to be sent
-             * and do not depend on these values anymore. */
-            r->utf8.used = 0;
-            r->utf8.needed = 0;
         }
     } else {
         ssize_t rv;
         size_t left;
 
         rv = utf8_validate(buf, len);
-        left = len - (size_t) rv;
-
         if (rv < 0) {
             cws_close(priv, 1007, NULL, 0);
             return -1;
         }
+
+        left = len - (size_t) rv;
 
         if (0 < left) {
             if ((r->frame->fin) && (r->frame->payload_len <= len)) {
@@ -335,6 +337,7 @@ static ssize_t _process_text_stream(CWS *priv, const char *buf, size_t len,
             r->frame->payload_len -= left;
             len_to_send = len - left;
         }
+        r->frame->payload_len -= len_to_send;
     }
 
     return len_to_send;
@@ -408,9 +411,9 @@ static ssize_t _process_data_frame(CWS *priv, const char **buf, size_t *len)
             return rv;
         }
         len_to_send = (size_t) rv;
+    } else {
+        r->frame->payload_len -= len_to_send;
     }
-
-    r->frame->payload_len -= len_to_send;
 
     _send_data_frame(priv, buf_to_send, len_to_send);
 

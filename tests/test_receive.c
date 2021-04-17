@@ -358,15 +358,16 @@ void test_simple()
               "\x89\x04ping"            /* PING with payload 'ping' */
               "\x8a\x04pong"            /* PONG with payload 'pong' */
               "\x80\x03ᚅ"               /* Final CONT with 3 bytes of text */
+              "\x81\x04𒀺"               /* TEXT with 4 bytes of UTF8 text */
               "\x82\x05-_/-|"           /* BIN as a single packet */
               "\x82\x00"                /* BIN as a single packet */
               "\x81\x02hi"              /* TEXT as a single packet */
               "\x82\x05-_/-|"           /* BIN as a single packet */
               "\x88\x06\x03\xe8|bye"    /* Close as a single packet */
               "\x01\x07ignored",        /* Close as a single packet */
-        .blocks = (int[11]){ 2, 7, 6, 6, 5, 7, 2, 4, 7, 8, 9 },
-        .rv = (size_t[11]){ 2, 7, 6, 6, 5, 7, 2, 4, 7, 8, 9 },
-        .block_count = 11,
+        .blocks = (int[12]){ 2, 7, 6, 6, 5, 6, 7, 2, 4, 7, 8, 9 },
+        .rv = (size_t[12]){ 2, 7, 6, 6, 5, 6, 7, 2, 4, 7, 8, 9 },
+        .block_count = 12,
 
         .ping = (struct mock_ping[1]) {
             {
@@ -384,56 +385,15 @@ void test_simple()
                 .more = 0,
             },
         },
-        .stream = (struct mock_stream[7]) {
-            {
-                .info = CWS_TEXT | CWS_FIRST,
-                .len = 0,
-                .data = NULL,
-                .seen = 0,
-                .more = 1,
-            },
-            {
-                .info = CWS_CONT,
-                .len = 5,
-                .data = "hello",
-                .seen = 0,
-                .more = 1,
-            },
-            {
-                .info = CWS_CONT | CWS_LAST,
-                .len = 3,
-                .data = "ᚅ",
-                .seen = 0,
-                .more = 1,
-            },
-            {
-                .info = CWS_BINARY | CWS_FIRST | CWS_LAST,
-                .len = 5,
-                .data = "-_/-|",
-                .seen = 0,
-                .more = 1,
-            },
-            {
-                .info = CWS_BINARY | CWS_FIRST | CWS_LAST,
-                .len = 0,
-                .data = 0,
-                .seen = 0,
-                .more = 1,
-            },
-            {
-                .info = CWS_TEXT | CWS_FIRST | CWS_LAST,
-                .len = 2,
-                .data = "hi",
-                .seen = 0,
-                .more = 1,
-            },
-            {
-                .info = CWS_BINARY | CWS_FIRST | CWS_LAST,
-                .len = 5,
-                .data = "-_/-|",
-                .seen = 0,
-                .more = 0,
-            },
+        .stream = (struct mock_stream[8]) {
+            { .info = CWS_TEXT   | CWS_FIRST,            .len = 0, .data = NULL,    .seen = 0, .more = 1, },
+            { .info = CWS_CONT,                          .len = 5, .data = "hello", .seen = 0, .more = 1, },
+            { .info = CWS_CONT               | CWS_LAST, .len = 3, .data = "ᚅ",     .seen = 0, .more = 1, },
+            { .info = CWS_TEXT   | CWS_FIRST | CWS_LAST, .len = 4, .data = "𒀺",     .seen = 0, .more = 1, },
+            { .info = CWS_BINARY | CWS_FIRST | CWS_LAST, .len = 5, .data = "-_/-|", .seen = 0, .more = 1, },
+            { .info = CWS_BINARY | CWS_FIRST | CWS_LAST, .len = 0, .data = 0,       .seen = 0, .more = 1, },
+            { .info = CWS_TEXT   | CWS_FIRST | CWS_LAST, .len = 2, .data = "hi",    .seen = 0, .more = 1, },
+            { .info = CWS_BINARY | CWS_FIRST | CWS_LAST, .len = 5, .data = "-_/-|", .seen = 0, .more = 0, },
         },
         .close = NULL,
     };
@@ -450,21 +410,22 @@ void test_more_complex()
               "\x89\x04ping"            /* PING with payload 'ping' */
               "\x8a\x04pong"            /* PONG with payload 'pong' */
               "\x80\x03ᚅ"               /* Final CONT with 3 bytes of UTF8 text */
+              "\x81\x04𒀺"               /* TEXT with 4 bytes of UTF8 text */
               "\x82\x05-_/-|"           /* BIN as a single packet */
               "\x82\x00"                /* BIN as a single packet */
               "\x81\x02hi"              /* TEXT as a single packet */
               "\x82\x05-_/-|"           /* BIN as a single packet */
               "\x88\x06\x03\xe8|bye"    /* Close as a single packet */
               "\x01\x07ignored",        /* Close as a single packet */
-        .blocks = (int[63]){ 1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,
+        .blocks = (int[69]){ 1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,
                              1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,
                              1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,
-                             1,1,1 },
-        .rv = (size_t[63]){ 1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,
+                             1,1,1,1,1,1,1,1,1 },
+        .rv = (size_t[69]){ 1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,
                             1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,
                             1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,
-                            1,1,1 },
-        .block_count = 63,
+                            1,1,1,1,1,1,1,1,1 },
+        .block_count = 69,
 
         .ping = (struct mock_ping[1]) {
             { .data = "ping", .len = 4, .seen = 0, .more = 0, },
@@ -472,7 +433,7 @@ void test_more_complex()
         .pong = (struct mock_pong[1]) {
             { .data = "pong", .len = 4, .seen = 0, .more = 0, },
         },
-        .stream = (struct mock_stream[23]) {
+        .stream = (struct mock_stream[25]) {
             { .info = CWS_TEXT   | CWS_FIRST,            .len = 0, .data = NULL, .seen = 0, .more = 1, },
             { .info = CWS_CONT,                          .len = 1, .data = "h",  .seen = 0, .more = 1, },
             { .info = CWS_CONT,                          .len = 1, .data = "e",  .seen = 0, .more = 1, },
@@ -480,6 +441,8 @@ void test_more_complex()
             { .info = CWS_CONT,                          .len = 1, .data = "l",  .seen = 0, .more = 1, },
             { .info = CWS_CONT,                          .len = 1, .data = "o",  .seen = 0, .more = 1, },
             { .info = CWS_CONT               | CWS_LAST, .len = 3, .data = "ᚅ",  .seen = 0, .more = 1, },
+            { .info = CWS_TEXT   | CWS_FIRST,            .len = 0, .data = NULL, .seen = 0, .more = 1, },
+            { .info = CWS_CONT               | CWS_LAST, .len = 4, .data = "𒀺",  .seen = 0, .more = 1, },
             { .info = CWS_BINARY | CWS_FIRST,            .len = 0, .data = NULL, .seen = 0, .more = 1, },
             { .info = CWS_CONT,                          .len = 1, .data = "-",  .seen = 0, .more = 1, },
             { .info = CWS_CONT,                          .len = 1, .data = "_",  .seen = 0, .more = 1, },
