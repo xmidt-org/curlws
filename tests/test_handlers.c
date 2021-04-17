@@ -57,13 +57,14 @@ void test_populate_callbacks()
     memset(&src, 0, sizeof(src));
 
     populate_callbacks(&priv.cb, &src);
-    CU_ASSERT(priv.cb.on_connect_fn == _default_on_connect);
-    CU_ASSERT(priv.cb.on_text_fn    == _default_on_text);
-    CU_ASSERT(priv.cb.on_binary_fn  == _default_on_binary);
+    CU_ASSERT(priv.cb.on_connect_fn == NULL);
+    CU_ASSERT(priv.cb.on_text_fn    == NULL);
+    CU_ASSERT(priv.cb.on_binary_fn  == NULL);
+    CU_ASSERT(priv.cb.on_stream_fn  == _default_on_stream);
     CU_ASSERT(priv.cb.on_ping_fn    == _default_on_ping);
-    CU_ASSERT(priv.cb.on_pong_fn    == _default_on_pong);
-    CU_ASSERT(priv.cb.on_close_fn   == _default_on_close);
-    CU_ASSERT(priv.cb.configure_fn  == _default_configure);
+    CU_ASSERT(priv.cb.on_pong_fn    == NULL);
+    CU_ASSERT(priv.cb.on_close_fn   == NULL);
+    CU_ASSERT(priv.cb.configure_fn  == NULL);
 
     populate_callbacks(&priv.cb, &src);
 
@@ -99,18 +100,30 @@ void test_defaults_dont_crash()
 
     populate_callbacks(&priv.cb, NULL);
 
-    (priv.cb.on_connect_fn)(NULL, &priv, NULL);
-    (priv.cb.on_text_fn)(NULL, &priv, NULL, 0);
-    (priv.cb.on_binary_fn)(NULL, &priv, NULL, 0);
-    (priv.cb.on_stream_fn)(NULL, &priv, 0, NULL, 0);
-    (priv.cb.on_ping_fn)(NULL, &priv, NULL, 0);
-    (priv.cb.on_pong_fn)(NULL, &priv, NULL, 0);
-    (priv.cb.on_close_fn)(NULL, &priv, 0, NULL, 0);
-    (priv.cb.configure_fn)(NULL, &priv, NULL);
+    cb_on_connect(&priv, NULL);
+    cb_on_text(&priv, NULL, 0);
+    cb_on_binary(&priv, NULL, 0);
+    cb_on_stream(&priv, 0, NULL, 0);
+    cb_on_ping(&priv, NULL, 0);
+    cb_on_pong(&priv, NULL, 0);
+    cb_on_close(&priv, 0, NULL, 0);
+    cb_on_close(&priv, 0, "include a string", SIZE_MAX);
+    cb_on_close(&priv, 0, "include a string", 0);
 
     /* Check the verbose debug callback */
-    src.verbose = 3;
+    priv.cfg.verbose = 3;
     populate_callbacks(&priv.cb, &src);
+
+    /* Make sure nothing crashes if we're in verbose mode. */
+    cb_on_connect(&priv, NULL);
+    cb_on_text(&priv, NULL, 0);
+    cb_on_binary(&priv, NULL, 0);
+    cb_on_stream(&priv, 0, NULL, 0);
+    cb_on_ping(&priv, NULL, 0);
+    cb_on_pong(&priv, NULL, 0);
+    cb_on_close(&priv, 0, NULL, 0);
+    cb_on_close(&priv, 0, "include a string", SIZE_MAX);
+    cb_on_close(&priv, 0, "include a string", 0);
 }
 
 

@@ -51,28 +51,16 @@
 /*----------------------------------------------------------------------------*/
 /*                             Function Prototypes                            */
 /*----------------------------------------------------------------------------*/
-static void _default_on_connect(void*, CWS*, const char*);
-static void _default_on_text(void*, CWS*, const char*, size_t);
-static void _default_on_binary(void*, CWS*, const void*, size_t);
 static void _default_on_stream(void*, CWS*, int, const void*, size_t);
 static void _default_on_ping(void*, CWS*, const void*, size_t);
-static void _default_on_pong(void*, CWS*, const void*, size_t);
-static void _default_on_close(void*, CWS*, int, const char*, size_t);
-static void _default_configure(void*, CWS*, CURL*);
 
 /*----------------------------------------------------------------------------*/
 /*                             External Functions                             */
 /*----------------------------------------------------------------------------*/
 void populate_callbacks(struct callbacks *dest, const struct cws_config *src)
 {
-    dest->on_connect_fn = _default_on_connect;
-    dest->on_text_fn    = _default_on_text;
-    dest->on_binary_fn  = _default_on_binary;
     dest->on_stream_fn  = _default_on_stream;
     dest->on_ping_fn    = _default_on_ping;
-    dest->on_pong_fn    = _default_on_pong;
-    dest->on_close_fn   = _default_on_close;
-    dest->configure_fn  = _default_configure;
 
     if (NULL == src) {
         return;
@@ -107,32 +95,6 @@ void populate_callbacks(struct callbacks *dest, const struct cws_config *src)
 
 
 /*----------------------------------------------------------------------------*/
-/*                             Internal functions                             */
-/*----------------------------------------------------------------------------*/
-static void _default_on_connect(void *user, CWS *priv, const char *websocket_protocols)
-{
-    IGNORE_UNUSED(user);
-    IGNORE_UNUSED(priv);
-    IGNORE_UNUSED(websocket_protocols);
-}
-
-
-static void _default_on_text(void *user, CWS *priv, const char *text, size_t len)
-{
-    IGNORE_UNUSED(user);
-    IGNORE_UNUSED(priv);
-    IGNORE_UNUSED(text);
-    IGNORE_UNUSED(len);
-}
-
-
-static void _default_on_binary(void *user, CWS *priv, const void *buffer, size_t len)
-{
-    IGNORE_UNUSED(user);
-    IGNORE_UNUSED(priv);
-    IGNORE_UNUSED(buffer);
-    IGNORE_UNUSED(len);
-}
 
 static void _default_on_stream(void *user, CWS *priv, int info, const void *buffer, size_t len)
 {
@@ -184,31 +146,4 @@ static void _default_on_ping(void *user, CWS *priv, const void *buffer, size_t l
     IGNORE_UNUSED(user);
 
     cws_pong(priv, buffer, len);
-}
-
-
-static void _default_on_pong(void *user, CWS *priv, const void *buffer, size_t len)
-{
-    IGNORE_UNUSED(user);
-    IGNORE_UNUSED(priv);
-    IGNORE_UNUSED(buffer);
-    IGNORE_UNUSED(len);
-}
-
-
-static void _default_on_close(void *user, CWS *priv, int status, const char *reason, size_t len)
-{
-    IGNORE_UNUSED(user);
-    IGNORE_UNUSED(priv);
-    IGNORE_UNUSED(status);
-    IGNORE_UNUSED(reason);
-    IGNORE_UNUSED(len);
-}
-
-
-static void _default_configure(void *user, CWS *priv, CURL *easy)
-{
-    IGNORE_UNUSED(user);
-    IGNORE_UNUSED(priv);
-    IGNORE_UNUSED(easy);
 }

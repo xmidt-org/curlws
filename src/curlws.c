@@ -143,7 +143,9 @@ CWS *cws_create(const struct cws_config *config)
         curl_easy_setopt(priv->easy, CURLOPT_INTERFACE, config->interface);
     }
 
-    (*priv->cb.configure_fn)(priv->cfg.user, priv, priv->easy);
+    if (priv->cb.configure_fn) {
+        (*priv->cb.configure_fn)(priv->cfg.user, priv, priv->easy);
+    }
 
     curl_easy_setopt(priv->easy, CURLOPT_PRIVATE, priv);
 
