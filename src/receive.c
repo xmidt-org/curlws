@@ -289,10 +289,6 @@ static ssize_t _process_text_stream(CWS *priv, const char *buf, size_t len,
                 return -1;
             }
 
-            /* We used the bytes so to simplify things, deduct them here and
-             * declare we are sending 0 bytes. */
-            r->frame->payload_len -= len;
-
             *buf_to_send = NULL;
             len_to_send = 0;
         } else {
@@ -303,7 +299,6 @@ static ssize_t _process_text_stream(CWS *priv, const char *buf, size_t len,
             *buf_to_send = r->utf8.buf;
             len_to_send = r->utf8.used;
             r->utf8.used = 0;
-            r->frame->payload_len -= len;
 
             rv = utf8_validate(*buf_to_send, len_to_send);
             if (rv < 0) {
@@ -315,6 +310,9 @@ static ssize_t _process_text_stream(CWS *priv, const char *buf, size_t len,
         ssize_t rv;
         size_t left;
 
+        /* This code block handles the cases where there are no outstanding UTF8
+         * bytes needed to complete a character at the start.  There could be
+         * incomplete UTF8 characters at the end. */
         rv = utf8_validate(buf, len);
         if (rv < 0) {
             cws_close(priv, 1007, NULL, 0);
@@ -323,7 +321,11 @@ static ssize_t _process_text_stream(CWS *priv, const char *buf, size_t len,
 
         left = len - (size_t) rv;
 
+        /* Below moves any extra bytes we have that are probably incomplete UTF8
+         * characters into the buffer set aside to deal with that. */
         if (0 < left) {
+            /* If this is the last buffer of the last frame and we have extra
+             * characters, then we have a problem and must close error out. */
             if ((r->frame->fin) && (r->frame->payload_len <= len)) {
                 cws_close(priv, 1007, NULL, 0);
                 return -1;
@@ -331,13 +333,14 @@ static ssize_t _process_text_stream(CWS *priv, const char *buf, size_t len,
 
             memcpy(r->utf8.buf, &buf[len - left], left);
             r->utf8.used = left;
+
+            /* The first byte of a UTF8 character is enough to determine the
+             * length needed for the complete character. */
             r->utf8.needed = utf8_get_size(r->utf8.buf[0]);
             r->utf8.needed -= left;
 
-            r->frame->payload_len -= left;
             len_to_send = len - left;
         }
-        r->frame->payload_len -= len_to_send;
     }
 
     return len_to_send;
@@ -411,9 +414,8 @@ static ssize_t _process_data_frame(CWS *priv, const char **buf, size_t *len)
             return rv;
         }
         len_to_send = (size_t) rv;
-    } else {
-        r->frame->payload_len -= len_to_send;
     }
+    r->frame->payload_len -= min;
 
     _send_data_frame(priv, buf_to_send, len_to_send);
 
