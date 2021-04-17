@@ -30,9 +30,40 @@ By participating, you agree to this Code.
 
 Add details here.
 
-## Install
+## Building and Testing
 
-Add details here.
+### Start the Autobahn test server (Only needed to test)
+
+This requires docker.
+
+```
+./tests/autobahn.sh
+```
+
+### Build the code
+
+```
+mkdir build
+cd build
+cmake ..
+make
+```
+
+### Testing
+
+To `validate` you need `jq` installed.
+To produce coverage results you need `lcov` installed.
+
+```
+make test validate coverage
+```
+
+### Look at the results
+
+The local autobahn server reports results here: http://localhost:8080
+
+The lcov local code/branch coverage results can be found at `build/index.html`
+
 
 ## Contributing
 
