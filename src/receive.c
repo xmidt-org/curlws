@@ -268,16 +268,88 @@ static ssize_t _process_control_frame(CWS *priv, const char **buf, size_t *len)
     return 0;
 }
 
+static ssize_t _process_text_stream(CWS *priv, const char *buf, size_t len,
+                                    const char **buf_to_send)
+{
+    ssize_t len_to_send = len;
+    struct recv *r = &priv->recv;
+
+    if (0 < r->utf8.needed) {
+        len = _min_size_t(r->utf8.needed, len);
+        memcpy(&r->utf8.buf[r->utf8.used], buf, len);
+        r->utf8.used += len;
+        r->utf8.needed -= len;
+
+        if (0 != r->utf8.needed) {
+            if (false == utf8_maybe_valid(r->utf8.buf, r->utf8.used)) {
+                cws_close(priv, 1007, NULL, 0);
+                return -1;
+            }
+
+            len_to_send = len;
+            *buf_to_send = NULL;
+        } else {
+            ssize_t rv;
+
+            /* We have extra bytes from the previous frame, so we should add
+             * them to this frame to make sure we don't roll over backwards. */
+            r->frame->payload_len += r->utf8.used - len;
+
+            len_to_send = r->utf8.used;
+            *buf_to_send = r->utf8.buf;
+
+            rv = utf8_validate(*buf_to_send, len_to_send);
+            if (rv < 0) {
+                cws_close(priv, 1007, NULL, 0);
+                return -1;
+            }
+
+            /* We can reset these because the buffer is ready to be sent
+             * and do not depend on these values anymore. */
+            r->utf8.used = 0;
+            r->utf8.needed = 0;
+        }
+    } else {
+        ssize_t rv;
+        size_t left;
+
+        rv = utf8_validate(buf, len);
+        left = len - (size_t) rv;
+
+        if (rv < 0) {
+            cws_close(priv, 1007, NULL, 0);
+            return -1;
+        }
+
+        if (0 < left) {
+            if ((r->frame->fin) && (r->frame->payload_len <= len)) {
+                cws_close(priv, 1007, NULL, 0);
+                return -1;
+            }
+
+            memcpy(r->utf8.buf, &buf[len - left], left);
+            r->utf8.used = left;
+            r->utf8.needed = utf8_get_size(r->utf8.buf[0]);
+            r->utf8.needed -= left;
+
+            r->frame->payload_len -= left;
+            len_to_send = len - left;
+        }
+    }
+
+    return len_to_send;
+}
 
 static void _send_data_frame(CWS *priv, const char *buffer, size_t len)
 {
     struct recv *r = &priv->recv;
 
+    /* If this is the last byte of the last frame, mark the fragment as LAST */
     if ((0 == r->frame->payload_len) && (r->frame->fin)) {
         r->fragment_info |= CWS_LAST;
     }
 
-    /* Clean up the buffer & length */
+    /* Clean up the buffer & length arguments. */
     if (buffer) {
         if (0 == len) {
             buffer = NULL;
@@ -286,26 +358,29 @@ static void _send_data_frame(CWS *priv, const char *buffer, size_t len)
         len = 0;
     }
 
+    /* Send the buffer if we have data or if this is the first or last frame.
+     * Doing a bit of filtering here makes testing a bit simpler and consistent
+     * as well as it cuts down on sending a bunch of useless empty buffers. */
     if ((0 < len) || ((CWS_FIRST | CWS_LAST) & r->fragment_info)) {
         priv->dispatching++;
         cb_on_stream(priv, r->fragment_info, buffer, len);
         priv->dispatching--;
     }
 
-    if (CWS_FIRST & r->fragment_info) {
-        r->fragment_info &= ~CWS_FIRST;
-        /* Set the expectation for the next frame to be a CONTINUATION */
-        r->fragment_info &= ~CWS_NONCTRL_MASK;
-        r->fragment_info |= CWS_CONT;
-    }
+    /* Set the expectation for the next frame to be a CONTINUATION */
+    r->fragment_info &= ~CWS_NONCTRL_MASK;
+    r->fragment_info |= CWS_CONT;
 
+    /* The next chuck of data is definitely not the 'first'. */
+    r->fragment_info &= ~CWS_FIRST;
+
+    /* Throw away the frame if we sent all the data associated with it. */
     if (0 == r->frame->payload_len) {
         r->frame = NULL;
-        /* Set the expectation for the next frame to be a CONTINUATION */
-        r->fragment_info &= ~CWS_NONCTRL_MASK;
-        r->fragment_info |= CWS_CONT;
     }
 
+    /* If this was the last frame reset the stream markers to expect a TEXT or
+     * BINARY frame to lead off a new stream. */
     if (CWS_LAST & r->fragment_info) {
         r->fragment_info = 0;
         r->stream_type = 0;
@@ -321,80 +396,21 @@ static void _send_data_frame(CWS *priv, const char *buffer, size_t len)
 static ssize_t _process_data_frame(CWS *priv, const char **buf, size_t *len)
 {
     struct recv *r = &priv->recv;
-    const char *buffer = *buf;
-    const char *buf_to_send = buffer;
+    const char *buf_to_send = *buf;
     size_t min = _min_size_t(r->frame->payload_len, *len);
     size_t len_to_send = min;
 
     if (CWS_TEXT == r->stream_type) {
-        if (0 < r->utf8.needed) {
-            min = _min_size_t(r->utf8.needed, min);
-            memcpy(&r->utf8.buf[r->utf8.used], buffer, min);
-            r->utf8.used += min;
-            r->utf8.needed -= min;
+        ssize_t rv;
 
-            if (0 != r->utf8.needed) {
-                if (false == utf8_maybe_valid(r->utf8.buf, r->utf8.used)) {
-                    cws_close(priv, 1007, NULL, 0);
-                    return -1;
-                }
-
-                len_to_send = min;
-                buf_to_send = NULL;
-            } else {
-                ssize_t rv;
-
-                /* We have extra bytes from the previous frame, so we should add
-                 * them to this frame to make sure we don't roll over backwards. */
-                r->frame->payload_len += r->utf8.used - min;
-
-                len_to_send = r->utf8.used;
-                buf_to_send = r->utf8.buf;
-
-                rv = utf8_validate(buf_to_send, len_to_send);
-                if (rv < 0) {
-                    cws_close(priv, 1007, NULL, 0);
-                    return -1;
-                }
-
-                /* We can reset these because the buffer is ready to be sent
-                 * and do not depend on these values anymore. */
-                r->utf8.used = 0;
-                r->utf8.needed = 0;
-            }
-        } else {
-            ssize_t rv;
-            size_t left;
-
-            rv = utf8_validate(buffer, min);
-            left = min - (size_t) rv;
-
-            if (rv < 0) {
-                cws_close(priv, 1007, NULL, 0);
-                return -1;
-            }
-
-            if (0 < left) {
-                if ((0 == r->frame->fin) ||
-                    ((1 == r->frame->fin) && (min < r->frame->payload_len)))
-                {
-                    memcpy(r->utf8.buf, &buffer[min - left], left);
-                    r->utf8.used = left;
-                    r->utf8.needed = utf8_get_size(r->utf8.buf[0]);
-                    r->utf8.needed -= left;
-
-                    r->frame->payload_len -= left;
-                    len_to_send -= left;
-                } else {
-                    cws_close(priv, 1007, NULL, 0);
-                    return -1;
-                }
-            }
+        rv = _process_text_stream(priv, *buf, min, &buf_to_send);
+        if (rv < 0) {
+            return rv;
         }
+        len_to_send = (size_t) rv;
     }
 
     r->frame->payload_len -= len_to_send;
-
 
     _send_data_frame(priv, buf_to_send, len_to_send);
 
