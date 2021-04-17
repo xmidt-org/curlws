@@ -42,7 +42,10 @@
 /*----------------------------------------------------------------------------*/
 /*                               Data Structures                              */
 /*----------------------------------------------------------------------------*/
-/* none */
+typedef struct header_checker {
+    const char *prefix;
+    void (*check)(CWS *priv, const char *suffix, size_t suffixlen);
+} hc_t;
 
 /*----------------------------------------------------------------------------*/
 /*                            File Scoped Variables                           */
@@ -79,15 +82,12 @@ static size_t _header_cb(const char *buffer, size_t count, size_t nitems, void *
     long http_status = -1;
     long http_version = -1;
     const size_t len = count * nitems;
-    const struct header_checker {
-        const char *prefix;
-        void (*check)(CWS *priv, const char *suffix, size_t suffixlen);
-    } header_checkers[] = {
-        {"Sec-WebSocket-Accept:",   _check_accept},
-        {"Sec-WebSocket-Protocol:", _check_protocol},
-        {"Connection:",             _check_connection},
-        {"Upgrade:",                _check_upgrade},
-        {NULL, NULL}
+    const hc_t header_checkers[] = {
+        { .prefix = "Sec-WebSocket-Accept:",   .check = _check_accept     },
+        { .prefix = "Sec-WebSocket-Protocol:", .check = _check_protocol   },
+        { .prefix = "Connection:",             .check = _check_connection },
+        { .prefix = "Upgrade:",                .check = _check_upgrade    },
+        { NULL, NULL }
     };
 
     curl_easy_getinfo(priv->easy, CURLINFO_RESPONSE_CODE, &http_status);
@@ -132,7 +132,7 @@ static size_t _header_cb(const char *buffer, size_t count, size_t nitems, void *
         return len;
     }
 
-    for (const struct header_checker *itr = header_checkers; itr->prefix != NULL; itr++) {
+    for (const hc_t *itr = header_checkers; itr->prefix != NULL; itr++) {
         if (cws_has_prefix(buffer, len, itr->prefix)) {
             size_t prefixlen = strlen(itr->prefix);
             size_t valuelen = len - prefixlen;
