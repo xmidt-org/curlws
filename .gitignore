@@ -15,6 +15,9 @@ report.json
 reports
 src/xxd.c
 
+# CTags
+tags
+
 # Ignore the various build artifacts
 .ignore
 
