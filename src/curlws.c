@@ -49,7 +49,7 @@
 /*----------------------------------------------------------------------------*/
 /*                                   Macros                                   */
 /*----------------------------------------------------------------------------*/
-#define STR_OR_EMPTY(p) (p != NULL ? p : "")
+/* none */
 
 /*----------------------------------------------------------------------------*/
 /*                               Data Structures                              */
@@ -65,7 +65,7 @@
 /*----------------------------------------------------------------------------*/
 /*                             Function Prototypes                            */
 /*----------------------------------------------------------------------------*/
-static CWScode _close(CWS*, int, int, const char*, size_t);
+static CWScode _normalize_close_inputs(int*, int*, const char**, size_t*);
 
 static bool _validate_config(const struct cws_config*);
 static struct curl_slist* _cws_calculate_websocket_key(CWS*, struct curl_slist*);
@@ -239,7 +239,37 @@ error:
 
 void cws_destroy(CWS *priv)
 {
-    _cws_cleanup(priv);
+    if (priv) {
+        if (priv->dispatching > 0)
+            return;
+
+        if (priv->cfg.url) {
+            free(priv->cfg.url);
+        }
+        if (priv->easy) {
+            curl_easy_cleanup(priv->easy);
+        }
+        if (priv->headers) {
+            curl_slist_free_all(priv->headers);
+        }
+        if (priv->cfg.ws_protocols_requested) {
+            free(priv->cfg.ws_protocols_requested);
+        }
+        if (priv->header_state.ws_protocols_received) {
+            free(priv->header_state.ws_protocols_received);
+        }
+
+        send_destroy(priv);
+
+        if (priv->mem) {
+            mem_cleanup_pool(priv->mem);
+        }
+        if (priv->stream_buffer) {
+            free(priv->stream_buffer);
+        }
+
+        free(priv);
+    }
 }
 
 
@@ -269,12 +299,33 @@ CWScode cws_pong(CWS *priv, const void *data, size_t len)
 
 CWScode cws_close(CWS *priv, int code, const char *reason, size_t len)
 {
-    return _close(priv, CWS_CLOSE, code, reason, len);
-}
+    int options;
+    CWScode rv;
+    uint8_t buf[WS_CTL_PAYLOAD_MAX];    /* Limited by RFC6455 Section 5.5 */
+    uint8_t *p = NULL;
 
-CWScode cws_close_urgent(CWS *priv, int code, const char *reason, size_t len)
-{
-    return _close(priv, CWS_CLOSE | CWS_URGENT, code, reason, len);
+    rv = _normalize_close_inputs(&code, &options, &reason, &len);
+    if (CWSE_OK != rv) {
+        return rv;
+    }
+
+    if (code) {
+        p = buf;
+        *p++ = (uint8_t) (0x00ff & (code >> 8));
+        *p++ = (uint8_t) (0x00ff & code);
+        
+        if (len) {
+            memcpy(p, reason, len);
+            p[len] = '\0';
+            len++;
+        }
+        len += 2;
+        p = buf;
+    }
+
+    rv = frame_sender_control(priv, options, p, len);
+    priv->closed = true;
+    return rv;
 }
 
 
@@ -330,93 +381,67 @@ CWScode cws_send_strm_text(CWS *priv, int info, const char *s, size_t len)
 /*----------------------------------------------------------------------------*/
 /*                             Internal functions                             */
 /*----------------------------------------------------------------------------*/
-
-void _cws_cleanup(CWS *priv)
+static CWScode _normalize_close_inputs(int *_code, int *_opts,
+                                       const char **_reason, size_t *_len)
 {
-    if (priv) {
-        if (priv->dispatching > 0)
-            return;
+    int opts = CWS_CLOSE;
+    int code = *_code;
+    size_t len = *_len;
+    const char *reason = *_reason;
 
-        if (priv->cfg.url) {
-            free(priv->cfg.url);
-        }
-        if (priv->easy) {
-            curl_easy_cleanup(priv->easy);
-        }
-        if (priv->headers) {
-            curl_slist_free_all(priv->headers);
-        }
-        if (priv->cfg.ws_protocols_requested) {
-            free(priv->cfg.ws_protocols_requested);
-        }
-        if (priv->header_state.ws_protocols_received) {
-            free(priv->header_state.ws_protocols_received);
-        }
+    /* Handle the urgent version */
+    if (code < 0) {
+        opts |= CWS_URGENT;
 
-        send_destroy(priv);
-
-        if (priv->mem) {
-            mem_cleanup_pool(priv->mem);
+        if (-1 == code) {
+            code = 0;
+        } else {
+            code = 0 - code;    /* Convert to positive */
         }
-        if (priv->stream_buffer) {
-            free(priv->stream_buffer);
-        }
-
-        free(priv);
-    }
-}
-
-
-static CWScode _close(CWS *priv, int options, int code, const char *reason, size_t len)
-{
-    CWScode ret;
-    uint8_t buf[WS_CTL_PAYLOAD_MAX];    /* Limited by RFC6455 Section 5.5 */
-    uint8_t *p;
-
-    if ((0 == code) && (NULL == reason) && (0 == len)) {
-        ret = frame_sender_control(priv, options, NULL, 0);
-        priv->closed = true;
-        return ret;
     }
 
-    if (false == is_close_code_valid(code)) {
-        return CWSE_INVALID_CLOSE_REASON_CODE;
-    }
-
+    /* Normalize the reason and len */
     if (reason) {
-        if (len == SIZE_MAX) {
+        if (0 == len) {
+            reason = NULL;
+        } else if (len == SIZE_MAX) {
             len = strlen(reason);
+        }
+
+        if (0 < len) {
+            if (((ssize_t) len) != utf8_validate(reason, len)) {
+                return CWSE_INVALID_UTF8;
+            }
+
+            /* 2 byte reason code + '\0' at the end. */
+            if ((WS_CTL_PAYLOAD_MAX - 3) < len) {
+                return CWSE_APP_DATA_LENGTH_TOO_LONG;
+            }
         }
     } else {
         len = 0;
     }
 
-    if (((ssize_t) len) != utf8_validate(reason, len)) {
-        return CWSE_INVALID_UTF8;
+    /* Handle the special 0 code case */
+    if (0 == code) {
+        /* You can't have a code of 0 and expect to send reason text. */
+        if ((reason) || (len)) {
+            return CWSE_INVALID_CLOSE_REASON_CODE;
+        }
+    } else {
+        if (false == is_close_code_valid(code)) {
+            return CWSE_INVALID_CLOSE_REASON_CODE;
+        }
     }
 
-    /* 2 byte reason code + '\0' at the end. */
-    if ((WS_CTL_PAYLOAD_MAX - 3) < len) {
-        return CWSE_APP_DATA_LENGTH_TOO_LONG;
-    }
+    /* Transfer the results back only if successful */
+    *_code = code;
+    *_len = len;
+    *_opts = opts;
+    *_reason = reason;
 
-    p = buf;
-    *p++ = (uint8_t) (0x00ff & (code >> 8));
-    *p++ = (uint8_t) (0x00ff & code);
-    
-    if (len) {
-        memcpy(p, reason, len);
-        p[len] = '\0';
-        len++;
-    }
-    len += 2;
-
-    ret = frame_sender_control(priv, options, buf, len);
-    priv->closed = true;
-    return ret;
+    return CWSE_OK;
 }
-
-
 
 /*----------------------------------------------------------------------------*/
 /*                      Internal Configuration Functions                      */
@@ -447,8 +472,7 @@ static bool _validate_config(const struct cws_config *config)
 
     p = config->extra_headers;
     while (p) {
-        size_t i;
-        for (i = 0; i < sizeof(disallowed) / sizeof(disallowed[0]); i++) {
+        for (size_t i = 0; i < sizeof(disallowed) / sizeof(disallowed[0]); i++) {
             if (cws_has_prefix(p->data, strlen(p->data), disallowed[i])) {
                 return false;
             }
