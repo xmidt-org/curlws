@@ -418,8 +418,13 @@ CWScode cws_pong(CWS *handle, const void *data, size_t len);
  *       See https://tools.ietf.org/html/rfc6455#section-5.5 for details.
  *       See https://tools.ietf.org/html/rfc6455#section-5.5.1 for details.
  *
- * @note This call appends the close frame to whatever existing transactions
- *       are queued and closes the connection after the close frame is sent.
+ * @note Normally this call appends the close frame to whatever existing
+ *       transactions are queued and closes the connection after the close frame
+ *       is sent.  If you wish to interrupt the stream and close immediately
+ *       you can make the code value negative to indicate it is urgent to close
+ *       the connection immediately.  To represent an urgent version of the '0'
+ *       reason code (where no reason is sent), the value of '-1' should
+ *       be used.
  *
  * @param handle the websocket handle to interact with
  * @param code   the reason code why it was closed, see the well-known numbers
@@ -436,26 +441,6 @@ CWScode cws_pong(CWS *handle, const void *data, size_t len);
  * @retval CWSE_APP_DATA_LENGTH_TOO_LONG
  */
 CWScode cws_close(CWS *handle, int code, const char *reason, size_t len);
-
-
-/**
- * Similar to cws_close() except that all queued transactions are cancelled.
- *
- * @param handle the websocket handle to interact with
- * @param code   the reason code why it was closed, see the well-known numbers
- *               at: https://tools.ietf.org/html/rfc6455#section-7.4.1
- * @param reason #NULL or some UTF-8 string null ('\0') terminated.
- * @param len    the length of reason in bytes. If SIZE_MAX is used,
- *               strlen() is used on reason (if not NULL).  Limited to 123 or
- *               less.
- *
- * @retval CWSE_OK
- * @retval CWSE_OUT_OF_MEMORY
- * @retval CWSE_CLOSED_CONNECTION
- * @retval CWSE_INVALID_CLOSE_REASON_CODE
- * @retval CWSE_APP_DATA_LENGTH_TOO_LONG
- */
-CWScode cws_close_urgent(CWS *handle, int code, const char *reason, size_t len);
 
 
 /*----------------------------------------------------------------------------*/

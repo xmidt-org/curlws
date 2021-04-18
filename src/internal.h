@@ -165,10 +165,7 @@ struct cws_object {
 /*----------------------------------------------------------------------------*/
 /*                             Function Prototypes                            */
 /*----------------------------------------------------------------------------*/
+/* none */
 
-/**
- * Internal only cleanup function.
- */
-void _cws_cleanup(CWS *priv);
 #endif
 
