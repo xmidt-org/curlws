@@ -425,7 +425,7 @@ static CWScode _normalize_close_inputs(int *_code, int *_opts,
     /* Handle the special 0 code case */
     if (0 == code) {
         /* You can't have a code of 0 and expect to send reason text. */
-        if ((reason) || (len)) {
+        if ((NULL != reason) || (0 < len)) {
             return CWSE_INVALID_CLOSE_REASON_CODE;
         }
     } else {
