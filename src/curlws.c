@@ -337,6 +337,8 @@ CWScode cws_send_blk_binary(CWS *priv, const void *data, size_t len)
 
 CWScode cws_send_blk_text(CWS *priv, const char *s, size_t len)
 {
+    size_t prev_len;
+
     if (s) {
         if (len == SIZE_MAX) {
             len = strlen(s);
@@ -345,7 +347,8 @@ CWScode cws_send_blk_text(CWS *priv, const char *s, size_t len)
         len = 0;
     }
 
-    if (((ssize_t) len) != utf8_validate(s, len)) {
+    prev_len = len;
+    if (0 != utf8_validate(s, &len) || (prev_len != len)) {
         return CWSE_INVALID_UTF8;
     }
 
@@ -365,12 +368,12 @@ CWScode cws_send_strm_binary(CWS *priv, int info, const void *data, size_t len)
 
 CWScode cws_send_strm_text(CWS *priv, int info, const char *s, size_t len)
 {
+    size_t prev_len = len;
+
     IGNORE_UNUSED(priv);
     IGNORE_UNUSED(info);
-    IGNORE_UNUSED(s);
-    IGNORE_UNUSED(len);
 
-    if (((ssize_t) len) != utf8_validate(s, len)) {
+    if (0 != utf8_validate(s, &len) || (prev_len != len)) {
         return CWSE_INVALID_UTF8;
     }
 
@@ -409,7 +412,8 @@ static CWScode _normalize_close_inputs(int *_code, int *_opts,
         }
 
         if (0 < len) {
-            if (((ssize_t) len) != utf8_validate(reason, len)) {
+            size_t prev_len = len;
+            if (0 != utf8_validate(reason, &len) || (prev_len != len)) {
                 return CWSE_INVALID_UTF8;
             }
 
