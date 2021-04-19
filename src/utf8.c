@@ -108,7 +108,7 @@ size_t utf8_get_size(char c)
 bool utf8_maybe_valid(const char *text, size_t len)
 {
     char buf[4] = { 0, 0x80, 0x80, 0x80 };
-    ssize_t c_len;
+    size_t c_len;
 
     memcpy(buf, text, len);
     c_len = utf8_len[(uint8_t)*buf];
@@ -117,7 +117,7 @@ bool utf8_maybe_valid(const char *text, size_t len)
         return false;
     }
 
-    if (c_len == utf8_validate(buf, c_len)) {
+    if (0 == utf8_validate(buf, &c_len)) {
         return true;
     }
 
@@ -125,16 +125,17 @@ bool utf8_maybe_valid(const char *text, size_t len)
 }
 
 
-ssize_t utf8_validate(const char *text, size_t len)
+int utf8_validate(const char *text, size_t *len)
 {
     const uint8_t *bytes = (const uint8_t*) text;
-    size_t left = len;
+    size_t left = *len;
 
     while (left) {
         size_t c_len = utf8_len[*bytes];
 
         if (left < c_len) {
-            return len - left;
+            *len -= left;
+            return 0;
         }
 
         if (0 == c_len) {
@@ -176,7 +177,8 @@ ssize_t utf8_validate(const char *text, size_t len)
         bytes += c_len;
     }
 
-    return len - left;
+    *len -= left;
+    return 0;
 }
 
 

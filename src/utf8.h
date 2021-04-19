@@ -58,20 +58,18 @@ bool utf8_maybe_valid(const char *text, size_t len);
 
 
 /**
- * Checks a string to ensure only valid UTF8 character sequences are present
+ * Checks a string to ensure only valid UTF-8 character sequences are present
  * and returns the number of bytes left over (of there are any).
  *
- * @param string the text to validate is UTF8
- * @param len    the length of the string in bytes
+ * @param text   the string to validate is UTF-8
+ * @param len    the length of the string in bytes (in)
+ *               the length of the string in bytes of all completely present
+ *               characters (out)
  *
- * @returns 0 or greater if all the characters so far are valid.  If the return
- *          value is less than the len, then there are extra utf8 bytes that are
- *          not enough to make the next character.  The caller needs to deal
- *          with them.
- *
- *          If less than 0 then there was an encoding error.
+ * @returns 0 if the string is valid assuming more data may come later, or
+ *          less than zero indicates an error 
  */
-ssize_t utf8_validate(const char *text, size_t len);
+int utf8_validate(const char *text, size_t *len);
 
 #endif
 
