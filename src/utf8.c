@@ -107,17 +107,17 @@ size_t utf8_get_size(char c)
 
 bool utf8_maybe_valid(const char *text, size_t len)
 {
-    char buf[4] = { 0, 0x80, 0x80, 0x80 };
+    uint8_t buf[4] = { 0, 0x80, 0x80, 0x80 };
     ssize_t c_len;
 
     memcpy(buf, text, len);
-    c_len = utf8_len[(uint8_t)*buf];
+    c_len = utf8_len[*buf];
 
     if (0 == c_len) {
         return false;
     }
 
-    if (c_len == utf8_validate(buf, c_len)) {
+    if (c_len == utf8_validate((char*)buf, c_len)) {
         return true;
     }
 

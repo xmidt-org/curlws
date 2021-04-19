@@ -68,24 +68,24 @@ void test_populate_callbacks()
 
     populate_callbacks(&priv.cb, &src);
 
-    src.on_connect = (void*) 1;
-    src.on_text    = (void*) 2;
-    src.on_binary  = (void*) 3;
-    src.on_stream  = (void*) 4;
-    src.on_ping    = (void*) 5;
-    src.on_pong    = (void*) 6;
-    src.on_close   = (void*) 7;
-    src.configure  = (void*) 10;
+    src.on_connect = (void (*)(void*, CWS*, const char*)) 1;
+    src.on_text    = (void (*)(void*, CWS*, const char*, size_t)) 2;
+    src.on_binary  = (void (*)(void*, CWS*, const void*, size_t)) 3;
+    src.on_stream  = (void (*)(void*, CWS*, int, const void*, size_t)) 4;
+    src.on_ping    = (void (*)(void*, CWS*, const void*, size_t)) 5;
+    src.on_pong    = (void (*)(void*, CWS*, const void*, size_t)) 6;
+    src.on_close   = (void (*)(void*, CWS*, int, const char*, size_t)) 7;
+    src.configure  = (void (*)(void*, CWS*, CURL*)) 8;
 
     populate_callbacks(&priv.cb, &src);
-    CU_ASSERT(priv.cb.on_connect_fn == (void*) 1);
-    CU_ASSERT(priv.cb.on_text_fn    == (void*) 2);
-    CU_ASSERT(priv.cb.on_binary_fn  == (void*) 3);
-    CU_ASSERT(priv.cb.on_stream_fn  == (void*) 4);
-    CU_ASSERT(priv.cb.on_ping_fn    == (void*) 5);
-    CU_ASSERT(priv.cb.on_pong_fn    == (void*) 6);
-    CU_ASSERT(priv.cb.on_close_fn   == (void*) 7);
-    CU_ASSERT(priv.cb.configure_fn  == (void*) 10);
+    CU_ASSERT(priv.cb.on_connect_fn == (void (*)(void*, CWS*, const char*)) 1);
+    CU_ASSERT(priv.cb.on_text_fn    == (void (*)(void*, CWS*, const char*, size_t)) 2);
+    CU_ASSERT(priv.cb.on_binary_fn  == (void (*)(void*, CWS*, const void*, size_t)) 3);
+    CU_ASSERT(priv.cb.on_stream_fn  == (void (*)(void*, CWS*, int, const void*, size_t)) 4);
+    CU_ASSERT(priv.cb.on_ping_fn    == (void (*)(void*, CWS*, const void*, size_t)) 5);
+    CU_ASSERT(priv.cb.on_pong_fn    == (void (*)(void*, CWS*, const void*, size_t)) 6);
+    CU_ASSERT(priv.cb.on_close_fn   == (void (*)(void*, CWS*, int, const char*, size_t)) 7);
+    CU_ASSERT(priv.cb.configure_fn  == (void (*)(void*, CWS*, CURL*)) 8);
 
 }
 

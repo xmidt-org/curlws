@@ -309,7 +309,7 @@ static int _frame_decode(struct cws_frame *in, const void *buffer, size_t len, s
         buf += 4;
     }
 
-    *delta = ((const void*) buf) - buffer;
+    *delta = buf - ((const uint8_t*) buffer);
 
     /* Only when we're 100% complete and correct will we copy over the values */
     memcpy(in, &f, sizeof(struct cws_frame));

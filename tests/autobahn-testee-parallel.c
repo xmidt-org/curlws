@@ -428,7 +428,7 @@ int main(int argc, char *argv[]) {
                  base_url, current_test);
 
         p->ws = cws_create(&cfg);
-        INF("ws: %p, url: %s", p->ws, test_url);
+        INF("ws: %p, url: %s", (void*) p->ws, test_url);
         if (!p->ws)
             goto error_ws;
 
