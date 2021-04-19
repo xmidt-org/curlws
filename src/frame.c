@@ -48,7 +48,7 @@
 /*----------------------------------------------------------------------------*/
 /*                             Function Prototypes                            */
 /*----------------------------------------------------------------------------*/
-static int _frame_decode(struct cws_frame*, const void*, size_t, ssize_t*);
+static int _frame_decode(struct cws_frame*, const void*, size_t, long*);
 
 /*----------------------------------------------------------------------------*/
 /*                             External Functions                             */
@@ -103,10 +103,10 @@ int frame_validate(const struct cws_frame *f, frame_dir dir)
 }
 
 
-int frame_decode(struct cws_frame *in, const void *buffer, size_t len, ssize_t *delta)
+int frame_decode(struct cws_frame *in, const void *buffer, size_t len, long *delta)
 {
     if (NULL == delta) {
-        ssize_t tmp;
+        long tmp;
         return _frame_decode(in, buffer, len, &tmp);
     }
     return _frame_decode(in, buffer, len, delta);
@@ -214,7 +214,7 @@ const char* frame_opcode_to_string(const struct cws_frame *f)
 /*----------------------------------------------------------------------------*/
 /*                             Internal functions                             */
 /*----------------------------------------------------------------------------*/
-static int _frame_decode(struct cws_frame *in, const void *buffer, size_t len, ssize_t *delta)
+static int _frame_decode(struct cws_frame *in, const void *buffer, size_t len, long *delta)
 {
     struct cws_frame f;
     const uint8_t *buf = (const uint8_t*) buffer;

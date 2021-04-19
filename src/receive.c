@@ -120,7 +120,7 @@ static void _handle_close(CWS *priv, struct recv *r)
     }
 
     if (1 < len) {
-        ssize_t rv;
+        size_t prev_len;
 
         status = r->control.buf[0] << 8 | r->control.buf[1];
         if (!is_close_code_valid(status)) {
@@ -134,8 +134,8 @@ static void _handle_close(CWS *priv, struct recv *r)
         s = (const char*) &r->control.buf[2];
         len -= 2;
 
-        rv = utf8_validate(s, len);
-        if (len != (size_t) rv) {
+        prev_len = len;
+        if ((0 != utf8_validate(s, &len)) || (prev_len != len)) {
             cws_close(priv, 1007, NULL, 0);
             return;
         }
@@ -173,7 +173,7 @@ static struct cws_frame* _process_frame_header(CWS *priv, const char **buf, size
     const char *buffer = *buf;
     size_t _len = *len;
     size_t min;
-    ssize_t delta;
+    long delta;
     struct cws_frame *frame;
 
     if (0 == h->needed) {
@@ -267,12 +267,12 @@ static void _process_control_frame(CWS *priv, const char **buf, size_t *len)
     *buf = buffer;
 }
 
-static ssize_t _process_text_stream(CWS *priv, const char *buf, size_t len,
-                                    const char **buf_to_send)
+static int _process_text_stream(CWS *priv, const char *buf, size_t len,
+                                const char **buf_to_send, size_t *len_to_send)
 {
-    ssize_t len_to_send = len;
     struct recv *r = &priv->recv;
 
+    *len_to_send = len;
     if (0 < r->utf8.needed) {
         len = _min_size_t(r->utf8.needed, len);
         memcpy(&r->utf8.buf[r->utf8.used], buf, len);
@@ -289,40 +289,41 @@ static ssize_t _process_text_stream(CWS *priv, const char *buf, size_t len,
             }
 
             *buf_to_send = NULL;
-            len_to_send = 0;
+            *len_to_send = 0;
         } else {
-            ssize_t rv;
+            size_t valid;
+
+            valid = r->utf8.used;
+            if ((0 != utf8_validate(r->utf8.buf, &valid)) ||
+                (r->utf8.used != valid))
+            {
+                cws_close(priv, 1007, NULL, 0);
+                return -1;
+            }
 
             /* Consume the utf8 buffer as well as the characters that came in
              * this call and get ready for the next block of data. */
             *buf_to_send = r->utf8.buf;
-            len_to_send = r->utf8.used;
+            *len_to_send = r->utf8.used;
             r->utf8.used = 0;
-
-            rv = utf8_validate(*buf_to_send, len_to_send);
-            if (rv < 0) {
-                cws_close(priv, 1007, NULL, 0);
-                return -1;
-            }
         }
     } else {
-        ssize_t rv;
-        size_t left;
+        size_t valid;
 
+        valid = len;
         /* This code block handles the cases where there are no outstanding UTF8
          * bytes needed to complete a character at the start.  There could be
          * incomplete UTF8 characters at the end. */
-        rv = utf8_validate(buf, len);
-        if (rv < 0) {
+        if (0 != utf8_validate(*buf_to_send, &valid)) {
             cws_close(priv, 1007, NULL, 0);
             return -1;
         }
 
-        left = len - (size_t) rv;
-
         /* Below moves any extra bytes we have that are probably incomplete UTF8
          * characters into the buffer set aside to deal with that. */
-        if (0 < left) {
+        if (valid < len) {
+            size_t left = len - valid;
+
             /* If this is the last buffer of the last frame and we have extra
              * characters, then we have a problem and must close error out. */
             if ((r->frame->fin) && (r->frame->payload_len <= len)) {
@@ -330,7 +331,7 @@ static ssize_t _process_text_stream(CWS *priv, const char *buf, size_t len,
                 return -1;
             }
 
-            memcpy(r->utf8.buf, &buf[len - left], left);
+            memcpy(r->utf8.buf, &buf[valid], left);
             r->utf8.used = left;
 
             /* The first byte of a UTF8 character is enough to determine the
@@ -338,11 +339,11 @@ static ssize_t _process_text_stream(CWS *priv, const char *buf, size_t len,
             r->utf8.needed = utf8_get_size(r->utf8.buf[0]);
             r->utf8.needed -= left;
 
-            len_to_send = len - left;
+            *len_to_send = valid;
         }
     }
 
-    return len_to_send;
+    return 0;
 }
 
 static void _send_data_frame(CWS *priv, const char *buffer, size_t len)
@@ -398,7 +399,7 @@ static void _send_data_frame(CWS *priv, const char *buffer, size_t len)
  * @retval  0 if the data was processed
  * @retval -1 if there was an error & the frame was closed
  */
-static ssize_t _process_data_frame(CWS *priv, const char **buf, size_t *len)
+static void _process_data_frame(CWS *priv, const char **buf, size_t *len)
 {
     struct recv *r = &priv->recv;
     const char *buf_to_send = *buf;
@@ -406,13 +407,12 @@ static ssize_t _process_data_frame(CWS *priv, const char **buf, size_t *len)
     size_t len_to_send = min;
 
     if (CWS_TEXT == r->stream_type) {
-        ssize_t rv;
+        int rv;
 
-        rv = _process_text_stream(priv, *buf, min, &buf_to_send);
+        rv = _process_text_stream(priv, *buf, min, &buf_to_send, &len_to_send);
         if (rv < 0) {
-            return rv;
+            return;
         }
-        len_to_send = (size_t) rv;
     }
     r->frame->payload_len -= min;
 
@@ -420,8 +420,6 @@ static ssize_t _process_data_frame(CWS *priv, const char **buf, size_t *len)
 
     *buf += min;
     *len -= min;
-
-    return 0;
 }
 
 

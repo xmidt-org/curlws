@@ -94,7 +94,7 @@ int frame_validate(const struct cws_frame *f, frame_dir dir);
  *         -4 length field was too large
  *         -5 length field was too small (<65536) for the length field size
  */
-int frame_decode(struct cws_frame *f, const void *buf, size_t len, ssize_t *delta);
+int frame_decode(struct cws_frame *f, const void *buf, size_t len, long *delta);
 
 
 /**
