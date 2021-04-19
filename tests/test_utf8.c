@@ -124,10 +124,10 @@ void test_maybe_valid()
 void test_get_size()
 {
     CU_ASSERT(1 == utf8_get_size('a'));
-    CU_ASSERT(2 == utf8_get_size(0xc4));
-    CU_ASSERT(3 == utf8_get_size(0xe1));
-    CU_ASSERT(4 == utf8_get_size(0xf4));
-    CU_ASSERT(0 == utf8_get_size(0xf5));
+    CU_ASSERT(2 == utf8_get_size((char)0xc4));
+    CU_ASSERT(3 == utf8_get_size((char)0xe1));
+    CU_ASSERT(4 == utf8_get_size((char)0xf4));
+    CU_ASSERT(0 == utf8_get_size((char)0xf5));
 }
 
 

@@ -58,7 +58,7 @@
 /*----------------------------------------------------------------------------*/
 CWScode data_block_sender(CWS *priv, int options, const void *data, size_t len)
 {
-    CWScode rv;
+    const uint8_t *buffer = data;
 
     switch (options) {
         case CWS_BINARY:
@@ -73,24 +73,26 @@ CWScode data_block_sender(CWS *priv, int options, const void *data, size_t len)
     }
 
     options |= CWS_FIRST;
-    if (!data || !len) {
+    if (!buffer || !len) {
         options |= CWS_LAST;
         return frame_sender_data(priv, options, NULL, 0);
     }
 
     while (priv->cfg.max_payload_size < len) {
-        rv = frame_sender_data(priv, options, data, priv->cfg.max_payload_size);
+        CWScode rv;
+
+        rv = frame_sender_data(priv, options, buffer, priv->cfg.max_payload_size);
         if (CWSE_OK != rv) {    /* Should only fail if we ran out of memory */
             return rv;
         }
 
         options = CWS_CONT;
         len -= priv->cfg.max_payload_size;
-        data += priv->cfg.max_payload_size;
+        buffer += priv->cfg.max_payload_size;
     }
 
     options |= CWS_LAST;
-    return frame_sender_data(priv, options, data, len);
+    return frame_sender_data(priv, options, buffer, len);
 }
 
 /*----------------------------------------------------------------------------*/

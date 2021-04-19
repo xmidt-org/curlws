@@ -52,10 +52,10 @@ struct mem_block_pool {
     struct mem_block *active;
 };
 
-typedef struct mem_pool {
+struct mem_pool {
     struct mem_block_pool ctrl;
     struct mem_block_pool data;
-} pool_t;
+};
 
 /*----------------------------------------------------------------------------*/
 /*                            File Scoped Variables                           */
@@ -145,7 +145,7 @@ void mem_free(void *ptr)
 
     /* We return the data pointer so back up from the data field to find the
      * actual struct so we can point there. */
-    p = (struct mem_block*) (ptr - delta);
+    p = (struct mem_block*) (((uint8_t*)ptr) - delta);
 
     /* If this is the head of the free list, don't try to free it again. */
     if (p == p->parent->free) {
