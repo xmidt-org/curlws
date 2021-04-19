@@ -56,47 +56,58 @@
 /*----------------------------------------------------------------------------*/
 void cws_encode_base64(const void *in, const size_t len, char *out)
 {
-    static const char base64_map[65] = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/=";
+    static const uint8_t base64_map[65] = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/=";
     const uint8_t *input = (const uint8_t*) in;
     size_t i, o;
     uint8_t c;
 
     for (i = 0, o = 0; i + 3 <= len; i += 3) {
-        c = (input[i] & (((1 << 6) - 1) << 2)) >> 2;
+        /* 6 bits */
+        c = (input[i] & 0xfc) >> 2;
         out[o++] = base64_map[c];
 
-        c = (input[i] & ((1 << 2) - 1)) << 4;
-        c |= (input[i + 1] & (((1 << 4) - 1) << 4)) >> 4;
+        /* 6 bits */
+        c = (input[i] & 0x03) << 4;
+        c |= (input[i + 1] & 0xf0) >> 4;
         out[o++] = base64_map[c];
 
-        c = (input[i + 1] & ((1 << 4) - 1)) << 2;
-        c |= (input[i + 2] & (((1 << 2) - 1) << 6)) >> 6;
+        /* 6 bits */
+        c = (input[i + 1] & 0x0f) << 2;
+        c |= (input[i + 2] & 0xc0) >> 6;
         out[o++] = base64_map[c];
 
-        c = input[i + 2] & ((1 << 6) - 1);
+        /* 6 bits */
+        c = input[i + 2] & 0x3f;
         out[o++] = base64_map[c];
     }
 
     if (i + 1 == len) {
-        c = (input[i] & (((1 << 6) - 1) << 2)) >> 2;
+        /* 6 bits */
+        c = (input[i] & 0xfc) >> 2;
         out[o++] = base64_map[c];
 
-        c = (input[i] & ((1 << 2) - 1)) << 4;
+        /* remaining 2 bits */
+        c = (input[i] & 0x03) << 4;
         out[o++] = base64_map[c];
 
+        /* filler '=' characters */
         out[o++] = base64_map[64];
         out[o++] = base64_map[64];
     } else if (i + 2 == len) {
-        c = (input[i] & (((1 << 6) - 1) << 2)) >> 2;
+        /* 6 bits */
+        c = (input[i] & 0xfc) >> 2;
         out[o++] = base64_map[c];
 
-        c = (input[i] & ((1 << 2) - 1)) << 4;
-        c |= (input[i + 1] & (((1 << 4) - 1) << 4)) >> 4;
+        /* 6 bits */
+        c = (input[i] & 0x03) << 4;
+        c |= (input[i + 1] & 0xf0) >> 4;
         out[o++] = base64_map[c];
 
-        c = (input[i + 1] & ((1 << 4) - 1)) << 2;
+        /* remining 4 bits */
+        c = (input[i + 1] & 0x0f) << 2;
         out[o++] = base64_map[c];
 
+        /* filler '=' characters */
         out[o++] = base64_map[64];
     }
     out[o] = '\0';
