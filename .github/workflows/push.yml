@@ -57,7 +57,6 @@ jobs:
 
       - name: Upload SonarCloud
         run: |
-          ./.github/scripts/sonarcloud.sh -b build -s ./src
           build/sonar-scanner-4.6.0.2311-linux/bin/sonar-scanner -Dsonar.host.url=https://sonarcloud.io -Dproject.settings=.sonar-project.properties -Dsonar.login=${{ secrets.SONAR_TOKEN }}
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

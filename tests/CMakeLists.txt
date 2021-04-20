@@ -352,6 +352,12 @@ add_custom_target(validate
 
 
 
+add_custom_target(sonarcloud
+                  COMMAND lcov -q --capture
+                          --directory ${CMAKE_CURRENT_BINARY_DIR}/CMakeFiles/
+                          --output-file sonarcloud.info
+                  WORKING_DIRECTORY ${CMAKE_BINARY_DIR})
+
 add_custom_target(coverage
                   COMMAND lcov -q --capture
                           --directory ${CMAKE_CURRENT_BINARY_DIR}/CMakeFiles/
