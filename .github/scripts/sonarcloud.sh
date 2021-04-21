@@ -1,16 +1,37 @@
 #!/bin/bash
 
 base=.
-src=${base}/src
+prefix=tests/CMakeFiles
+out=out
 
 
-while getopts b:s: flag
+while getopts b:p:s: flag
 do
     case "${flag}" in
         b) base=${OPTARG};;
-        s) src=${OPTARG};;
+        p) prefix=${OPTARG};;
+        s) out=${OPTARG};;
     esac
 done
 
-sources=`find ${src} -type f -name '*.c'`
-find ${base} -type f -name '*.gcda' -exec gcov -b -c -p ${sources} {} +
+first=`ls -d ${prefix}/*/ | head -n 1`
+all=`ls -d ${prefix}/*/`
+
+gcov-tool merge -o ${out} ${first} ${first}
+for dir in ${all}
+do
+gcov-tool merge -o ${out} ${out} ${dir}
+
+pushd "${dir}"
+gcnos=`find . -type f -name *.gcno`
+popd
+
+for gcno in ${gcnos}
+do
+mkdir -p "${gcno}"
+cp ${dir}/${gcno} ${out}/${gcno}
+done
+
+done
+
+find ${out} -type f -name '*.gcda' -exec gcov -abcp {} +

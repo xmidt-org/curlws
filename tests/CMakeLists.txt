@@ -350,14 +350,6 @@ add_custom_target(validate
                   COMMAND ./autobahn_report ws://localhost:9001
                   COMMAND ${CMAKE_SOURCE_DIR}/tests/check_autobahn_results.sh -f ${CMAKE_SOURCE_DIR}/reports/clients/index.json)
 
-
-
-add_custom_target(sonarcloud
-                  COMMAND lcov -q --capture
-                          --directory ${CMAKE_CURRENT_BINARY_DIR}/CMakeFiles/
-                          --output-file sonarcloud.info
-                  WORKING_DIRECTORY ${CMAKE_BINARY_DIR})
-
 add_custom_target(coverage
                   COMMAND lcov -q --capture
                           --directory ${CMAKE_CURRENT_BINARY_DIR}/CMakeFiles/

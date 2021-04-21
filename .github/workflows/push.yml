@@ -47,7 +47,8 @@ jobs:
       - name: Build
         working-directory: build
         run: |
-          build-wrapper-linux-x86/build-wrapper-linux-x86-64 --out-dir bw-output make all test sonarcloud
+          build-wrapper-linux-x86/build-wrapper-linux-x86-64 --out-dir bw-output make all test
+          ../.github/scripts/sonarcloud.sh
 
       - name: Check Autobahn Tests
         working-directory: build
