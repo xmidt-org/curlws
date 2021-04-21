@@ -14,6 +14,8 @@ do
     esac
 done
 
+mkdir -p "${out}"
+
 first=`ls -d ${prefix}/*/ | head -n 1`
 all=`ls -d ${prefix}/*/`
 
