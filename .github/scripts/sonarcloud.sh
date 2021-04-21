@@ -33,4 +33,4 @@ do
 cp "${gcno}" "${out}/${gcno#*.dir/}"
 done
 
-find ${out} -type f -name '*.gcda' -exec gcov -abcp {} +
+find ${out} -type f -name '*.gcda' -exec gcov -p {} +
