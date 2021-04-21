@@ -25,7 +25,7 @@ jobs:
       - name: Install packages
         run: |
           sudo apt update
-          sudo apt-get -y install valgrind libcunit1 libcunit1-doc libcunit1-dev libcurl4-openssl-dev jq
+          sudo apt-get -y install valgrind libcunit1 libcunit1-doc libcunit1-dev libcurl4-openssl-dev jq lcov
           pip install codecov
 
       - name: Make Build Directory
@@ -55,9 +55,13 @@ jobs:
           ./tests/autobahn_report ws://localhost:9001
           ../tests/check_autobahn_results.sh -f $GITHUB_WORKSPACE/reports/clients/index.json
 
+      - name: Merge GCOV Reports for Sonarcloud
+        working-directory: build
+        run: |
+          ../.github/scripts/sonarcloud.sh
+
       - name: Upload SonarCloud
         run: |
-          find . -type f -name '*.gcda' -exec gcov -p {} +
           build/sonar-scanner-4.6.0.2311-linux/bin/sonar-scanner -Dsonar.host.url=https://sonarcloud.io -Dproject.settings=.sonar-project.properties -Dsonar.login=${{ secrets.SONAR_TOKEN }}
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
