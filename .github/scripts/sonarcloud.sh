@@ -23,17 +23,14 @@ gcov-tool merge -o ${out} ${first} ${first}
 for dir in ${all}
 do
 gcov-tool merge -o ${out} ${out} ${dir}
+done
 
-pushd "${dir}"
 gcnos=`find . -type f -name *.gcno`
-popd
 
 for gcno in ${gcnos}
 do
-mkdir -p "${gcno}"
-cp ${dir}/${gcno} ${out}/${gcno}
-done
 
+cp "${gcno}" "${out}/${gcno#*.dir/}"
 done
 
 find ${out} -type f -name '*.gcda' -exec gcov -abcp {} +
