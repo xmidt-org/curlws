@@ -215,11 +215,7 @@ void add_suites( CU_pSuite *suite )
         const char *label;
         void (*fn)(void);
     } tests[] = {
-        //{ .label = "_cws_add_websocket_protocols() Tests", .fn = test_cws_add_websocket_protocols },
-        //{ .label = "_cws_calculate_websocket_key() Tests", .fn = test_calculate_websocket_key     },
-        //{ .label = "_validate_config() Tests",             .fn = test_validate_config             },
-        //{ .label = "_cws_add_headers() Tests",             .fn = test_add_headers                 },
-        { .label = "create/destroy Tests",                 .fn = test_create_destroy              },
+        { .label = "create/destroy Tests", .fn = test_create_destroy              },
         { .label = NULL, .fn = NULL }
     };
     int i;
