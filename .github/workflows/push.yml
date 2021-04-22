@@ -25,7 +25,7 @@ jobs:
       - name: Install packages
         run: |
           sudo apt update
-          sudo apt-get -y install valgrind libcunit1 libcunit1-doc libcunit1-dev libcurl4-openssl-dev jq lcov
+          sudo apt-get -y install valgrind libcunit1 libcunit1-doc libcunit1-dev libcurl4-openssl-dev jq gcovr
           pip install codecov
 
       - name: Make Build Directory
@@ -58,7 +58,7 @@ jobs:
       - name: Merge GCOV Reports for Sonarcloud
         working-directory: build
         run: |
-          ../.github/scripts/sonarcloud.sh
+          gcovr --sonarqube coverage.xml -r ..
 
       - name: Upload SonarCloud
         run: |
