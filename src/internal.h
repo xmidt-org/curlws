@@ -67,7 +67,7 @@ struct callbacks {
     void (*on_connect_fn)(void*, CWS*, const char*);
     void (*on_text_fn)(void*, CWS*, const char*, size_t);
     void (*on_binary_fn)(void*, CWS*, const void*, size_t);
-    void (*on_stream_fn)(void*, CWS*, int, const void*, size_t);
+    void (*on_fragment_fn)(void*, CWS*, int, const void*, size_t);
     void (*on_ping_fn)(void*, CWS*, const void*, size_t);
     void (*on_pong_fn)(void*, CWS*, const void*, size_t);
     void (*on_close_fn)(void*, CWS*, int, const char*, size_t);

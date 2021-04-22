@@ -51,7 +51,7 @@
 /*----------------------------------------------------------------------------*/
 /*                             Function Prototypes                            */
 /*----------------------------------------------------------------------------*/
-static void _default_on_stream(void*, CWS*, int, const void*, size_t);
+static void _default_on_fragment(void*, CWS*, int, const void*, size_t);
 static void _default_on_ping(void*, CWS*, const void*, size_t);
 
 /*----------------------------------------------------------------------------*/
@@ -59,8 +59,8 @@ static void _default_on_ping(void*, CWS*, const void*, size_t);
 /*----------------------------------------------------------------------------*/
 void populate_callbacks(struct callbacks *dest, const struct cws_config *src)
 {
-    dest->on_stream_fn  = _default_on_stream;
-    dest->on_ping_fn    = _default_on_ping;
+    dest->on_fragment_fn = _default_on_fragment;
+    dest->on_ping_fn     = _default_on_ping;
 
     if (NULL == src) {
         return;
@@ -76,8 +76,8 @@ void populate_callbacks(struct callbacks *dest, const struct cws_config *src)
     if (src->on_binary) {
         dest->on_binary_fn = src->on_binary;
     }
-    if (src->on_stream) {
-        dest->on_stream_fn = src->on_stream;
+    if (src->on_fragment) {
+        dest->on_fragment_fn = src->on_fragment;
     }
     if (src->on_ping) {
         dest->on_ping_fn = src->on_ping;
@@ -96,7 +96,7 @@ void populate_callbacks(struct callbacks *dest, const struct cws_config *src)
 
 /*----------------------------------------------------------------------------*/
 
-static void _default_on_stream(void *user, CWS *priv, int info, const void *buffer, size_t len)
+static void _default_on_fragment(void *user, CWS *priv, int info, const void *buffer, size_t len)
 {
     int one_frame = (CWS_FIRST | CWS_LAST);
 

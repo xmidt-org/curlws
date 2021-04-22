@@ -106,43 +106,43 @@ struct mock_stream {
     int more;
 };
 
-static struct mock_stream *__on_stream_goal = NULL;
-static void on_stream(void *data, CWS *handle, int info, const void *buffer, size_t len)
+static struct mock_stream *__on_fragment_goal = NULL;
+static void on_fragment(void *data, CWS *handle, int info, const void *buffer, size_t len)
 {
     (void) data;
 
-    //printf("on_stream( ... info: %08x, buffer: 0x%p, len: %ld )\n", info, buffer, len);
+    //printf("on_fragment( ... info: %08x, buffer: 0x%p, len: %ld )\n", info, buffer, len);
 
-    if (__on_stream_goal) {
+    if (__on_fragment_goal) {
         CU_ASSERT(NULL != handle);
 
-        CU_ASSERT(__on_stream_goal->info == info);
-        if (__on_stream_goal->info != info) {
-            printf("info: want: %08x, got: %08x\n", __on_stream_goal->info, info);
+        CU_ASSERT(__on_fragment_goal->info == info);
+        if (__on_fragment_goal->info != info) {
+            printf("info: want: %08x, got: %08x\n", __on_fragment_goal->info, info);
         }
 
-        CU_ASSERT(__on_stream_goal->len == len);
-        if (__on_stream_goal->len != len) {
-            printf("len: want: %ld, got: %ld\n", __on_stream_goal->len, len);
+        CU_ASSERT(__on_fragment_goal->len == len);
+        if (__on_fragment_goal->len != len) {
+            printf("len: want: %ld, got: %ld\n", __on_fragment_goal->len, len);
         }
 
-        if (NULL != __on_stream_goal->data) {
+        if (NULL != __on_fragment_goal->data) {
             for (size_t i = 0; i < len; i++) {
                 const char *c = (const char*) buffer;
 
-                if (__on_stream_goal->data[i] != c[i]) {
+                if (__on_fragment_goal->data[i] != c[i]) {
                     printf("data[%zd]: want: '%c' (0x%02x), got: '%c' (0x%02x)\n",
-                            i, __on_stream_goal->data[i], __on_stream_goal->data[i],
+                            i, __on_fragment_goal->data[i], __on_fragment_goal->data[i],
                             c[i], c[i]);
                 }
-                CU_ASSERT(__on_stream_goal->data[i] == c[i]);
+                CU_ASSERT(__on_fragment_goal->data[i] == c[i]);
             }
         }
-        __on_stream_goal->seen++;
-        if (0 != __on_stream_goal->more) {
-            __on_stream_goal = &__on_stream_goal[1];
+        __on_fragment_goal->seen++;
+        if (0 != __on_fragment_goal->more) {
+            __on_fragment_goal = &__on_fragment_goal[1];
         } else {
-            __on_stream_goal = NULL;
+            __on_fragment_goal = NULL;
         }
     }
 }
@@ -281,14 +281,14 @@ void run_test( struct test_vector *v )
     memset(&priv, 0, sizeof(CWS));
 
     receive_init(&priv);
-    priv.cb.on_stream_fn = on_stream;
+    priv.cb.on_fragment_fn = on_fragment;
     priv.cb.on_close_fn = on_close;
     priv.cb.on_ping_fn = on_ping;
     priv.cb.on_pong_fn = on_pong;
 
     __on_ping_goal = v->ping;
     __on_pong_goal = v->pong;
-    __on_stream_goal = v->stream;
+    __on_fragment_goal = v->stream;
     __on_close_goal = v->close;
 
     p = v->in;
