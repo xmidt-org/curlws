@@ -22,8 +22,8 @@
  *
  * https://opensource.org/licenses/MIT
  */
-#include <stdarg.h>
 #include <stdbool.h>
+#include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -32,7 +32,7 @@
 #include <curl/curl.h>
 
 #include "../src/curlws.h"
-#include "../src/curlws.c"
+#include "../src/internal.h"
 
 void cws_random(CWS *priv, void *buffer, size_t len)
 {
@@ -48,125 +48,6 @@ void cws_random(CWS *priv, void *buffer, size_t len)
     }
 }
 
-void test_cws_add_websocket_protocols()
-{
-    CWS obj;
-    struct curl_slist *headers = NULL;
-    struct curl_slist *rv = NULL;
-
-    memset(&obj, 0, sizeof(obj));
-
-    rv = _cws_add_websocket_protocols(&obj, headers, NULL);
-    CU_ASSERT(NULL == rv);
-
-    rv = _cws_add_websocket_protocols(&obj, headers, "chat");
-    CU_ASSERT(NULL != rv);
-    CU_ASSERT_STRING_EQUAL(obj.cfg.ws_protocols_requested, "chat");
-    free(obj.cfg.ws_protocols_requested);
-    obj.cfg.ws_protocols_requested = NULL;
-
-    CU_ASSERT_STRING_EQUAL(rv->data, "Sec-WebSocket-Protocol: chat");
-    CU_ASSERT(NULL == rv->next);
-
-    curl_slist_free_all(rv);
-}
-
-
-void test_calculate_websocket_key()
-{
-    CWS obj;
-    struct curl_slist *headers = NULL;
-    struct curl_slist *rv = NULL;
-
-    memset(&obj, 0, sizeof(obj));
-
-    srand( 1000 );
-
-    rv = _cws_calculate_websocket_key(&obj, headers);
-    CU_ASSERT(NULL != rv);
-
-    //printf("\n\nGot: '%s'\n", headers->data);
-    //printf("Got: '%s'\n", obj.expected_key_header);
-
-    CU_ASSERT_STRING_EQUAL(rv->data, "Sec-WebSocket-Key: tluJnnQlu3K8f3LD4vsxcQ==");
-    CU_ASSERT(NULL == rv->next);
-
-    /* TODO: Validate this pair is correct. */
-    CU_ASSERT_STRING_EQUAL(obj.expected_key_header, "4522FSSIYHASSkUaUouiInl8Cvk=");
-
-
-    curl_slist_free_all(rv);
-}
-
-
-void test_validate_config()
-{
-    struct cws_config src;
-
-    memset(&src, 0, sizeof(src));
-
-    CU_ASSERT(false == _validate_config(NULL));
-    CU_ASSERT(false == _validate_config(&src));
-
-    src.url = "http://example.com";
-    CU_ASSERT(true == _validate_config(&src));
-
-    src.max_redirects = -4;
-    CU_ASSERT(false == _validate_config(&src));
-    src.max_redirects = 0;
-
-    src.ip_version = 4;
-    CU_ASSERT(true == _validate_config(&src));
-    src.ip_version = 6;
-    CU_ASSERT(true == _validate_config(&src));
-    src.ip_version = 9;
-    CU_ASSERT(false == _validate_config(&src));
-}
-
-
-void test_add_headers()
-{
-    struct cws_config src;
-    int found;
-    struct curl_slist *rv = NULL;
-    struct curl_slist *headers = NULL;
-    const char *list[] = {
-        "cat: 1",
-        "dog: 2"
-    };
-
-    memset(&src, 0, sizeof(src));
-
-    rv = _cws_add_headers(headers, &src, NULL, 0);
-    CU_ASSERT(NULL == rv);
-
-    src.extra_headers = curl_slist_append(src.extra_headers, "Header-A: 123");
-    src.extra_headers = curl_slist_append(src.extra_headers, "Header-B: 654");
-    rv = _cws_add_headers(headers, &src, list, sizeof(list)/sizeof(char*));
-    CU_ASSERT(NULL != rv);
-
-    headers = rv;
-    found = 0;
-    while (rv) {
-        if (0 == strcmp(rv->data, "Header-A: 123")) {
-            found |= 1;
-        }
-        if (0 == strcmp(rv->data, "Header-B: 654")) {
-            found |= 2;
-        }
-        if (0 == strcmp(rv->data, "cat: 1")) {
-            found |= 4;
-        }
-        if (0 == strcmp(rv->data, "dog: 2")) {
-            found |= 8;
-        }
-        rv = rv->next;
-    }
-    CU_ASSERT(0x0f == found);
-    curl_slist_free_all(headers);
-    curl_slist_free_all(src.extra_headers);
-}
-
 
 void test_create_destroy()
 {
@@ -174,6 +55,9 @@ void test_create_destroy()
     struct cws_config cfg;
 
     memset(&cfg, 0, sizeof(cfg));
+
+    ws = cws_create(NULL);
+    CU_ASSERT(NULL == ws);
 
     ws = cws_create(&cfg);
     CU_ASSERT(NULL == ws);
@@ -183,6 +67,141 @@ void test_create_destroy()
     ws = cws_create(&cfg);
     CU_ASSERT(NULL != ws);
     cws_destroy(ws);
+
+    /* Validate the expected header based on a fixed random number */
+    srand( 1000 );
+    ws = cws_create(&cfg);
+    CU_ASSERT(NULL != ws);
+    CU_ASSERT_STRING_EQUAL(ws->expected_key_header, "4522FSSIYHASSkUaUouiInl8Cvk=");
+    cws_destroy(ws);
+
+    /* Invalid redirect count */
+    cfg.max_redirects = -2;
+    ws = cws_create(&cfg);
+    CU_ASSERT(NULL == ws);
+
+    /* Valid redirect count (unlimited) */
+    cfg.max_redirects = -1;
+    ws = cws_create(&cfg);
+    CU_ASSERT(NULL != ws);
+    cws_destroy(ws);
+
+    /* Any interface value is accepted. */
+    cfg.interface = "not really valid";
+    ws = cws_create(&cfg);
+    CU_ASSERT(NULL != ws);
+    cws_destroy(ws);
+
+    /* Invalid verbose options */
+    cfg.verbose = -1;
+    ws = cws_create(&cfg);
+    CU_ASSERT(NULL == ws);
+
+    cfg.verbose = 12;
+    ws = cws_create(&cfg);
+    CU_ASSERT(NULL == ws);
+
+    /* Valid options */
+    cfg.verbose = 1;
+    ws = cws_create(&cfg);
+    CU_ASSERT(NULL != ws);
+    cws_destroy(ws);
+
+    cfg.verbose = 2;
+    ws = cws_create(&cfg);
+    CU_ASSERT(NULL != ws);
+    cws_destroy(ws);
+
+    cfg.verbose = 3;
+    ws = cws_create(&cfg);
+    CU_ASSERT(NULL != ws);
+    cws_destroy(ws);
+
+    cfg.verbose = 0;
+    ws = cws_create(&cfg);
+    CU_ASSERT(NULL != ws);
+    cws_destroy(ws);
+
+    /* Invalid ip option */
+    cfg.ip_version = -1;
+    ws = cws_create(&cfg);
+    CU_ASSERT(NULL == ws);
+
+    cfg.ip_version = 5;
+    ws = cws_create(&cfg);
+    CU_ASSERT(NULL == ws);
+
+    /* Valid ip options */
+    cfg.ip_version = 4;
+    ws = cws_create(&cfg);
+    CU_ASSERT(NULL != ws);
+    cws_destroy(ws);
+
+    cfg.ip_version = 6;
+    ws = cws_create(&cfg);
+    CU_ASSERT(NULL != ws);
+    cws_destroy(ws);
+
+    /* Invalid security option */
+    cfg.insecure_ok = 1;
+    ws = cws_create(&cfg);
+    CU_ASSERT(NULL == ws);
+
+    /* Valid security option - no security */
+    cfg.insecure_ok = CURLWS_INSECURE_MODE;
+    ws = cws_create(&cfg);
+    CU_ASSERT(NULL != ws);
+    cws_destroy(ws);
+
+    cfg.insecure_ok = 0;
+    ws = cws_create(&cfg);
+    CU_ASSERT(NULL != ws);
+    cws_destroy(ws);
+
+    /* Websocket_protocols are not NULL */
+    cfg.websocket_protocols = "chat";
+    ws = cws_create(&cfg);
+    CU_ASSERT(NULL != ws);
+    CU_ASSERT_STRING_EQUAL(ws->cfg.ws_protocols_requested, "chat");
+    cws_destroy(ws);
+    cfg.websocket_protocols = NULL;
+
+    /* Explicit expect invalid */
+    cfg.explicit_expect = -1;
+    ws = cws_create(&cfg);
+    CU_ASSERT(NULL == ws);
+
+    /* Valid explicit expect */
+    cfg.explicit_expect = 1;
+    ws = cws_create(&cfg);
+    CU_ASSERT(NULL != ws);
+    cws_destroy(ws);
+
+    /* Valid max payload size */
+    cfg.max_payload_size = 10;
+    ws = cws_create(&cfg);
+    CU_ASSERT(NULL != ws);
+    cws_destroy(ws);
+    cfg.max_payload_size = 0;
+
+    /* Valid headers */
+    cfg.extra_headers = curl_slist_append(cfg.extra_headers, "Safe: header");
+    ws = cws_create(&cfg);
+    CU_ASSERT(NULL != ws);
+    cws_destroy(ws);
+
+    cfg.extra_headers = curl_slist_append(cfg.extra_headers, "Extra-Safe: header");
+    ws = cws_create(&cfg);
+    CU_ASSERT(NULL != ws);
+    cws_destroy(ws);
+
+    /* Invalid headers */
+    cfg.extra_headers = curl_slist_append(cfg.extra_headers, "Expect: header");
+    ws = cws_create(&cfg);
+    CU_ASSERT(NULL == ws);
+
+    curl_slist_free_all(cfg.extra_headers);
+    cfg.extra_headers = NULL;
 
     /* Simulate a failure during creation. */
     ws = (CWS*) calloc(1, sizeof(CWS));
@@ -196,11 +215,7 @@ void add_suites( CU_pSuite *suite )
         const char *label;
         void (*fn)(void);
     } tests[] = {
-        { .label = "_cws_add_websocket_protocols() Tests", .fn = test_cws_add_websocket_protocols },
-        { .label = "_cws_calculate_websocket_key() Tests", .fn = test_calculate_websocket_key     },
-        { .label = "_validate_config() Tests",             .fn = test_validate_config             },
-        { .label = "_cws_add_headers() Tests",             .fn = test_add_headers                 },
-        { .label = "create/destroy Tests",                 .fn = test_create_destroy              },
+        { .label = "create/destroy Tests", .fn = test_create_destroy              },
         { .label = NULL, .fn = NULL }
     };
     int i;

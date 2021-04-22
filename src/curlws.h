@@ -126,10 +126,12 @@ struct cws_config {
      */
     int ip_version;
 
-    /* If set, this forces the connection establishment to ignore hostname
-     * validation logic and other protective measures.  Funcationally equal
-     * to using -k with the curl cli. */
-    /* WTS: TODO */
+    /* If set to 0x7269736b, ('risk') this forces the connection establishment
+     * to ignore hostname validation logic and other protective measures.
+     * Functionally equivalent to using -k with the curl cli.  Any other value
+     * defaults to the secure validation of host/peer names. */
+#define CURLWS_INSECURE_MODE 0x7269736b
+    int insecure_ok;
 
     /* The various websocket protocols in a single string format.
      * Something like "chat", "superchat", "superchat,chat" ...
