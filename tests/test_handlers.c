@@ -57,35 +57,35 @@ void test_populate_callbacks()
     memset(&src, 0, sizeof(src));
 
     populate_callbacks(&priv.cb, &src);
-    CU_ASSERT(priv.cb.on_connect_fn == NULL);
-    CU_ASSERT(priv.cb.on_text_fn    == NULL);
-    CU_ASSERT(priv.cb.on_binary_fn  == NULL);
-    CU_ASSERT(priv.cb.on_stream_fn  == _default_on_stream);
-    CU_ASSERT(priv.cb.on_ping_fn    == _default_on_ping);
-    CU_ASSERT(priv.cb.on_pong_fn    == NULL);
-    CU_ASSERT(priv.cb.on_close_fn   == NULL);
-    CU_ASSERT(priv.cb.configure_fn  == NULL);
+    CU_ASSERT(priv.cb.on_connect_fn  == NULL);
+    CU_ASSERT(priv.cb.on_text_fn     == NULL);
+    CU_ASSERT(priv.cb.on_binary_fn   == NULL);
+    CU_ASSERT(priv.cb.on_fragment_fn == _default_on_fragment);
+    CU_ASSERT(priv.cb.on_ping_fn     == _default_on_ping);
+    CU_ASSERT(priv.cb.on_pong_fn     == NULL);
+    CU_ASSERT(priv.cb.on_close_fn    == NULL);
+    CU_ASSERT(priv.cb.configure_fn   == NULL);
 
     populate_callbacks(&priv.cb, &src);
 
-    src.on_connect = (void (*)(void*, CWS*, const char*)) 1;
-    src.on_text    = (void (*)(void*, CWS*, const char*, size_t)) 2;
-    src.on_binary  = (void (*)(void*, CWS*, const void*, size_t)) 3;
-    src.on_stream  = (void (*)(void*, CWS*, int, const void*, size_t)) 4;
-    src.on_ping    = (void (*)(void*, CWS*, const void*, size_t)) 5;
-    src.on_pong    = (void (*)(void*, CWS*, const void*, size_t)) 6;
-    src.on_close   = (void (*)(void*, CWS*, int, const char*, size_t)) 7;
-    src.configure  = (void (*)(void*, CWS*, CURL*)) 8;
+    src.on_connect  = (void (*)(void*, CWS*, const char*)) 1;
+    src.on_text     = (void (*)(void*, CWS*, const char*, size_t)) 2;
+    src.on_binary   = (void (*)(void*, CWS*, const void*, size_t)) 3;
+    src.on_fragment = (void (*)(void*, CWS*, int, const void*, size_t)) 4;
+    src.on_ping     = (void (*)(void*, CWS*, const void*, size_t)) 5;
+    src.on_pong     = (void (*)(void*, CWS*, const void*, size_t)) 6;
+    src.on_close    = (void (*)(void*, CWS*, int, const char*, size_t)) 7;
+    src.configure   = (void (*)(void*, CWS*, CURL*)) 8;
 
     populate_callbacks(&priv.cb, &src);
-    CU_ASSERT(priv.cb.on_connect_fn == (void (*)(void*, CWS*, const char*)) 1);
-    CU_ASSERT(priv.cb.on_text_fn    == (void (*)(void*, CWS*, const char*, size_t)) 2);
-    CU_ASSERT(priv.cb.on_binary_fn  == (void (*)(void*, CWS*, const void*, size_t)) 3);
-    CU_ASSERT(priv.cb.on_stream_fn  == (void (*)(void*, CWS*, int, const void*, size_t)) 4);
-    CU_ASSERT(priv.cb.on_ping_fn    == (void (*)(void*, CWS*, const void*, size_t)) 5);
-    CU_ASSERT(priv.cb.on_pong_fn    == (void (*)(void*, CWS*, const void*, size_t)) 6);
-    CU_ASSERT(priv.cb.on_close_fn   == (void (*)(void*, CWS*, int, const char*, size_t)) 7);
-    CU_ASSERT(priv.cb.configure_fn  == (void (*)(void*, CWS*, CURL*)) 8);
+    CU_ASSERT(priv.cb.on_connect_fn  == (void (*)(void*, CWS*, const char*)) 1);
+    CU_ASSERT(priv.cb.on_text_fn     == (void (*)(void*, CWS*, const char*, size_t)) 2);
+    CU_ASSERT(priv.cb.on_binary_fn   == (void (*)(void*, CWS*, const void*, size_t)) 3);
+    CU_ASSERT(priv.cb.on_fragment_fn == (void (*)(void*, CWS*, int, const void*, size_t)) 4);
+    CU_ASSERT(priv.cb.on_ping_fn     == (void (*)(void*, CWS*, const void*, size_t)) 5);
+    CU_ASSERT(priv.cb.on_pong_fn     == (void (*)(void*, CWS*, const void*, size_t)) 6);
+    CU_ASSERT(priv.cb.on_close_fn    == (void (*)(void*, CWS*, int, const char*, size_t)) 7);
+    CU_ASSERT(priv.cb.configure_fn   == (void (*)(void*, CWS*, CURL*)) 8);
 
 }
 
@@ -103,7 +103,7 @@ void test_defaults_dont_crash()
     cb_on_connect(&priv, NULL);
     cb_on_text(&priv, NULL, 0);
     cb_on_binary(&priv, NULL, 0);
-    cb_on_stream(&priv, 0, NULL, 0);
+    cb_on_fragment(&priv, 0, NULL, 0);
     cb_on_ping(&priv, NULL, 0);
     cb_on_pong(&priv, NULL, 0);
     cb_on_close(&priv, 0, NULL, 0);
@@ -118,7 +118,7 @@ void test_defaults_dont_crash()
     cb_on_connect(&priv, NULL);
     cb_on_text(&priv, NULL, 0);
     cb_on_binary(&priv, NULL, 0);
-    cb_on_stream(&priv, 0, NULL, 0);
+    cb_on_fragment(&priv, 0, NULL, 0);
     cb_on_ping(&priv, NULL, 0);
     cb_on_pong(&priv, NULL, 0);
     cb_on_close(&priv, 0, NULL, 0);

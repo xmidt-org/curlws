@@ -99,18 +99,18 @@ void cb_on_binary(CWS *priv, const void *buf, size_t len)
 }
 
 
-void cb_on_stream(CWS *priv, int info, const void *buf, size_t len)
+void cb_on_fragment(CWS *priv, int info, const void *buf, size_t len)
 {
     if (priv->cfg.verbose) {
-        fprintf(stderr, "< websocket on_stream info: 0x%08x, len: %zd, [buf]\n", info, len);
+        fprintf(stderr, "< websocket on_fragment info: 0x%08x, len: %zd, [buf]\n", info, len);
     }
 
-    if (priv->cb.on_stream_fn) {
-        (*priv->cb.on_stream_fn)(priv->cfg.user, priv, info, buf, len);
+    if (priv->cb.on_fragment_fn) {
+        (*priv->cb.on_fragment_fn)(priv->cfg.user, priv, info, buf, len);
     }
 
     if (priv->cfg.verbose) {
-        fprintf(stderr, "> websocket on_stream\n");
+        fprintf(stderr, "> websocket on_fragment\n");
     }
 }
 

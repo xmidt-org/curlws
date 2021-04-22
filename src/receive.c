@@ -369,7 +369,7 @@ static void _send_data_frame(CWS *priv, const char *buffer, size_t len)
      * as well as it cuts down on sending a bunch of useless empty buffers. */
     if ((0 < len) || ((CWS_FIRST | CWS_LAST) & r->fragment_info)) {
         priv->dispatching++;
-        cb_on_stream(priv, r->fragment_info, buffer, len);
+        cb_on_fragment(priv, r->fragment_info, buffer, len);
         priv->dispatching--;
     }
 

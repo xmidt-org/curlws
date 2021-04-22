@@ -36,13 +36,16 @@
 extern "C" {
 #endif
 
-/* Used to define the location in the stream this frame is by (*on_stream) */
+/* Used to define the location in the stream this frame is by (*on_fragment) */
 #define CWS_CONT        0x00000100
 #define CWS_BINARY      0x00000200
 #define CWS_TEXT        0x00000400
 
 #define CWS_FIRST       0x01000000
 #define CWS_LAST        0x02000000
+
+/* The constant used to enable insecure mode. */
+#define CURLWS_INSECURE_MODE 0x7269736b
 
 /* All possible error codes from all the curlws functions. Future versions
  * may return other values.
@@ -126,11 +129,10 @@ struct cws_config {
      */
     int ip_version;
 
-    /* If set to 0x7269736b, ('risk') this forces the connection establishment
+    /* If set to CURLWS_INSECURE_MODE, this forces the connection establishment
      * to ignore hostname validation logic and other protective measures.
      * Functionally equivalent to using -k with the curl cli.  Any other value
      * defaults to the secure validation of host/peer names. */
-#define CURLWS_INSECURE_MODE 0x7269736b
     int insecure_ok;
 
     /* The various websocket protocols in a single string format.
@@ -169,7 +171,7 @@ struct cws_config {
      *       UTF-8 is not validated. If it's invalid, consider closing the
      *       connection with code = 1007.
      *
-     * @note If (*on_stream) is set, this callback behavior is disabled.
+     * @note If (*on_fragment) is set, this callback behavior is disabled.
      *
      * @param user   the user data specified in this configuration
      * @param handle handle for this websocket
@@ -181,7 +183,7 @@ struct cws_config {
     /**
      * Reports binary data.
      *
-     * @note If (*on_stream) is set, this callback behavior is disabled.
+     * @note If (*on_fragment) is set, this callback behavior is disabled.
      *
      * @param user   the user data specified in this configuration
      * @param handle handle for this websocket
@@ -200,28 +202,47 @@ struct cws_config {
      *
      * @note No control message data will be reported using this function call.
      *
-     * @note The info parameter describes where this frame is in the stream,
-     *       and the type of the frame (Binary/Text).  For a stream with a
-     *       single frame, both CWS_FIRST and CWS_LAST will be set.  It is
-     *       reasonable for a frame to not be either the first or last
-     *       frame.
+     * @note The info parameter describes where this frame is in the stream of
+     *       fragments and the type of the frame (Binary/Text/Continuation).
+     *       For a stream with a single frame, both CWS_FIRST and CWS_LAST will
+     *       both be set at.  All frames following the first frame will be of
+     *       type CWS_CONT.  It is reasonable for a frame to not be either the
+     *       first or last frame.
      *
      * @note If this callback is set to a non-NULL value, then the callbacks
      *       (*on_text) and (*on_binary) are disabled.
      *
+     * @note Valid combinations of the info bitmask:
+     *       CWS_BINARY | CWS_FIRST | CWS_LAST - a single binary fragment
+     *
+     *       CWS_BINARY | CWS_FIRST            - a binary fragment with
+     *                                           additional fragments to follow
+     *
+     *       CWS_TEXT   | CWS_FIRST | CWS_LAST - a single text fragment
+     *
+     *       CWS_TEXT   | CWS_FIRST            - a text fragment with additional
+     *                                           fragments to follow
+     *
+     *       CWS_CONT                          - a single fragment that is the
+     *                                           type declared at the start of
+     *                                           the stream of fragments, with
+     *                                           additional fragments to follow
+     *
+     *       CWS_CONT | CWS_LAST               - a single fragment that is the
+     *                                           type declared at the start of
+     *                                           the stream of fragments, with
+     *                                           no fragments to follow
+     *
      * @param user   the user data specified in this configuration
      * @param handle handle for this websocket
-     * @param info   information about the frame of date presented
-     *                  Either CWS_BINARY or CWS_TEXT will be set indicating
-     *                  the type of the payload.
-     *                  CWS_FIRST will be set if this is the first frame in a
-     *                  sequence.
-     *                  CWS_LAST will be set if this is the last frame in a
-     *                  sequence.
-     * @param buffer the data being returned
-     * @param len    the length of the data
+     * @param info   information about the frame of date presented.  Valid
+     *               combinations are listed in the notes.
+     *                 CWS_BINARY | CWS_TEXT |CWS_CONT (fragment type)
+     *                 CWS_FIRST | CWS_LAST (if fragment is first, last or both)
+     * @param buffer the data being returned (may be NULL)
+     * @param len    the length of the data (may be 0)
      */
-    void (*on_stream)(void *user, CWS *handle, int info, const void *buffer, size_t len);
+    void (*on_fragment)(void *user, CWS *handle, int info, const void *buffer, size_t len);
 
     /**
      * Reports PING.
