@@ -58,8 +58,7 @@ jobs:
       - name: Merge GCOV Reports for Sonarcloud
         working-directory: build
         run: |
-          ../.github/scripts/sonarcloud.sh
-          cat '#home#runner#work#curlws#curlws#src#cb.c.gcov'
+          gcovr -v --sonarqube coverage.xml -r ..
 
       - name: Upload SonarCloud
         run: |
