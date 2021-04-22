@@ -49,13 +49,17 @@
 /*----------------------------------------------------------------------------*/
 /*                                   Macros                                   */
 /*----------------------------------------------------------------------------*/
-/* none */
+#define CURLWS_MIN_VERSION          0x073202
+#define CURLWS_MIN_VERSION_STRING   "7.50.2"
+
+#if !CURL_AT_LEAST_VERSION(0x07, 0x32, 0x02)
+#error "curl minimum version not met 7.50.2"
+#endif
 
 /*----------------------------------------------------------------------------*/
 /*                               Data Structures                              */
 /*----------------------------------------------------------------------------*/
 /* none */
-
 
 /*----------------------------------------------------------------------------*/
 /*                            File Scoped Variables                           */
@@ -66,13 +70,19 @@
 /*                             Function Prototypes                            */
 /*----------------------------------------------------------------------------*/
 static CWScode _normalize_close_inputs(int*, int*, const char**, size_t*);
+static int _check_curl_version(void);
+static int _config_url(CWS*, const struct cws_config*);
+static int _config_redirects(CWS*, const struct cws_config*);
+static int _config_ip_version(CWS*, const struct cws_config*);
+static int _config_interface(CWS*, const struct cws_config*);
+static int _config_security(CWS*, const struct cws_config*);
+static int _config_verbosity(CWS*, const struct cws_config*);
+static int _config_ws_workarounds(CWS*, const struct cws_config*);
+static int _config_memorypool(CWS*, const struct cws_config*);
+static int _config_ws_key(CWS*);
+static int _config_ws_protocols(CWS*, const struct cws_config*);
+static int _config_http_headers(CWS*, const struct cws_config*);
 
-static bool _validate_config(const struct cws_config*);
-static struct curl_slist* _cws_calculate_websocket_key(CWS*, struct curl_slist*);
-static struct curl_slist* _cws_add_websocket_protocols(CWS*, struct curl_slist*, const char*);
-static struct curl_slist* _cws_add_headers(struct curl_slist*,
-                                           const struct cws_config*,
-                                           const char*[], size_t);
 
 /*----------------------------------------------------------------------------*/
 /*                             External Functions                             */
@@ -80,160 +90,56 @@ static struct curl_slist* _cws_add_headers(struct curl_slist*,
 
 CWS *cws_create(const struct cws_config *config)
 {
-    const char *ws_headers[] = {
-         "Connection: Upgrade",
-         "Upgrade: websocket",
-         "Sec-WebSocket-Version: 13",
-    };
-
+    int error = 0;
     CWS *priv = NULL;
-    const curl_version_info_data *curl_ver = NULL;
-    struct curl_slist *headers = NULL;
-    struct curl_slist *tmp = NULL;
-    size_t max_payload_size;
 
-    curl_ver = curl_version_info(CURLVERSION_NOW);
-
-    /* TODO figure out how to make this a compile/link time check ... */
-    if (curl_ver->version_num < 0x073202) {
-        fprintf(stderr, "ERROR: CURL version '%s'. At least '7.50.2' is required for WebSocket to work reliably", curl_ver->version);
-        goto error;
-    }
-
-    if (!_validate_config(config)) {
-        goto error;
+    if ((0 != _check_curl_version()) || (NULL == config)) {
+        return NULL;
     }
 
     priv = (CWS*) calloc(1, sizeof(struct cws_object));
-    if (!priv) { goto error; }
-
-    priv->cfg.max_payload_size = 1024;
-    if (config->max_payload_size) {
-        priv->cfg.max_payload_size = config->max_payload_size;
+    if (!priv) {
+        return NULL;
     }
 
-    /* The largest frame size, so allocate this amount. */
-    max_payload_size = priv->cfg.max_payload_size + WS_FRAME_HEADER_MAX;
-
-    priv->mem_cfg.data_block_size = send_get_memory_needed(max_payload_size);
-    priv->mem_cfg.control_block_size = send_get_memory_needed(WS_CTL_FRAME_MAX);
-
-    priv->mem = mem_init_pool(&priv->mem_cfg);
-    if (!priv) { goto error; }
-
-    populate_callbacks(&priv->cb, config);
-
     priv->easy = curl_easy_init();
-    if (!priv->easy) { goto error; }
+    if (!priv->easy) {
+        cws_destroy(priv);
+        return NULL;
+    }
 
     priv->cfg.user = config->user;
 
-    /* Place things here that are "ok" for a user to overwrite. */
-
-    /* Force a reasonably modern version of TLS */
-    curl_easy_setopt(priv->easy, CURLOPT_SSLVERSION, CURL_SSLVERSION_TLSv1_2);
-
-    /* Setup redirect limits. */
-    if (0 != config->max_redirects) {
-        curl_easy_setopt(priv->easy, CURLOPT_FOLLOWLOCATION, 1L);
-        curl_easy_setopt(priv->easy, CURLOPT_MAXREDIRS, config->max_redirects);
-    }
-
-    if (NULL != config->interface) {
-        curl_easy_setopt(priv->easy, CURLOPT_INTERFACE, config->interface);
-    }
+    /* Only place things here that are "ok" for a user to overwrite. */
 
     if (priv->cb.configure_fn) {
         (*priv->cb.configure_fn)(priv->cfg.user, priv, priv->easy);
     }
 
-    curl_easy_setopt(priv->easy, CURLOPT_PRIVATE, priv);
+    populate_callbacks(&priv->cb, config);
+    error |= _config_memorypool(priv, config);
+    error |= _config_url(priv, config);
+    error |= _config_security(priv, config);
+    error |= _config_interface(priv, config);
+    error |= _config_redirects(priv, config);
+    error |= _config_ip_version(priv, config);
 
     header_init(priv);
     receive_init(priv);
     send_init(priv);
 
-    priv->cfg.url = cws_rewrite_url(config->url);
-    if (!priv->cfg.url) { goto error; }
-    curl_easy_setopt(priv->easy, CURLOPT_URL, priv->cfg.url);
+    error |= _config_verbosity(priv, config);
+    error |= _config_ws_workarounds(priv, config);
+    error |= _config_ws_key(priv);
+    error |= _config_ws_protocols(priv, config);
+    error |= _config_http_headers(priv, config);
 
-    priv->cfg.verbose = config->verbose;
-    if (0 != (2 & config->verbose)) {
-        curl_easy_setopt(priv->easy, CURLOPT_VERBOSE, 1L);
+    if (error) {
+        cws_destroy(priv);
+        return NULL;
     }
-
-    /*
-     * BEGIN: work around CURL to get WebSocket:
-     *
-     * WebSocket must be HTTP/1.1 GET request where we must keep the
-     * "send" part alive without any content-length and no chunked
-     * encoding and the server answer is 101-upgrade.
-     */
-    curl_easy_setopt(priv->easy, CURLOPT_HTTP_VERSION, CURL_HTTP_VERSION_1_1);
-    /* Use CURLOPT_UPLOAD=1 to force "send" even with a GET request,
-     * however it will set HTTP request to PUT
-     */
-    curl_easy_setopt(priv->easy, CURLOPT_UPLOAD, 1L);
-    /*
-     * Then we manually override the string sent to be "GET".
-     */
-    curl_easy_setopt(priv->easy, CURLOPT_CUSTOMREQUEST, "GET");
-
-    /* We need to close connections and not allow reuse. */
-    curl_easy_setopt(priv->easy, CURLOPT_FORBID_REUSE, 1L);
-
-    /* We need to freshly connect each time. */
-    curl_easy_setopt(priv->easy, CURLOPT_FRESH_CONNECT, 1L);
-
-    /*
-     * CURLOPT_UPLOAD=1 with HTTP/1.1 implies:
-     *     Expect: 100-continue
-     * but we don't want that, rather 101. Then force: 101.
-     */
-    if (1 == config->explicit_expect) {
-        tmp = curl_slist_append(headers, "Expect: 101");
-        if (!tmp) { goto error; }
-        headers = tmp;
-    }
-
-    /*
-     * CURLOPT_UPLOAD=1 without a size implies in:
-     *     Transfer-Encoding: chunked
-     * but we don't want that, rather unmodified (raw) bites as we're
-     * doing the websockets framing ourselves. Force nothing.
-     */
-    tmp = curl_slist_append(headers, "Transfer-Encoding:");
-    if (!tmp) { goto error; }
-    headers = tmp;
-
-    /* END: work around CURL to get WebSocket. */
-
-    /* Calculate the unique key pair. */
-    tmp = _cws_calculate_websocket_key(priv, headers);
-    if (!tmp) { goto error; }
-
-    tmp = _cws_add_websocket_protocols(priv, headers, config->websocket_protocols);
-    if (!tmp) { goto error; }
-
-    /* regular mandatory WebSockets headers (ws_headers) and any custom ones
-     * specified by the config */
-
-    tmp = _cws_add_headers(headers, config, ws_headers, sizeof(ws_headers)/sizeof(char*));
-    if (!tmp) { goto error; }
-    headers = tmp;
-
-    curl_easy_setopt(priv->easy, CURLOPT_HTTPHEADER, headers);
-    priv->headers = headers;
 
     return priv;
-
-error:
-    if (headers) {
-        curl_slist_free_all(headers);
-    }
-
-    cws_destroy(priv);
-    return NULL;
 }
 
 
@@ -447,74 +353,224 @@ static CWScode _normalize_close_inputs(int *_code, int *_opts,
     return CWSE_OK;
 }
 
+
+static int _check_curl_version(void)
+{
+    const curl_version_info_data *curl_ver = NULL;
+    curl_ver = curl_version_info(CURLVERSION_NOW);
+
+    if (curl_ver->version_num < CURLWS_MIN_VERSION) {
+        fprintf(stderr, "ERROR: CURL version '%s'. At least '%s' is required for WebSocket to work reliably",
+                curl_ver->version, CURLWS_MIN_VERSION_STRING);
+        return -1;
+    }
+    return 0;
+}
+
+
 /*----------------------------------------------------------------------------*/
 /*                      Internal Configuration Functions                      */
 /*----------------------------------------------------------------------------*/
-static bool _validate_config(const struct cws_config *config)
+static int _config_url(CWS *priv, const struct cws_config *config)
 {
-    struct curl_slist *p;
-    const char *disallowed[] = {
-        "Connection",
-        "Content-Length",
-        "Content-Type",
-        "Expect",
-        "Sec-WebSocket-Accept",
-        "Sec-WebSocket-Key",
-        "Sec-WebSocket-Protocol",
-        "Sec-WebSocket-Version",
-        "Transfer-Encoding",
-        "Upgrade"
-    };
-
-    if ((NULL == config) || (NULL == config->url)) {
-        return false;
-    }
-
-    if (config->max_redirects < -1) {
-        return false;
-    }
-
-    p = config->extra_headers;
-    while (p) {
-        for (size_t i = 0; i < sizeof(disallowed) / sizeof(disallowed[0]); i++) {
-            if (cws_has_prefix(p->data, strlen(p->data), disallowed[i])) {
-                return false;
+    if (config->url) {
+        priv->cfg.url = cws_rewrite_url(config->url);
+        if (priv->cfg.url) {
+            if (CURLE_OK == curl_easy_setopt(priv->easy, CURLOPT_URL, priv->cfg.url)) {
+                return 0;
             }
         }
-        p = p->next;
     }
 
-    switch (config->ip_version) {
-        case 0:
-        case 4:
-        case 6:
-            break;
-        default:
-            return false;
-    }
-
-    switch (config->verbose) {
-        case 0:
-        case 1:
-        case 2:
-        case 3:
-            break;
-        default:
-            return false;
-    }
-
-    switch (config->explicit_expect) {
-        case 0:
-        case 1:
-            break;
-        default:
-            return false;
-    }
-
-    return true;
+    return -1;
 }
 
-static struct curl_slist* _cws_calculate_websocket_key(CWS *priv, struct curl_slist *headers)
+
+static int _config_redirects(CWS *priv, const struct cws_config *config)
+{
+    CURLcode rv = CURLE_OK;
+
+    /* Invalid, too low */
+    if (config->max_redirects < -1) {
+        return -1;
+    }
+
+    /* Setup redirect limits. */
+    if (0 != config->max_redirects) {
+        rv |= curl_easy_setopt(priv->easy, CURLOPT_FOLLOWLOCATION, 1L);
+        rv |= curl_easy_setopt(priv->easy, CURLOPT_MAXREDIRS, config->max_redirects);
+    }
+
+    return (CURLE_OK == rv) ? 0 : -1;
+}
+
+
+static int _config_ip_version(CWS *priv, const struct cws_config *config)
+{
+    CURLcode rv = CURLE_OK;
+
+    if (0 != config->ip_version) {
+        long resolve;
+
+        if (4 == config->ip_version) {
+            resolve = CURL_IPRESOLVE_V4;
+        } else if (6 == config->ip_version) {
+            resolve = CURL_IPRESOLVE_V6;
+        } else {
+            return -1;
+        }
+
+        rv |= curl_easy_setopt(priv->easy, CURLOPT_IPRESOLVE, resolve);
+    }
+
+    return (CURLE_OK == rv) ? 0 : -1;
+}
+
+
+static int _config_interface(CWS *priv, const struct cws_config *config)
+{
+    CURLcode rv = CURLE_OK;
+
+    if (NULL != config->interface) {
+        rv |= curl_easy_setopt(priv->easy, CURLOPT_INTERFACE, config->interface);
+    }
+
+    return (CURLE_OK == rv) ? 0 : -1;
+}
+
+
+static int _config_security(CWS *priv, const struct cws_config *config)
+{
+    /* Force a reasonably modern version of TLS */
+    if (CURLE_OK != curl_easy_setopt(priv->easy, CURLOPT_SSLVERSION, CURL_SSLVERSION_TLSv1_2)) {
+        return -1;
+    }
+
+    if (0 == config->insecure_ok) {
+        return 0;
+    }
+
+    /* If you **really** must run in insecure mode, ok... but seriously this
+     * is dangerous. */
+
+    if (0x7269736b == config->insecure_ok) {
+        if (CURLE_OK != curl_easy_setopt(priv->easy, CURLOPT_SSL_VERIFYPEER, 0L)) {
+            return -1;
+        }
+        if (CURLE_OK != curl_easy_setopt(priv->easy, CURLOPT_SSL_VERIFYHOST, 0L)) {
+            return -1;
+        }
+
+        return 0;
+    }
+
+    return -1;
+}
+
+
+
+static int _config_verbosity(CWS *priv, const struct cws_config *config)
+{
+    CURLcode rv = CURLE_OK;
+
+    if ((config->verbose < 0) || (3 < config->verbose)) {
+        return -1;
+    }
+
+    priv->cfg.verbose = config->verbose;
+    if (0 != (2 & config->verbose)) {
+        rv |= curl_easy_setopt(priv->easy, CURLOPT_VERBOSE, 1L);
+    }
+
+    return (CURLE_OK == rv) ? 0 : -1;
+}
+
+
+static int _config_ws_workarounds(CWS *priv, const struct cws_config *config)
+{
+    struct curl_slist *p;
+    CURLcode rv = CURLE_OK;
+
+    /*
+     * BEGIN: work around CURL to get WebSocket:
+     *
+     * WebSocket must be HTTP/1.1 GET request where we must keep the
+     * "send" part alive without any content-length and no chunked
+     * encoding and the server answer is 101-upgrade.
+     */
+    rv |= curl_easy_setopt(priv->easy, CURLOPT_HTTP_VERSION, CURL_HTTP_VERSION_1_1);
+
+    /* Use CURLOPT_UPLOAD=1 to force "send" even with a GET request,
+     * however it will set HTTP request to PUT
+     */
+    rv |= curl_easy_setopt(priv->easy, CURLOPT_UPLOAD, 1L);
+
+    /*
+     * Then we manually override the string sent to be "GET".
+     */
+    rv |= curl_easy_setopt(priv->easy, CURLOPT_CUSTOMREQUEST, "GET");
+
+    /* We need to close connections and not allow reuse. */
+    rv |= curl_easy_setopt(priv->easy, CURLOPT_FORBID_REUSE, 1L);
+
+    /* We need to freshly connect each time. */
+    rv |= curl_easy_setopt(priv->easy, CURLOPT_FRESH_CONNECT, 1L);
+
+    /*
+     * CURLOPT_UPLOAD=1 with HTTP/1.1 implies:
+     *     Expect: 100-continue
+     * but we don't want that, rather 101. Then force: 101.
+     */
+    if (1 == config->explicit_expect) {
+        p = curl_slist_append(priv->headers, "Expect: 101");
+        if (!p) {
+            return -1;
+        }
+        priv->headers = p;
+    } else if (0 != config->explicit_expect) {
+        return -1;
+    }
+
+    /*
+     * CURLOPT_UPLOAD=1 without a size implies in:
+     *     Transfer-Encoding: chunked
+     * but we don't want that, rather unmodified (raw) bites as we're
+     * doing the websockets framing ourselves. Force nothing.
+     */
+    p = curl_slist_append(priv->headers, "Transfer-Encoding:");
+    if (!p) {
+        return -1;
+    }
+    priv->headers = p;
+
+    /* END: work around CURL to get WebSocket. */
+
+    return (CURLE_OK == rv) ? 0 : -1;
+}
+
+
+static int _config_memorypool(CWS *priv, const struct cws_config *config)
+{
+    size_t max_payload_size;
+
+    priv->cfg.max_payload_size = 1024;
+    if (config->max_payload_size) {
+        priv->cfg.max_payload_size = config->max_payload_size;
+    }
+
+    /* The largest frame size, so allocate this amount. */
+    max_payload_size = priv->cfg.max_payload_size + WS_FRAME_HEADER_MAX;
+
+    priv->mem_cfg.data_block_size = send_get_memory_needed(max_payload_size);
+    priv->mem_cfg.control_block_size = send_get_memory_needed(WS_CTL_FRAME_MAX);
+
+    priv->mem = mem_init_pool(&priv->mem_cfg);
+
+    return 0;
+}
+
+
+static int _config_ws_key(CWS *priv)
 {
     const char guid[] = "258EAFA5-E914-47DA-95CA-C5AB0DC85B11";
     const char header[] = "Sec-WebSocket-Key: ";
@@ -533,67 +589,104 @@ static struct curl_slist* _cws_calculate_websocket_key(CWS *priv, struct curl_sl
 
     snprintf(send, sizeof(send), "%s%s", header, b64_key);
 
-    tmp = curl_slist_append(headers, send);
-    if (tmp) {
-        snprintf(combined, sizeof(combined), "%s%s", b64_key, guid);
-
-        cws_sha1(combined, strlen(combined), sha1_value);
-        cws_encode_base64(sha1_value, sizeof(sha1_value), priv->expected_key_header);
+    tmp = curl_slist_append(priv->headers, send);
+    if (!tmp) {
+        return -1;
     }
 
-    return tmp;
+    priv->headers = tmp;
+    snprintf(combined, sizeof(combined), "%s%s", b64_key, guid);
+
+    cws_sha1(combined, strlen(combined), sha1_value);
+    cws_encode_base64(sha1_value, sizeof(sha1_value), priv->expected_key_header);
+
+    return 0;
 }
 
-static struct curl_slist* _cws_add_websocket_protocols(CWS *priv, struct curl_slist *headers,
-                                                       const char *websocket_protocols)
+static int _config_ws_protocols(CWS *priv, const struct cws_config *config)
 {
+    struct curl_slist *tmp;
     char *buf;
 
-    if (!websocket_protocols) {
-        return headers;
+    if (!config->websocket_protocols) {
+        return 0;
     }
 
-    buf = cws_strmerge("Sec-WebSocket-Protocol: ", websocket_protocols);
+    buf = cws_strmerge("Sec-WebSocket-Protocol: ", config->websocket_protocols);
     if (!buf) {
-        return NULL;
+        return -1;
     }
 
-    headers = curl_slist_append(headers, buf);
+    tmp = curl_slist_append(priv->headers, buf);
     free(buf);
 
-    if (headers) {
-        priv->cfg.ws_protocols_requested = cws_strdup(websocket_protocols);
+    if (!tmp) {
+        return -1;
     }
 
-    return headers;
+    priv->headers = tmp;
+
+    priv->cfg.ws_protocols_requested = cws_strdup(config->websocket_protocols);
+    if (!priv->cfg.ws_protocols_requested) {
+        return -1;
+    }
+
+    return 0;
 }
 
-static struct curl_slist* _cws_add_headers(struct curl_slist *headers,
-                                           const struct cws_config *config,
-                                           const char *list[], size_t len)
+
+static int _config_http_headers(CWS *priv, const struct cws_config *config)
 {
-    struct curl_slist *p, *tmp;
+    const char *disallowed[] = {
+        "Connection:",
+        "Content-Length:",
+        "Content-Type:",
+        "Expect:",
+        "Sec-WebSocket-Accept:",
+        "Sec-WebSocket-Key:",
+        "Sec-WebSocket-Protocol:",
+        "Sec-WebSocket-Version:",
+        "Transfer-Encoding:",
+        "Upgrade:"
+    };
+    const char *ws_headers[] = {
+         "Connection: Upgrade",
+         "Upgrade: websocket",
+         "Sec-WebSocket-Version: 13",
+    };
+    CURLcode rv = CURLE_OK;
+    struct curl_slist *p = NULL;
+    struct curl_slist *extra = NULL;
 
-    tmp = NULL;
-
-    for (size_t i = 0; i < len; i++) {
-        tmp = curl_slist_append(headers, list[i]);
-        if (!tmp) {
-            return NULL;
+    /* Add the required headers */
+    for (size_t i = 0; i < sizeof(ws_headers) / sizeof(ws_headers[0]); i++) {
+        p = curl_slist_append(priv->headers, ws_headers[i]);
+        if (!p) {
+            return -1;
         }
-        headers = tmp;
+        priv->headers = p;
     }
 
-    p = config->extra_headers;
-    while (p) {
-        tmp = curl_slist_append(headers, p->data);
-        if (!tmp) {
-            return NULL;
+
+    /* Add the extra headers */
+    extra = config->extra_headers;
+    while (extra) {
+        /* Validate the extra header is ok */
+        for (size_t i = 0; i < sizeof(disallowed) / sizeof(disallowed[0]); i++) {
+            if (cws_has_prefix(extra->data, strlen(extra->data), disallowed[i])) {
+                return -1;
+            }
         }
 
-        headers = tmp;
-        p = p->next;
+        p = curl_slist_append(priv->headers, extra->data);
+        if (!p) {
+            return -1;
+        }
+        priv->headers = p;
+        extra = extra->next;
     }
 
-    return headers;
+    rv |= curl_easy_setopt(priv->easy, CURLOPT_HTTPHEADER, priv->headers);
+
+    return (CURLE_OK == rv) ? 0 : -1;
 }
