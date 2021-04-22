@@ -59,6 +59,7 @@ jobs:
         working-directory: build
         run: |
           ../.github/scripts/sonarcloud.sh
+          cat '#home#runner#work#curlws#curlws#src#cb.c.gcov'
 
       - name: Upload SonarCloud
         run: |
