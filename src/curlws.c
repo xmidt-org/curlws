@@ -478,7 +478,7 @@ static int _config_verbosity(CWS *priv, const struct cws_config *config)
     }
 
     priv->cfg.verbose = config->verbose;
-    if (0 != (2 & config->verbose)) {
+    if (1 < config->verbose) {
         rv |= curl_easy_setopt(priv->easy, CURLOPT_VERBOSE, 1L);
     }
 
