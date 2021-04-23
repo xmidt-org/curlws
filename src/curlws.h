@@ -65,6 +65,7 @@ typedef enum {
     CWSE_STREAM_CONTINUITY_ISSUE,       /*  8 */
     CWSE_INVALID_OPTIONS,               /*  9 */
     CWSE_INVALID_UTF8,                  /* 10 */
+    CWSE_BAD_FUNCTION_ARGUMENT,         /* 11 */
 
     CWSE_LAST /* never use! */
 } CWScode;
@@ -400,6 +401,7 @@ void cws_destroy(CWS *handle);
  * @retval CWSE_OUT_OF_MEMORY
  * @retval CWSE_CLOSED_CONNECTION
  * @retval CWSE_APP_DATA_LENGTH_TOO_LONG
+ * @retval CWSE_BAD_FUNCTION_ARGUMENT
  */
 CWScode cws_ping(CWS *handle, const void *data, size_t len);
 
@@ -424,6 +426,7 @@ CWScode cws_ping(CWS *handle, const void *data, size_t len);
  * @retval CWSE_OUT_OF_MEMORY
  * @retval CWSE_CLOSED_CONNECTION
  * @retval CWSE_APP_DATA_LENGTH_TOO_LONG
+ * @retval CWSE_BAD_FUNCTION_ARGUMENT
  */
 CWScode cws_pong(CWS *handle, const void *data, size_t len);
 
@@ -462,6 +465,8 @@ CWScode cws_pong(CWS *handle, const void *data, size_t len);
  * @retval CWSE_CLOSED_CONNECTION
  * @retval CWSE_INVALID_CLOSE_REASON_CODE
  * @retval CWSE_APP_DATA_LENGTH_TOO_LONG
+ * @retval CWSE_INVALID_UTF8
+ * @retval CWSE_BAD_FUNCTION_ARGUMENT
  */
 CWScode cws_close(CWS *handle, int code, const char *reason, size_t len);
 
@@ -481,6 +486,7 @@ CWScode cws_close(CWS *handle, int code, const char *reason, size_t len);
  * @retval CWSE_OK
  * @retval CWSE_OUT_OF_MEMORY
  * @retval CWSE_CLOSED_CONNECTION
+ * @retval CWSE_BAD_FUNCTION_ARGUMENT
  */
 CWScode cws_send_blk_binary(CWS *handle, const void *data, size_t len);
 
@@ -500,6 +506,8 @@ CWScode cws_send_blk_binary(CWS *handle, const void *data, size_t len);
  * @retval CWSE_OK
  * @retval CWSE_OUT_OF_MEMORY
  * @retval CWSE_CLOSED_CONNECTION
+ * @retval CWSE_INVALID_UTF8
+ * @retval CWSE_BAD_FUNCTION_ARGUMENT
  */
 CWScode cws_send_blk_text(CWS *handle, const char *s, size_t len);
 
@@ -524,6 +532,8 @@ CWScode cws_send_blk_text(CWS *handle, const char *s, size_t len);
  * @retval CWSE_OUT_OF_MEMORY
  * @retval CWSE_CLOSED_CONNECTION
  * @retval CWSE_STREAM_CONTINUITY_ISSUE
+ * @retval CWSE_INVALID_OPTIONS
+ * @retval CWSE_BAD_FUNCTION_ARGUMENT
  */
 CWScode cws_send_strm_binary(CWS *handle, int info, const void *data, size_t len);
 
@@ -534,6 +544,10 @@ CWScode cws_send_strm_binary(CWS *handle, int info, const void *data, size_t len
  * @note If the len is specified as something other than SIZE_MAX then no
  *       terminating '\0' is needed.  If SIZE_MAX is used then strlen() is
  *       used to determine the string length and a terminating '\0' is required.
+ *
+ * @note This interface will not validate multi-byte UTF-8 characters split
+ *       across buffer boundaries.  Either you should align the buffer boundary
+ *       to the character boundary or validate on prior to making this call.
  *
  * @param handle the websocket handle to interact with
  * @param info   information about the frame of date presented.  The type
@@ -547,6 +561,9 @@ CWScode cws_send_strm_binary(CWS *handle, int info, const void *data, size_t len
  * @retval CWSE_OUT_OF_MEMORY
  * @retval CWSE_CLOSED_CONNECTION
  * @retval CWSE_STREAM_CONTINUITY_ISSUE
+ * @retval CWSE_INVALID_OPTIONS
+ * @retval CWSE_INVALID_UTF8
+ * @retval CWSE_BAD_FUNCTION_ARGUMENT
  */
 CWScode cws_send_strm_text(CWS *handle, int info, const char *s, size_t len);
 

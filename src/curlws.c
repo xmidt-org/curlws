@@ -193,12 +193,20 @@ CURLMcode cws_multi_remove_handle(CWS *ws, CURLM *multi_handle)
 
 CWScode cws_ping(CWS *priv, const void *data, size_t len)
 {
+    if (!priv) {
+        return CWSE_BAD_FUNCTION_ARGUMENT;
+    }
+
     return frame_sender_control(priv, CWS_PING, data, len);
 }
 
 
 CWScode cws_pong(CWS *priv, const void *data, size_t len)
 {
+    if (!priv) {
+        return CWSE_BAD_FUNCTION_ARGUMENT;
+    }
+
     return frame_sender_control(priv, CWS_PONG, data, len);
 }
 
@@ -209,6 +217,10 @@ CWScode cws_close(CWS *priv, int code, const char *reason, size_t len)
     CWScode rv;
     uint8_t buf[WS_CTL_PAYLOAD_MAX];    /* Limited by RFC6455 Section 5.5 */
     uint8_t *p = NULL;
+
+    if (!priv) {
+        return CWSE_BAD_FUNCTION_ARGUMENT;
+    }
 
     rv = _normalize_close_inputs(&code, &options, &reason, &len);
     if (CWSE_OK != rv) {
@@ -237,6 +249,10 @@ CWScode cws_close(CWS *priv, int code, const char *reason, size_t len)
 
 CWScode cws_send_blk_binary(CWS *priv, const void *data, size_t len)
 {
+    if (!priv) {
+        return CWSE_BAD_FUNCTION_ARGUMENT;
+    }
+
     return data_block_sender(priv, CWS_BINARY, data, len);
 }
 
@@ -244,6 +260,10 @@ CWScode cws_send_blk_binary(CWS *priv, const void *data, size_t len)
 CWScode cws_send_blk_text(CWS *priv, const char *s, size_t len)
 {
     size_t prev_len;
+
+    if (!priv) {
+        return CWSE_BAD_FUNCTION_ARGUMENT;
+    }
 
     if (s) {
         if (len == SIZE_MAX) {
@@ -264,26 +284,58 @@ CWScode cws_send_blk_text(CWS *priv, const char *s, size_t len)
 
 CWScode cws_send_strm_binary(CWS *priv, int info, const void *data, size_t len)
 {
-    IGNORE_UNUSED(priv);
-    IGNORE_UNUSED(info);
-    IGNORE_UNUSED(data);
-    IGNORE_UNUSED(len);
-    return CWSE_OK;
+
+    if (!priv) {
+        return CWSE_BAD_FUNCTION_ARGUMENT;
+    }
+
+    /* If the message has no payload and is not a start or end block, don't
+     * send it. */
+    if ((0 == info) && ((!data) || (0 == len))) {
+        if (0 != priv->last_sent_data_frame_info) {
+            return CWSE_OK;
+        } else {
+            return CWSE_STREAM_CONTINUITY_ISSUE;
+        }
+    }
+
+    if (CWS_FIRST & info) {
+        info |= CWS_BINARY;
+    } else {
+        info |= CWS_CONT;
+    }
+
+    return frame_sender_data(priv, info, data, len);
 }
 
 
 CWScode cws_send_strm_text(CWS *priv, int info, const char *s, size_t len)
 {
-    size_t prev_len = len;
+    if (!priv) {
+        return CWSE_BAD_FUNCTION_ARGUMENT;
+    }
 
-    IGNORE_UNUSED(priv);
-    IGNORE_UNUSED(info);
+    /* If the message has no payload and is not a start or end block, don't
+     * send it. */
+    if ((0 == info) && ((!s) || (0 == len))) {
+        if (0 != priv->last_sent_data_frame_info) {
+            return CWSE_OK;
+        } else {
+            return CWSE_STREAM_CONTINUITY_ISSUE;
+        }
+    }
 
-    if (0 != utf8_validate(s, &len) || (prev_len != len)) {
+    if (CWS_FIRST & info) {
+        info |= CWS_TEXT;
+    } else {
+        info |= CWS_CONT;
+    }
+
+    if (0 != utf8_validate(s, &len)) {
         return CWSE_INVALID_UTF8;
     }
 
-    return CWSE_OK;
+    return frame_sender_data(priv, info, s, len);
 }
 
 
