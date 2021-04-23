@@ -88,9 +88,6 @@ void populate_callbacks(struct callbacks *dest, const struct cws_config *src)
     if (src->on_close) {
         dest->on_close_fn = src->on_close;
     }
-    if (src->configure) {
-        dest->configure_fn = src->configure;
-    }
 }
 
 
