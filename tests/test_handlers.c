@@ -64,7 +64,6 @@ void test_populate_callbacks()
     CU_ASSERT(priv.cb.on_ping_fn     == _default_on_ping);
     CU_ASSERT(priv.cb.on_pong_fn     == NULL);
     CU_ASSERT(priv.cb.on_close_fn    == NULL);
-    CU_ASSERT(priv.cb.configure_fn   == NULL);
 
     populate_callbacks(&priv.cb, &src);
 
@@ -85,7 +84,6 @@ void test_populate_callbacks()
     CU_ASSERT(priv.cb.on_ping_fn     == (void (*)(void*, CWS*, const void*, size_t)) 5);
     CU_ASSERT(priv.cb.on_pong_fn     == (void (*)(void*, CWS*, const void*, size_t)) 6);
     CU_ASSERT(priv.cb.on_close_fn    == (void (*)(void*, CWS*, int, const char*, size_t)) 7);
-    CU_ASSERT(priv.cb.configure_fn   == (void (*)(void*, CWS*, CURL*)) 8);
 
 }
 

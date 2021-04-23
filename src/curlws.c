@@ -112,8 +112,8 @@ CWS *cws_create(const struct cws_config *config)
 
     /* Only place things here that are "ok" for a user to overwrite. */
 
-    if (priv->cb.configure_fn) {
-        (*priv->cb.configure_fn)(priv->cfg.user, priv, priv->easy);
+    if (config->configure) {
+        (*config->configure)(priv->cfg.user, priv, priv->easy);
     }
 
     populate_callbacks(&priv->cb, config);
