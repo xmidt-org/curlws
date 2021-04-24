@@ -201,14 +201,8 @@ add_test(NAME Test_Curlws COMMAND ${MEMORY_CHECK} ./test_curlws)
 add_executable(test_curlws test_curlws.c
                            ../src/cb.c
                            ../src/curlws.c
-                           ../src/data_block_sender.c
-                           ../src/frame_senders.c
-                           ../src/frame.c
                            ../src/handlers.c
-                           ../src/header.c
                            ../src/memory.c
-                           ../src/receive.c
-                           ../src/send.c
                            ../src/sha1_openssl.c
                            ../src/utf8.c
                            ../src/utils.c
@@ -218,21 +212,9 @@ if (${CMAKE_SYSTEM_NAME} MATCHES "Linux")
 target_link_libraries (test_curlws gcov)
 endif()
 target_link_libraries (test_curlws cunit)
-target_link_libraries (test_curlws ${OPENSSL_LIBRARIES} ${CURL_LIBRARIES})
+target_link_libraries (test_curlws ${OPENSSL_LIBRARIES})
 # ---------------------------------------------------------------------------- #
 
-
-# ---------------------------------------------------------------------------- #
-#add_test(NAME Test_MockedCurlws COMMAND ${MEMORY_CHECK} ./test_mocked_curlws)
-#
-#add_executable(test_mocked_curlws test_mocked_curlws.c ../src/utils.c ../src/memory.c)
-#
-#if (${CMAKE_SYSTEM_NAME} MATCHES "Linux")
-#target_link_libraries (test_mocked_curlws gcov)
-#endif()
-#target_link_libraries (test_mocked_curlws cunit)
-#target_link_libraries (test_mocked_curlws ${OPENSSL_LIBRARIES})
-# ---------------------------------------------------------------------------- #
 
 
 # ---------------------------------------------------------------------------- #
