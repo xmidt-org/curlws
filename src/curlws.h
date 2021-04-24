@@ -357,7 +357,8 @@ CWS *cws_create(const struct cws_config *config);
  * @param cws_handle   the websocket handle to associate with the multi handle
  * @param multi_handle the multi handle to control the websocket
  *
- * @return the response from libcurl
+ * @return the response from libcurl or CURLM_UNKNOWN_OPTION if the CWS handle
+ *         is invalid
  */
 CURLMcode cws_multi_add_handle(CWS *cws_handle, CURLM *multi_handle);
 
@@ -369,7 +370,8 @@ CURLMcode cws_multi_add_handle(CWS *cws_handle, CURLM *multi_handle);
  * @param cws_handle   the websocket handle to associate with the multi handle
  * @param multi_handle the multi handle to control the websocket
  *
- * @return the response from libcurl
+ * @return the response from libcurl or CURLM_UNKNOWN_OPTION if the CWS handle
+ *         is invalid
  */
 CURLMcode cws_multi_remove_handle(CWS *cws_handle, CURLM *multi_handle);
 

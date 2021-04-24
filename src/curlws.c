@@ -183,7 +183,9 @@ void cws_destroy(CWS *priv)
 CURLMcode cws_multi_add_handle(CWS *priv, CURLM *multi_handle)
 {
     if (!priv) {
-        return CURLM_BAD_FUNCTION_ARGUMENT;
+        /* CURLM_BAD_FUNCTION_ARGUMENT is only available since 7.69.0
+         * so use a much older error code. */
+        return CURLM_UNKNOWN_OPTION;
     }
 
     return curl_multi_add_handle(multi_handle, priv->easy);
@@ -193,7 +195,9 @@ CURLMcode cws_multi_add_handle(CWS *priv, CURLM *multi_handle)
 CURLMcode cws_multi_remove_handle(CWS *priv, CURLM *multi_handle)
 {
     if (!priv) {
-        return CURLM_BAD_FUNCTION_ARGUMENT;
+        /* CURLM_BAD_FUNCTION_ARGUMENT is only available since 7.69.0
+         * so use a much older error code. */
+        return CURLM_UNKNOWN_OPTION;
     }
 
     return curl_multi_remove_handle(multi_handle, priv->easy);
