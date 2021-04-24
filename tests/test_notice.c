@@ -48,6 +48,7 @@ char* read_notice_file(const char *filename)
         if (buf) {
             if (len == (long) fread(buf, 1, len, f)) {
                 buf[len] = '\0';
+            } else {
                 free(buf);
                 buf = NULL;
             }
@@ -63,6 +64,7 @@ void test_notice()
     char *goal = NULL;
 
     goal = read_notice_file(global_filename);
+    CU_ASSERT(NULL != goal);
     if (goal) {
         const char *got = NULL;
         size_t goal_size, got_size;

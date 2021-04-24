@@ -25,6 +25,12 @@ if(NOT DISABLE_VALGRIND)
 set (MEMORY_CHECK valgrind --leak-check=full --show-reachable=yes  --error-exitcode=1 -v)
 endif ()
 
+if (USE_OPENSSL_SHA)
+set (SHA_FILES ../src/sha1_openssl.c)
+else()
+set (SHA_FILES ../src/sha1/sha1.c ../src/sha1_internal.c)
+endif()
+
 set (CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Wall -W -g -fprofile-arcs -ftest-coverage -O0 -finstrument-functions")
 set (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall -W  -g -fprofile-arcs -ftest-coverage -O0 -finstrument-functions")
 set (CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -fprofile-arcs -ftest-coverage -O0 -finstrument-functions")
@@ -72,7 +78,7 @@ target_link_libraries (test_notice)
 # ---------------------------------------------------------------------------- #
 add_test(NAME Test_SHA1 COMMAND ${MEMORY_CHECK} ./test_sha1)
 
-add_executable(test_sha1 test_sha1.c ../src/sha1_openssl.c)
+add_executable(test_sha1 test_sha1.c ${SHA_FILES})
 
 if (${CMAKE_SYSTEM_NAME} MATCHES "Linux")
 target_link_libraries (test_sha1 gcov)
@@ -216,7 +222,7 @@ add_executable(test_curlws test_curlws.c
                            ../src/curlws.c
                            ../src/handlers.c
                            ../src/memory.c
-                           ../src/sha1_openssl.c
+                           ${SHA_FILES}
                            ../src/utf8.c
                            ../src/utils.c
                            ../src/ws.c)
@@ -275,7 +281,7 @@ add_executable(test_autobahn autobahn-testee.c
                              ../src/random.c
                              ../src/receive.c
                              ../src/send.c
-                             ../src/sha1_openssl.c
+                             ${SHA_FILES}
                              ../src/utf8.c
                              ../src/utils.c
                              ../src/ws.c)
@@ -303,7 +309,7 @@ add_executable(test_autobahn_parallel autobahn-testee-parallel.c
                                       ../src/random.c
                                       ../src/receive.c
                                       ../src/send.c
-                                      ../src/sha1_openssl.c
+                                      ${SHA_FILES}
                                       ../src/utf8.c
                                       ../src/utils.c
                                       ../src/ws.c)
@@ -330,7 +336,7 @@ add_executable(autobahn_report autobahn_report.c
                                       ../src/random.c
                                       ../src/receive.c
                                       ../src/send.c
-                                      ../src/sha1_openssl.c
+                                      ${SHA_FILES}
                                       ../src/utf8.c
                                       ../src/utils.c
                                       ../src/ws.c)

@@ -15,6 +15,10 @@ cURL is a leading networking library and tool for the c world, but it lacks
 websocket support.  This project provides a complementary library that uses
 cURL for the initial handshakes and then provides a simple websocket experience.
 
+Outside of libcurl and it's dependencies and a functional libc, this library
+does not depend on any external libraries.  SHA1 is included unless you choose
+to configure the `USE_OPENSSL_SHA` option (see below).
+
 ## Table of Contents
 
 - [Code of Conduct](#code-of-conduct)
@@ -43,10 +47,12 @@ This requires docker.
 
 ### Build the code
 
+If you do not include the `-DUSE_OPENSSL_SHA=TRUE` the internal sha1 code is used.
+
 ```
 mkdir build
 cd build
-cmake ..
+cmake -DUSE_OPENSSL_SHA=TRUE
 make
 ```
 

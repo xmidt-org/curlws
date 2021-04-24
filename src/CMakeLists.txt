@@ -21,22 +21,38 @@
 #
 #   https://opensource.org/licenses/MIT
 
+target_sources(curlws
+    PRIVATE
+        cb.c
+        curlws.c
+        data_block_sender.c
+        frame.c
+        frame_senders.c
+        handlers.c
+        header.c
+        memory.c
+        notice.c
+        random.c
+        receive.c
+        send.c
+        utils.c
+        ws.c
+)
 
-add_library(curlws SHARED cb.c
-                          curlws.c
-                          data_block_sender.c
-                          frame.c
-                          frame_senders.c
-                          handlers.c
-                          header.c
-                          memory.c
-                          notice.c
-                          random.c
-                          receive.c
-                          send.c
-                          sha1_openssl.c
-                          utils.c
-                          ws.c)
+if (USE_OPENSSL_SHA)
+    MESSAGE(STATUS "Using Openssl for SHA1")
+    target_sources(curlws
+        PRIVATE
+            sha1_openssl.c
+    )
+else()
+    MESSAGE(STATUS "Using include SHA1 implementation")
+    target_sources(curlws
+        PRIVATE
+            sha1_internal.c
+    )
+    add_subdirectory(sha1)
+endif()
 
 install (FILES
          ${CMAKE_CURRENT_SOURCE_DIR}/curlws.h
