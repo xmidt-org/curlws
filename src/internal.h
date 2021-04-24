@@ -71,7 +71,6 @@ struct callbacks {
     void (*on_ping_fn)(void*, CWS*, const void*, size_t);
     void (*on_pong_fn)(void*, CWS*, const void*, size_t);
     void (*on_close_fn)(void*, CWS*, int, const char*, size_t);
-    void (*configure_fn)(void*, CWS*, CURL*);
 };
 
 struct recv {
