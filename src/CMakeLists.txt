@@ -30,6 +30,7 @@ add_library(curlws SHARED cb.c
                           handlers.c
                           header.c
                           memory.c
+                          notice.c
                           random.c
                           receive.c
                           send.c

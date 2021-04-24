@@ -57,6 +57,19 @@ target_link_libraries (test_utils)
 
 
 # ---------------------------------------------------------------------------- #
+add_test(NAME Test_Notice COMMAND ${MEMORY_CHECK} ./test_notice ${CMAKE_SOURCE_DIR}/NOTICE )
+
+add_executable(test_notice test_notice.c ../src/notice.c)
+
+if (${CMAKE_SYSTEM_NAME} MATCHES "Linux")
+target_link_libraries (test_notice gcov)
+endif()
+target_link_libraries (test_notice cunit)
+target_link_libraries (test_notice)
+# ---------------------------------------------------------------------------- #
+
+
+# ---------------------------------------------------------------------------- #
 add_test(NAME Test_SHA1 COMMAND ${MEMORY_CHECK} ./test_sha1)
 
 add_executable(test_sha1 test_sha1.c ../src/sha1_openssl.c)
