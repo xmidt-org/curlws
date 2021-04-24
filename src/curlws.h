@@ -570,6 +570,14 @@ CWScode cws_send_strm_binary(CWS *handle, int info, const void *data, size_t len
 CWScode cws_send_strm_text(CWS *handle, int info, const char *s, size_t len);
 
 
+/**
+ * Provide a mechanism for software that includes this library to easily be in
+ * compliance with the terms for the license & notice.
+ *
+ * @retval returns a string of the notice details that should not be free()d
+ */
+const char* cws_get_notice();
+
 #ifdef __cplusplus
 }
 #endif
