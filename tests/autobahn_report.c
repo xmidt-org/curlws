@@ -94,7 +94,7 @@ int main(int argc, char *argv[]) {
 
     snprintf(url, sizeof(url), "%s/updateReports?agent=curlws", base_url);
     cfg.url = url;
-    cfg.explicit_expect = 1;
+    cfg.expect = 1;
 
     ws = cws_create(&cfg);
     if (ws) {

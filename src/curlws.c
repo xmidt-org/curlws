@@ -570,13 +570,13 @@ static int _config_ws_workarounds(CWS *priv, const struct cws_config *config)
      *     Expect: 100-continue
      * but we don't want that, rather 101. Then force: 101.
      */
-    if (1 == config->explicit_expect) {
+    if (1 == config->expect) {
         p = curl_slist_append(priv->headers, "Expect: 101");
         if (!p) {
             return -1;
         }
         priv->headers = p;
-    } else if (0 != config->explicit_expect) {
+    } else if (0 != config->expect) {
         return -1;
     }
 

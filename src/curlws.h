@@ -146,7 +146,7 @@ struct cws_config {
      * a 101 vs possibly a 100.  Some server implementations reject this
      * option with a 417.
      */
-    int explicit_expect;
+    int expect;
 
     /* The largest amount of payload data sent as one websocket frame.
      * If set to 0 the library default of 1024 will be used.

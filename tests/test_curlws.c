@@ -444,13 +444,13 @@ void test_create_destroy()
         "Sec-WebSocket-Version: 13");
 
     /* Explicit expect invalid */
-    cfg.explicit_expect = -1;
+    cfg.expect = -1;
     ws = cws_create(&cfg);
     CU_ASSERT(NULL == ws);
     reset_setopt();
 
     /* Valid explicit expect */
-    cfg.explicit_expect = 1;
+    cfg.expect = 1;
     ws = cws_create(&cfg);
     CU_ASSERT(NULL != ws);
     cws_destroy(ws);

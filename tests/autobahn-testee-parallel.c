@@ -418,7 +418,7 @@ int main(int argc, char *argv[]) {
         cfg.on_pong = on_pong;
         cfg.on_close = on_close;
         cfg.user = p;
-        cfg.explicit_expect = 1;
+        cfg.expect = 1;
         cfg.max_payload_size = 131070;
 
         //fprintf(stderr, "TEST: %u\n", current_test);
