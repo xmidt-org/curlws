@@ -723,8 +723,8 @@ void test_multi_handles()
     memset(&ws, 0, sizeof(ws));
 
     /* These are pretty simple */
-    CU_ASSERT(CURLM_BAD_FUNCTION_ARGUMENT == cws_multi_add_handle(NULL, NULL));
-    CU_ASSERT(CURLM_BAD_FUNCTION_ARGUMENT == cws_multi_remove_handle(NULL, NULL));
+    CU_ASSERT(CURLM_UNKNOWN_OPTION == cws_multi_add_handle(NULL, NULL));
+    CU_ASSERT(CURLM_UNKNOWN_OPTION == cws_multi_remove_handle(NULL, NULL));
 
     CU_ASSERT(CURLM_OK == cws_multi_add_handle(&ws, NULL));
     CU_ASSERT(CURLM_OK == cws_multi_remove_handle(&ws, NULL));
