@@ -237,6 +237,7 @@ target_link_libraries (test_curlws ${OPENSSL_LIBRARIES})
 
 
 # ---------------------------------------------------------------------------- #
+if (USE_AUTOBAHN_SERIAL)
 add_test(NAME Test_Autobahn___1__10  COMMAND ./test_autobahn ws://localhost:9001   1  10)
 add_test(NAME Test_Autobahn__11__20  COMMAND ./test_autobahn ws://localhost:9001  11  20)
 add_test(NAME Test_Autobahn__21__30  COMMAND ./test_autobahn ws://localhost:9001  21  30)
@@ -268,6 +269,7 @@ add_test(NAME Test_Autobahn_271_280  COMMAND ./test_autobahn ws://localhost:9001
 add_test(NAME Test_Autobahn_281_290  COMMAND ./test_autobahn ws://localhost:9001 281 290)
 add_test(NAME Test_Autobahn_291_300  COMMAND ./test_autobahn ws://localhost:9001 291 300)
 add_test(NAME Test_Autobahn_301_303  COMMAND ./test_autobahn ws://localhost:9001 301 303)
+endif()
 
 add_executable(test_autobahn autobahn-testee.c
                              ../src/cb.c
@@ -295,7 +297,10 @@ target_link_libraries (test_autobahn ${OPENSSL_LIBRARIES} ${CURL_LIBRARIES})
 
 
 # ---------------------------------------------------------------------------- #
-#add_test(NAME Test_Autobahn_parallel  COMMAND ./test_autobahn_parallel ws://localhost:9001 1 303)
+if (USE_AUTOBAHN_SERIAL)
+else()
+add_test(NAME Test_Autobahn_parallel  COMMAND ./test_autobahn_parallel ws://localhost:9001 1 303)
+endif()
 
 add_executable(test_autobahn_parallel autobahn-testee-parallel.c
                                       ../src/cb.c
@@ -322,8 +327,6 @@ target_link_libraries (test_autobahn_parallel ${OPENSSL_LIBRARIES} ${CURL_LIBRAR
 # ---------------------------------------------------------------------------- #
 
 # ---------------------------------------------------------------------------- #
-#add_test(NAME Test_Autobahn_report  COMMAND ./autobahn_report ws://localhost:9001)
-
 add_executable(autobahn_report autobahn_report.c
                                       ../src/cb.c
                                       ../src/curlws.c
