@@ -33,12 +33,13 @@
 void test_validate()
 {
     struct {
+        const char *desc;
         struct cws_frame f;
         frame_dir dir;
         int rv;
     } tests[] = {
-        /* A happy path continuation frame */
-        { .f.fin = 1,
+        { .desc = "A happy path continuation frame",
+          .f.fin = 1,
           .f.opcode = WS_OPCODE_CONTINUATION,
           .f.is_control = 0,
           .f.mask = 1,
@@ -46,8 +47,8 @@ void test_validate()
           .f.payload_len = 1200,
           .dir = FRAME_DIR_C2S,
           .rv = 0 },
-        /* A happy path text frame */
-        { .f.fin = 1,
+        { .desc = "A happy path text frame",
+          .f.fin = 1,
           .f.opcode = WS_OPCODE_TEXT,
           .f.is_control = 0,
           .f.mask = 0,
@@ -55,8 +56,8 @@ void test_validate()
           .f.payload_len = 1200,
           .dir = FRAME_DIR_S2C,
           .rv = 0 },
-        /* A happy path ping frame */
-        { .f.fin = 1,
+        { .desc = "A happy path ping frame",
+          .f.fin = 1,
           .f.opcode = WS_OPCODE_PING,
           .f.is_control = 1,
           .f.mask = 0,
@@ -64,8 +65,8 @@ void test_validate()
           .f.payload_len = 0,
           .dir = FRAME_DIR_S2C,
           .rv = 0 },
-        /* A happy path pong frame */
-        { .f.fin = 1,
+        { .desc = "A happy path pong frame",
+          .f.fin = 1,
           .f.opcode = WS_OPCODE_PONG,
           .f.is_control = 1,
           .f.mask = 1,
@@ -74,8 +75,8 @@ void test_validate()
           .dir = FRAME_DIR_C2S,
           .rv = 0 },
 
-        /* A error path ping frame -- invalid mask */
-        { .f.fin = 1,
+        { .desc = "A error path ping frame -- invalid mask check",
+          .f.fin = 1,
           .f.opcode = WS_OPCODE_PING,
           .f.is_control = 1,
           .f.mask = 1,
@@ -83,27 +84,18 @@ void test_validate()
           .f.payload_len = 0,
           .dir = FRAME_DIR_S2C,
           .rv = -1 },
-        /* A error path ping frame -- invalid mask */
-        { .f.fin = 1,
+        { .desc = "A error path ping frame -- invalid mask check",
+          .f.fin = 1,
           .f.opcode = WS_OPCODE_PING,
           .f.is_control = 1,
           .f.mask = 0,
           .f.masking_key = {0, 0, 4, 0xd2},
           .f.payload_len = 0,
-          .dir = FRAME_DIR_S2C,
-          .rv = -1 },
-        /* A error path ping frame -- invalid mask */
-        { .f.fin = 1,
-          .f.opcode = WS_OPCODE_PING,
-          .f.is_control = 1,
-          .f.mask = 1,
-          .f.masking_key = {0, 0, 4, 0xd2},
-          .f.payload_len = 0,
-          .dir = FRAME_DIR_S2C,
+          .dir = FRAME_DIR_C2S,
           .rv = -1 },
 
-        /* A error path pong frame -- invalid mask */
-        { .f.fin = 1,
+        { .desc = "A error path pong frame -- invalid mask",
+          .f.fin = 1,
           .f.opcode = WS_OPCODE_PONG,
           .f.is_control = 1,
           .f.mask = 1,
@@ -111,8 +103,8 @@ void test_validate()
           .f.payload_len = 0,
           .dir = FRAME_DIR_S2C,
           .rv = -1 },
-        /* A error path pong frame -- invalid mask */
-        { .f.fin = 1,
+        { .desc = "A error path pong frame -- invalid mask",
+          .f.fin = 1,
           .f.opcode = WS_OPCODE_PONG,
           .f.is_control = 1,
           .f.mask = 0,
@@ -120,8 +112,8 @@ void test_validate()
           .f.payload_len = 0,
           .dir = FRAME_DIR_C2S,
           .rv = -1 },
-        /* A error path pong frame -- invalid mask */
-        { .f.fin = 1,
+        { .desc = "A error path pong frame -- invalid mask",
+          .f.fin = 1,
           .f.opcode = WS_OPCODE_PONG,
           .f.is_control = 1,
           .f.mask = 0,
@@ -130,8 +122,8 @@ void test_validate()
           .dir = FRAME_DIR_C2S,
           .rv = -1 },
 
-        /* A error path ping frame -- invalid control msg*/
-        { .f.fin = 1,
+        { .desc = "A error path ping frame -- invalid control msg",
+          .f.fin = 1,
           .f.opcode = WS_OPCODE_PING,
           .f.is_control = 0,
           .f.mask = 0,
@@ -139,8 +131,8 @@ void test_validate()
           .f.payload_len = 0,
           .dir = FRAME_DIR_S2C,
           .rv = -2 },
-        /* A error path text frame -- invalid control msg*/
-        { .f.fin = 1,
+        { .desc = "A error path text frame -- invalid control msg",
+          .f.fin = 1,
           .f.opcode = WS_OPCODE_TEXT,
           .f.is_control = 1,
           .f.mask = 1,
@@ -149,8 +141,8 @@ void test_validate()
           .dir = FRAME_DIR_C2S,
           .rv = -2 },
 
-        /* A error path ping frame -- invalid payload len */
-        { .f.fin = 1,
+        { .desc = "A error path ping frame -- invalid payload len",
+          .f.fin = 1,
           .f.opcode = WS_OPCODE_PING,
           .f.is_control = 1,
           .f.mask = 0,
@@ -158,8 +150,8 @@ void test_validate()
           .f.payload_len = 130,
           .dir = FRAME_DIR_S2C,
           .rv = -3 },
-        /* A error path text frame -- invalid payload len*/
-        { .f.fin = 1,
+        { .desc = "A error path text frame -- invalid payload len",
+          .f.fin = 1,
           .f.opcode = WS_OPCODE_TEXT,
           .f.is_control = 0,
           .f.mask = 1,
@@ -168,8 +160,8 @@ void test_validate()
           .dir = FRAME_DIR_C2S,
           .rv = -3 },
 
-        /* A error path ping frame -- invalid fin */
-        { .f.fin = 0,
+        { .desc = "A error path ping frame -- invalid fin",
+          .f.fin = 0,
           .f.opcode = WS_OPCODE_PING,
           .f.is_control = 1,
           .f.mask = 0,
@@ -178,8 +170,8 @@ void test_validate()
           .dir = FRAME_DIR_S2C,
           .rv = -4 },
 
-        /* A error path invalid opcode frame */
-        { .f.fin = 0,
+        { .desc = "A error path invalid opcode frame",
+          .f.fin = 0,
           .f.opcode = 5,
           .f.is_control = 1,
           .f.mask = 0,
@@ -193,7 +185,14 @@ void test_validate()
     int i;
 
     for (i = 0; tests[i].rv != -99; i++) {
-        CU_ASSERT(tests[i].rv == frame_validate(&tests[i].f, tests[i].dir));
+        int rv;
+
+        rv = frame_validate(&tests[i].f, tests[i].dir);
+        if (tests[i].rv != rv) {
+            printf("\nTest Failed: %s\n", tests[i].desc);
+            printf("expected: %d, got: %d\n", tests[i].rv, rv);
+        }
+        CU_ASSERT(tests[i].rv == rv);
     }
 }
 
@@ -476,6 +475,48 @@ void test_encode_long()
     free(expect2);
 }
 
+void test_to_string()
+{
+    struct cws_frame f;
+
+    memset(&f, 0, sizeof(struct cws_frame));
+
+    CU_ASSERT_STRING_EQUAL("invalid frame", frame_opcode_to_string(NULL));
+
+    for (int i = 0; i < 16; i++) {
+        char buf[20];
+
+        f.opcode = i;
+
+        switch (i) {
+            case WS_OPCODE_CONTINUATION:
+                sprintf(buf, "CONT");
+                break;
+            case WS_OPCODE_TEXT:
+                sprintf(buf, "TEXT");
+                break;
+            case WS_OPCODE_BINARY:
+                sprintf(buf, "BINARY");
+                break;
+            case WS_OPCODE_CLOSE:
+                sprintf(buf, "CLOSE");
+                break;
+            case WS_OPCODE_PING:
+                sprintf(buf, "PING");
+                break;
+            case WS_OPCODE_PONG:
+                sprintf(buf, "PONG");
+                break;
+            default:
+                sprintf(buf, "Unknown (0x%x)", i);
+                break;
+        }
+
+        printf("\nExpected: '%s', got: '%s'\n", buf, frame_opcode_to_string(&f));
+        CU_ASSERT_STRING_EQUAL_FATAL(buf, frame_opcode_to_string(&f));
+    }
+}
+
 
 
 void add_suites( CU_pSuite *suite )
@@ -489,6 +530,7 @@ void add_suites( CU_pSuite *suite )
         { .label = "Encode Long Buffer Tests", .fn = test_encode_long      },
         { .label = "Basic Decode Tests",       .fn = test_decode           },
         { .label = "Basic Validate Tests",     .fn = test_validate         },
+        { .label = "Basic to_string Tests",    .fn = test_to_string        },
         { .label = NULL, .fn = NULL }
     };
     int i;

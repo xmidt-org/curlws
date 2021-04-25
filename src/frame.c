@@ -55,19 +55,10 @@ static int _frame_decode(struct cws_frame*, const void*, size_t, long*);
 /*----------------------------------------------------------------------------*/
 int frame_validate(const struct cws_frame *f, frame_dir dir)
 {
-    bool is_mask_zero = ((0 == f->masking_key[0]) &&
-                         (0 == f->masking_key[1]) &&
-                         (0 == f->masking_key[2]) &&
-                         (0 == f->masking_key[3]));
-
-    if (FRAME_DIR_C2S == dir) {
-        if ((1 != f->mask) || (true == is_mask_zero)) {
-            return -1;
-        }
-    } else {
-        if ((0 != f->mask) || (false == is_mask_zero)) {
-            return -1;
-        }
+    if (((FRAME_DIR_C2S == dir) && (1 != f->mask)) ||
+        ((FRAME_DIR_S2C == dir) && (0 != f->mask)))
+    {
+        return -1;
     }
 
     switch (f->opcode) {
@@ -182,32 +173,29 @@ size_t frame_encode(const struct cws_frame *f, void *buf, size_t len)
 
 const char* frame_opcode_to_string(const struct cws_frame *f)
 {
-    const char *rv = "UNKNOWN";
+    static const char *map[] = {
+        "CONT",             /* 0x0 */
+        "TEXT",             /* 0x1 */
+        "BINARY",           /* 0x2 */
+        "Unknown (0x3)",    /* 0x3 */
+        "Unknown (0x4)",    /* 0x4 */
+        "Unknown (0x5)",    /* 0x5 */
+        "Unknown (0x6)",    /* 0x6 */
+        "Unknown (0x7)",    /* 0x7 */
+        "CLOSE",            /* 0x8 */
+        "PING",             /* 0x9 */
+        "PONG",             /* 0xa */
+        "Unknown (0xb)",    /* 0xb */
+        "Unknown (0xc)",    /* 0xc */
+        "Unknown (0xd)",    /* 0xd */
+        "Unknown (0xe)",    /* 0xe */
+        "Unknown (0xf)",    /* 0xf */
+    };
 
-    switch (f->opcode) {
-        case WS_OPCODE_CONTINUATION:
-            rv = "CONT";
-            break;
-        case WS_OPCODE_TEXT:
-            rv = "TEXT";
-            break;
-        case WS_OPCODE_BINARY:
-            rv = "BINARY";
-            break;
-        case WS_OPCODE_CLOSE:
-            rv = "CLOSE";
-            break;
-        case WS_OPCODE_PING:
-            rv = "PING";
-            break;
-        case WS_OPCODE_PONG:
-            rv = "PONG";
-            break;
-        default:
-            break;
+    if (f) {
+        return map[f->opcode];
     }
-
-    return rv;
+    return "invalid frame";
 }
 
 
