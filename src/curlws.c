@@ -70,7 +70,7 @@
 /*                             Function Prototypes                            */
 /*----------------------------------------------------------------------------*/
 static CWScode _normalize_close_inputs(int*, int*, const char**, size_t*);
-static int _check_curl_version(void);
+static int _check_curl_version(const struct cws_config*);
 CWScode _send_stream(CWS*, int, int, const void*, size_t);
 static int _config_url(CWS*, const struct cws_config*);
 static int _config_redirects(CWS*, const struct cws_config*);
@@ -94,7 +94,11 @@ CWS *cws_create(const struct cws_config *config)
     int error = 0;
     CWS *priv = NULL;
 
-    if ((0 != _check_curl_version()) || (NULL == config)) {
+    if (!config) {
+        return NULL;
+    }
+
+    if (0 != _check_curl_version(config)) {
         return NULL;
     }
 
@@ -377,14 +381,23 @@ static CWScode _normalize_close_inputs(int *_code, int *_opts,
 }
 
 
-static int _check_curl_version(void)
+static int _check_curl_version(const struct cws_config *config)
 {
     const curl_version_info_data *curl_ver = NULL;
     curl_ver = curl_version_info(CURLVERSION_NOW);
 
     if (curl_ver->version_num < CURLWS_MIN_VERSION) {
-        fprintf(stderr, "ERROR: CURL version '%s'. At least '%s' is required for WebSocket to work reliably",
-                curl_ver->version, CURLWS_MIN_VERSION_STRING);
+        if (config->verbose) {
+            FILE *err = stderr;
+
+            if (NULL != config->verbose_stream) {
+                err = config->verbose_stream;
+            }
+
+            fprintf(err, "ERROR: CURL version '%s'. At least '%s' is required "
+                         "for curlws to work reliably\n", curl_ver->version,
+                         CURLWS_MIN_VERSION_STRING);
+        }
         return -1;
     }
     return 0;
@@ -526,9 +539,17 @@ static int _config_verbosity(CWS *priv, const struct cws_config *config)
         return -1;
     }
 
+    priv->cfg.verbose_stream = stderr;
+    if (config->verbose_stream) {
+        priv->cfg.verbose_stream = config->verbose_stream;
+    }
+
     priv->cfg.verbose = config->verbose;
     if (1 < config->verbose) {
         rv |= curl_easy_setopt(priv->easy, CURLOPT_VERBOSE, 1L);
+        if (config->verbose_stream) {
+            rv |= curl_easy_setopt(priv->easy, CURLOPT_STDERR, priv->cfg.verbose_stream);
+        }
     }
 
     return (CURLE_OK == rv) ? 0 : -1;

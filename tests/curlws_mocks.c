@@ -197,6 +197,7 @@ curl_version_info_data* curl_version_info(CURLversion v)
 
     if (!__curl_info_test_value) {
         __curl_info.version_num = 0x073202;
+        __curl_info.version = "7.50.2";
     }
 
     return &__curl_info;
@@ -298,6 +299,9 @@ CURLcode curl_easy_setopt(CURL *easy, CURLoption option, ... )
             break;
         case CURLOPT_FRESH_CONNECT:
             snprintf(buf, sizeof(buf), "%-*s: %ld", width, "CURLOPT_FRESH_CONNECT", va_arg(ap, long));
+            break;
+        case CURLOPT_STDERR:
+            snprintf(buf, sizeof(buf), "%-*s: %p", width, "CURLOPT_STDERR", (void*) va_arg(ap, FILE*));
             break;
         case CURLOPT_HTTPHEADER:        /* pointer to headers */
             p = va_arg(ap, struct curl_slist*);
