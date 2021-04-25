@@ -30,6 +30,7 @@
 #include <stdbool.h>
 #include <stddef.h>
 #include <stdint.h>
+#include <stdio.h>
 
 #include "frame.h"
 #include "memory.h"
@@ -57,6 +58,9 @@ struct cfg_set {
 
     /* The verbosity of the logging. */
     int verbose;
+
+    /* The stream to log to. */
+    FILE *verbose_stream;
 
     char *ws_protocols_requested;
 };

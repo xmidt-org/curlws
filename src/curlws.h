@@ -31,6 +31,7 @@
 
 #include <curl/curl.h>
 #include <stddef.h>
+#include <stdio.h>
 
 #ifdef __cplusplus
 extern "C" {
@@ -122,6 +123,12 @@ struct cws_config {
      * 0 - quiet
      */
     int verbose;
+
+    /* Used to tell curlws to use the specified stream instead of the default
+     * stderr stream for verbose output for curlws and the associated libcurl
+     * debug if requested.
+     */
+    FILE *verbose_stream;
 
     /* Set the IP version to use when connecting.
      *  0 is system default
