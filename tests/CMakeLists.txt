@@ -299,10 +299,7 @@ target_link_libraries (test_autobahn ${OPENSSL_LIBRARIES} ${CURL_LIBRARIES})
 # ---------------------------------------------------------------------------- #
 if (USE_AUTOBAHN_SERIAL)
 else()
-add_test(NAME Test_Autobahn_parallel___1_100  COMMAND ./test_autobahn_parallel ws://localhost:9001 1   100)
-add_test(NAME Test_Autobahn_parallel_101_200  COMMAND ./test_autobahn_parallel ws://localhost:9001 101 200)
-add_test(NAME Test_Autobahn_parallel_201_300  COMMAND ./test_autobahn_parallel ws://localhost:9001 201 301)
-add_test(NAME Test_Autobahn_parallel_301_302  COMMAND ./test_autobahn_parallel ws://localhost:9001 301 303)
+add_test(NAME Test_Autobahn_parallel  COMMAND ./test_autobahn_parallel ws://localhost:9001 1 303)
 endif()
 
 add_executable(test_autobahn_parallel autobahn-testee-parallel.c

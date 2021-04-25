@@ -42,7 +42,7 @@ jobs:
       - name: CMake
         working-directory: build
         run: |
-          cmake .. -DDISABLE_VALGRIND:BOOL=false
+          cmake .. -DDISABLE_VALGRIND:BOOL=false -DUSE_AUTOBAHN_SERIAL:BOOL=true
 
       - name: Build
         working-directory: build

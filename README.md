@@ -50,18 +50,18 @@ This requires docker.
 ```
 mkdir build
 cd build
-cmake -DUSE_OPENSSL_SHA=TRUE -DUSE_AUTOBAHN_SERIAL=TRUE
+cmake ..
 make
 ```
 
-#### Configuration Options
+#### CMake Configuration Options
 
-  * `USE_OPENSSL_SHA` - `TRUE` or `FALSE` (default = `FALSE`) Set this if you want
+  * `USE_OPENSSL_SHA` - Boolean (default:`false`) Set this if you want
     to use the SHA1 implementation provided by OpenSsl instead of the built in
     version.  The built in version came from Yubico and is of excellent quality
     so the choice is simply a code configuration/space choice.
 
-  * `USE_AUTOBAHN_SERIAL` - `TRUE` or `FALSE` (default = `FALSE`) Set this if you
+  * `USE_AUTOBAHN_SERIAL` - Boolean (default:`false`) Set this if you
     want to run the autobahn test suite sequencially vs. a large number in parallel.
     This is useful for debugging a specific problem, and is more realiable since
     some of the tests include relatively short timeout values.  But running the
