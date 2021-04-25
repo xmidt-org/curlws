@@ -225,7 +225,7 @@ SHA1FinalBits (SHA1Context * context, const uint8_t message_bits,
   if (!context)
     return shaNull;
 
-  if (context->Computed || (length >= 8) || (length == 0))
+  if (context->Computed || (length >= 8))
     {
       context->Corrupted = shaStateError;
       return shaStateError;
