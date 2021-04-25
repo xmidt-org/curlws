@@ -36,6 +36,7 @@ target_sources(curlws
         receive.c
         send.c
         utils.c
+        utf8.c
         ws.c
 )
 
