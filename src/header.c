@@ -205,7 +205,7 @@ static void _output_header_error(CWS *priv, const char *header, const char *expe
 {
     if (priv->cfg.verbose) {
         const char *dots = "...";
-        int truncated = expected_len;
+        int truncated = (int) expected_len;
 
         if (got_len <= expected_len) {
             truncated = (int) got_len;
