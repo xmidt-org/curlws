@@ -527,11 +527,10 @@ static int _config_security(CWS *priv, const struct cws_config *config)
     /* If you **really** must run in insecure mode, ok... but seriously this
      * is dangerous. */
 
-    if (0 == config->insecure_ok) {
-    } else if (0x7269736b == config->insecure_ok) {
+    if (0x7269736b == config->insecure_ok) {
         rv |= curl_easy_setopt(priv->easy, CURLOPT_SSL_VERIFYPEER, 0L);
         rv |= curl_easy_setopt(priv->easy, CURLOPT_SSL_VERIFYHOST, 0L);
-    } else {
+    } else if (0 != config->insecure_ok) {
         rv = ~CURLE_OK;
     }
 
