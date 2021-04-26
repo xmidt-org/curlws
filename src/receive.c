@@ -85,16 +85,18 @@ static size_t _writefunction_cb(const char *buffer, size_t count, size_t nitems,
         return len;
     }
 
+    if (priv->closed) {
+        verbose(priv, "< websocket bytes ignored due to closed connection\n");
+        return count * nitems;
+    }
+
     while (len > 0) {
         size_t prev_len = len;
 
-        if (priv->closed) {
-            break;
-        }
-
         _cws_process_frame(priv, &buffer, &len);
 
-        if (len == prev_len) {
+        /* Either it's closed now or we made no progress.  Move on. */
+        if ((priv->closed) || (len == prev_len)) {
             break;
         }
     }
