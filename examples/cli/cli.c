@@ -77,7 +77,6 @@ int main(int argc, char *argv[]) {
 
     /* Very simple args parser. */
     for (int i = 1; i < argc; i++) {
-        printf( "arg: '%s'\n", argv[i]);
         if (is_opt(argv[i], "-4", NULL)) {
             cfg.ip_version = 4;
         } else if (is_opt(argv[i], "-6", NULL)) {
