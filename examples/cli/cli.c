@@ -77,6 +77,7 @@ int main(int argc, char *argv[]) {
 
     /* Very simple args parser. */
     for (int i = 1; i < argc; i++) {
+        printf( "arg: '%s'\n", argv[i]);
         if (is_opt(argv[i], "-4", NULL)) {
             cfg.ip_version = 4;
         } else if (is_opt(argv[i], "-6", NULL)) {
@@ -99,6 +100,7 @@ int main(int argc, char *argv[]) {
                    " -L, --location           Follow redirects\n"
                    "     --max-payload <num>  Maximum payload size to send\n"
                    "     --max-redirs <num>   Maximum number of redirects allowed\n"
+                   "     --tlsv1.2            Set the maximum TLS version (useful since Wireshare can only decode tls1.2\n"
                    " -v  --verbose            Verbose debugging in curlws is enabled, repeat for more\n"
                    "     --ws-protos <name>   List of websocket protocols to negotiate\n",
                    argv[0]);
@@ -119,6 +121,8 @@ int main(int argc, char *argv[]) {
         } else if (is_opt(argv[i], NULL, "--max-redirs")) {
             i++;
             max_redirs = atol(argv[i]);
+        } else if (is_opt(argv[i], NULL, "--tlsv1.2")) {
+            cfg.tls_version = CURL_SSLVERSION_MAX_TLSv1_2;
         } else if (is_opt(argv[i], "-v", "--verbose")) {
             cfg.verbose++;
         } else if (is_opt(argv[i], NULL, "--ws_protos")) {

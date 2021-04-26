@@ -78,12 +78,13 @@ static size_t _writefunction_cb(const char *buffer, size_t count, size_t nitems,
     size_t len = count * nitems;
 
     if (priv->cfg.verbose) {
-        fprintf(priv->cfg.verbose_stream, "< websocket bytes received: %ld\n", len);
+        fprintf(priv->cfg.verbose_stream, "< websocket bytes received: %zu\n", len);
     }
 
-    if (priv->header_state.redirection) {
+    if ((priv->cfg.follow_redirects) && (priv->header_state.redirection)) {
         if (priv->cfg.verbose) {
-            fprintf(priv->cfg.verbose_stream, "< websocket bytes ignored due to redirection\n");
+            fprintf(priv->cfg.verbose_stream,
+                        "< websocket bytes ignored due to redirection\n");
         }
         return len;
     }
@@ -92,16 +93,20 @@ static size_t _writefunction_cb(const char *buffer, size_t count, size_t nitems,
         size_t prev_len = len;
 
         if (priv->closed) {
-            return count * nitems;
+            break;
         }
 
         _cws_process_frame(priv, &buffer, &len);
 
         if (len == prev_len) {
-            return count * nitems;
+            break;
         }
     }
 
+    if (priv->cfg.verbose) {
+        fprintf(priv->cfg.verbose_stream,
+                    "< websocket bytes processed: %zu\n", (count * nitems));
+    }
     return count * nitems;
 }
 
