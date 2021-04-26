@@ -64,6 +64,8 @@ struct cfg_set {
 
     /* The request websocket protocols. */
     char *ws_protocols_requested;
+
+    bool follow_redirects;
 };
 
 /* The callback functions used.  These will be called without NULL

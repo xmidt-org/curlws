@@ -56,6 +56,16 @@
 #error "curl minimum version not met 7.50.2"
 #endif
 
+/* Before curl 7.54.0 the MAX_DEFAULT was missing, so choose the best
+ * available TLS */
+#if !CURL_AT_LEAST_VERSION(0x07, 0x36, 0x00)
+/* If before curl 7.54.0 then the best TLS available is 1.3 */
+#define CURL_SSLVERSION_MAX_DEFAULT CURL_SSLVERSION_TLSv1_3
+#elif !CURL_AT_LEAST_VERSION(0x07, 0x34, 0x00)
+/* If before curl 7.52.0 then the best TLS available is 1.2 */
+#define CURL_SSLVERSION_MAX_DEFAULT CURL_SSLVERSION_TLSv1_2
+#endif
+
 /*----------------------------------------------------------------------------*/
 /*                               Data Structures                              */
 /*----------------------------------------------------------------------------*/
@@ -115,12 +125,6 @@ CWS *cws_create(const struct cws_config *config)
 
     priv->cfg.user = config->user;
 
-    /* Only place things here that are "ok" for a user to overwrite. */
-
-    if (config->configure) {
-        (*config->configure)(priv->cfg.user, priv, priv->easy);
-    }
-
     populate_callbacks(&priv->cb, config);
     error |= _config_memorypool(priv, config);
     error |= _config_url(priv, config);
@@ -138,6 +142,11 @@ CWS *cws_create(const struct cws_config *config)
     error |= _config_ws_key(priv);
     error |= _config_ws_protocols(priv, config);
     error |= _config_http_headers(priv, config);
+
+    /* You can overwrite anything you want, but be very careful! */
+    if (config->configure) {
+        (*config->configure)(priv->cfg.user, priv, priv->easy);
+    }
 
     if (error) {
         cws_destroy(priv);
@@ -461,6 +470,8 @@ static int _config_redirects(CWS *priv, const struct cws_config *config)
     if (0 != config->max_redirects) {
         rv |= curl_easy_setopt(priv->easy, CURLOPT_FOLLOWLOCATION, 1L);
         rv |= curl_easy_setopt(priv->easy, CURLOPT_MAXREDIRS, config->max_redirects);
+
+        priv->cfg.follow_redirects = true;
     }
 
     return (CURLE_OK == rv) ? 0 : -1;
@@ -503,30 +514,28 @@ static int _config_interface(CWS *priv, const struct cws_config *config)
 
 static int _config_security(CWS *priv, const struct cws_config *config)
 {
-    /* Force a reasonably modern version of TLS */
-    if (CURLE_OK != curl_easy_setopt(priv->easy, CURLOPT_SSLVERSION, CURL_SSLVERSION_TLSv1_2)) {
-        return -1;
+    CURLcode rv = CURLE_OK;
+    long tls_version = CURL_SSLVERSION_MAX_DEFAULT;
+
+    if (config->tls_version) {
+        tls_version = config->tls_version;
     }
 
-    if (0 == config->insecure_ok) {
-        return 0;
-    }
+    /* Force a reasonably modern version of TLS */
+    rv |= curl_easy_setopt(priv->easy, CURLOPT_SSLVERSION, tls_version);
 
     /* If you **really** must run in insecure mode, ok... but seriously this
      * is dangerous. */
 
-    if (0x7269736b == config->insecure_ok) {
-        if (CURLE_OK != curl_easy_setopt(priv->easy, CURLOPT_SSL_VERIFYPEER, 0L)) {
-            return -1;
-        }
-        if (CURLE_OK != curl_easy_setopt(priv->easy, CURLOPT_SSL_VERIFYHOST, 0L)) {
-            return -1;
-        }
-
-        return 0;
+    if (0 == config->insecure_ok) {
+    } else if (0x7269736b == config->insecure_ok) {
+        rv |= curl_easy_setopt(priv->easy, CURLOPT_SSL_VERIFYPEER, 0L);
+        rv |= curl_easy_setopt(priv->easy, CURLOPT_SSL_VERIFYHOST, 0L);
+    } else {
+        rv = ~CURLE_OK;
     }
 
-    return -1;
+    return (CURLE_OK == rv) ? 0 : -1;
 }
 
 

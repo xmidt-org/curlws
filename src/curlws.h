@@ -143,6 +143,18 @@ struct cws_config {
      * defaults to the secure validation of host/peer names. */
     int insecure_ok;
 
+    /* If unset this library defaults secure and chooses to apply the best
+     * available TLS depending on the version of curl.
+     *
+     * CURL_SSLVERSION_MAX_DEFAULT [7.54.0 +)
+     * CURL_SSLVERSION_TLSv1_3     [7.52.0 - 7.54.0)
+     * CURL_SSLVERSION_TLSv1_2     [7.50.2 - 7.52.0)
+     *
+     * See the CURLOPT_SSLVERSION details for options you may set here.
+     * https://curl.se/libcurl/c/CURLOPT_SSLVERSION.html
+     */
+    long tls_version;
+
     /* The various websocket protocols in a single string format.
      * Something like "chat", "superchat", "superchat,chat" ...
      * The default is no special protocols (NULL)

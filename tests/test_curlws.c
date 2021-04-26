@@ -54,7 +54,18 @@ do {                                            \
 #define str(s) #s
 #define xstr(s) str(s)
 
+/* See curlws.c for details, but this is the same logic. */
+#if !CURL_AT_LEAST_VERSION(0x07, 0x36, 0x00)
+/* If before curl 7.54.0 then the best TLS available is 1.3 */
+#define MY_CURL_SSLVERSION_TLS  7
+#elif !CURL_AT_LEAST_VERSION(0x07, 0x34, 0x00)
+/* If before curl 7.52.0 then the best TLS available is 1.2 */
 #define MY_CURL_SSLVERSION_TLS  6
+#else
+/* The latest version */
+#define MY_CURL_SSLVERSION_TLS  65536
+#endif
+
 #define MY_HTTP_VERSION         2
 
 int __my_cfg_fn_seen = 0;
@@ -528,6 +539,24 @@ void test_create_insecure()
     validate_and_reset(
         "CURLOPT_URL            : https://example.com",
         "CURLOPT_SSLVERSION     : " xstr(MY_CURL_SSLVERSION_TLS),
+        "CURLOPT_HTTP_VERSION   : " xstr(MY_HTTP_VERSION),
+        "CURLOPT_UPLOAD         : 1",
+        "CURLOPT_CUSTOMREQUEST  : GET",
+        "CURLOPT_FORBID_REUSE   : 1",
+        "CURLOPT_FRESH_CONNECT  : 1",
+        "Transfer-Encoding:",
+        "Sec-WebSocket-Key: tluJnnQlu3K8f3LD4vsxcQ==",
+        "Connection: Upgrade",
+        "Upgrade: websocket",
+        "Sec-WebSocket-Version: 13");
+
+    cfg.tls_version = CURL_SSLVERSION_TLSv1_0;
+    ws = cws_create(&cfg);
+    CU_ASSERT_FATAL(NULL != ws);
+    cws_destroy(ws);
+    validate_and_reset(
+        "CURLOPT_URL            : https://example.com",
+        "CURLOPT_SSLVERSION     : 4",
         "CURLOPT_HTTP_VERSION   : " xstr(MY_HTTP_VERSION),
         "CURLOPT_UPLOAD         : 1",
         "CURLOPT_CUSTOMREQUEST  : GET",
