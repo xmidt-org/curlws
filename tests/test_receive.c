@@ -262,6 +262,9 @@ struct test_vector {
     const size_t *rv;
     size_t block_count;
 
+    bool follow_redirects;
+    bool redirection;
+
     struct mock_ping *ping;
     struct mock_pong *pong;
     struct mock_stream *stream;
@@ -285,6 +288,9 @@ void run_test( struct test_vector *v )
     priv.cb.on_close_fn = on_close;
     priv.cb.on_ping_fn = on_ping;
     priv.cb.on_pong_fn = on_pong;
+
+    priv.cfg.follow_redirects = v->follow_redirects;
+    priv.header_state.redirection = v->redirection;
 
     __on_ping_goal = v->ping;
     __on_pong_goal = v->pong;
@@ -349,6 +355,109 @@ void run_test( struct test_vector *v )
     }
 }
 
+
+void test_null_in()
+{
+    struct test_vector tests[] = {
+        {
+            .test_name = "Test null block, zero len",
+            .in = NULL,
+            .blocks = (int[1]){ 0 },
+            .rv = (size_t[1]){ 0 },
+            .block_count = 1,
+
+            .follow_redirects = false,
+            .redirection = false,
+
+            .ping = NULL,
+            .pong = NULL,
+            .stream = NULL,
+            .close = NULL,
+        },
+        {
+            .test_name = "Test null block, invalid len",
+            .in = NULL,
+            .blocks = (int[1]){ 1 },
+            .rv = (size_t[1]){ 1 },
+            .block_count = 1,
+
+            .follow_redirects = false,
+            .redirection = false,
+
+            .ping = NULL,
+            .pong = NULL,
+            .stream = NULL,
+            .close = NULL,
+        },
+        {
+            .test_name = "Test 0 len block",
+            .in = "ignored",
+            .blocks = (int[1]){ 0 },
+            .rv = (size_t[1]){ 0 },
+            .block_count = 1,
+
+            .follow_redirects = false,
+            .redirection = false,
+
+            .ping = NULL,
+            .pong = NULL,
+            .stream = NULL,
+            .close = NULL,
+        },
+    };
+
+    run_test( &tests[0] );
+    run_test( &tests[1] );
+    run_test( &tests[2] );
+}
+
+
+void test_redirection()
+{
+    struct test_vector tests[] = {
+        {
+            .test_name = "Test 1",
+            .in = "\x89\x04ping",           /* PING with payload 'ping' */
+            .blocks = (int[1]){ 6 },
+            .rv = (size_t[1]){ 6 },
+            .block_count = 1,
+
+            .follow_redirects = true,
+            .redirection = false,
+
+            .ping = (struct mock_ping[1]) {
+                {
+                    .data = "ping",
+                    .len = 4,
+                    .seen = 0,
+                    .more = 0,
+                },
+            },
+            .pong = NULL,
+            .stream = NULL,
+            .close = NULL,
+        }, {
+            .test_name = "Redirection active, while accepted",
+            .in = "\x89\x04ping",           /* PING with payload 'ping' */
+            .blocks = (int[1]){ 6 },
+            .rv = (size_t[1]){ 6 },
+            .block_count = 1,
+
+            .follow_redirects = true,
+            .redirection = true,
+
+            .ping = NULL,
+            .pong = NULL,
+            .stream = NULL,
+            .close = NULL,
+        },
+    };
+
+    run_test( &tests[0] );
+    run_test( &tests[1] );
+}
+
+
 void test_simple()
 {
     struct test_vector test = {
@@ -368,6 +477,9 @@ void test_simple()
         .blocks = (int[12]){ 2, 7, 6, 6, 5, 6, 7, 2, 4, 7, 8, 9 },
         .rv = (size_t[12]){ 2, 7, 6, 6, 5, 6, 7, 2, 4, 7, 8, 9 },
         .block_count = 12,
+
+        .follow_redirects = false,
+        .redirection = false,
 
         .ping = (struct mock_ping[1]) {
             {
@@ -427,6 +539,9 @@ void test_more_complex()
                             1,1,1,1,1,1,1,1,1 },
         .block_count = 69,
 
+        .follow_redirects = false,
+        .redirection = false,
+
         .ping = (struct mock_ping[1]) {
             { .data = "ping", .len = 4, .seen = 0, .more = 0, },
         },
@@ -472,8 +587,10 @@ void add_suites( CU_pSuite *suite )
         const char *label;
         void (*fn)(void);
     } tests[] = {
-        { .label = "simple Tests",       .fn = test_simple       },
-        { .label = "more complex Tests", .fn = test_more_complex },
+        { .label = "simple Tests",       .fn = test_simple        },
+        { .label = "more complex Tests ", .fn = test_more_complex },
+        { .label = "invalid input Tests", .fn = test_null_in      },
+        { .label = "redirection Tests  ", .fn = test_redirection  },
         { .label = NULL, .fn = NULL }
     };
     int i;
