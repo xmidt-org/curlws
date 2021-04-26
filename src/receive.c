@@ -80,6 +80,12 @@ static size_t _writefunction_cb(const char *buffer, size_t count, size_t nitems,
 
     verbose(priv, "< websocket bytes received: %zu\n", len);
 
+    /* If curl ever sent us nothing, just ignore it and move on. */
+    if ((!len) || (!buffer)) {
+        verbose(priv, "< websocket bytes ignored due to NULL buffer or no bytes\n");
+        return len;
+    }
+
     if ((priv->cfg.follow_redirects) && (priv->header_state.redirection)) {
         verbose(priv, "< websocket bytes ignored due to redirection\n");
         return len;
@@ -87,7 +93,7 @@ static size_t _writefunction_cb(const char *buffer, size_t count, size_t nitems,
 
     if (priv->closed) {
         verbose(priv, "< websocket bytes ignored due to closed connection\n");
-        return count * nitems;
+        return len;
     }
 
     while (len > 0) {
