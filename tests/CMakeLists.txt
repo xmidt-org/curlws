@@ -127,7 +127,9 @@ target_link_libraries (test_data_block_sender cunit)
 # ---------------------------------------------------------------------------- #
 add_test(NAME Test_Handlers COMMAND ${MEMORY_CHECK} ./test_handlers)
 
-add_executable(test_handlers test_handlers.c ../src/cb.c)
+add_executable(test_handlers test_handlers.c
+                             ../src/cb.c
+                             ../src/verbose.c)
 
 if (${CMAKE_SYSTEM_NAME} MATCHES "Linux")
 target_link_libraries (test_handlers gcov)
@@ -144,6 +146,7 @@ add_executable(test_receive test_receive.c
                            ../src/cb.c
                            ../src/frame.c
                            ../src/utf8.c
+                           ../src/verbose.c
                            ../src/ws.c)
 
 if (${CMAKE_SYSTEM_NAME} MATCHES "Linux")
@@ -161,6 +164,7 @@ add_executable(test_autobahn_27 test_autobahn_27.c
                                 ../src/cb.c
                                 ../src/frame.c
                                 ../src/utf8.c
+                                ../src/verbose.c
                                 ../src/ws.c)
 
 if (${CMAKE_SYSTEM_NAME} MATCHES "Linux")
@@ -175,7 +179,9 @@ target_link_libraries (test_autobahn_27)
 # ---------------------------------------------------------------------------- #
 add_test(NAME Test_Send COMMAND ${MEMORY_CHECK} ./test_send)
 
-add_executable(test_send test_send.c ../src/frame.c)
+add_executable(test_send test_send.c
+                         ../src/frame.c
+                         ../src/verbose.c)
 
 if (${CMAKE_SYSTEM_NAME} MATCHES "Linux")
 target_link_libraries (test_send gcov)
@@ -190,7 +196,8 @@ add_test(NAME Test_Header COMMAND ${MEMORY_CHECK} ./test_header)
 
 add_executable(test_header test_header.c
                            ../src/cb.c
-                           ../src/utils.c)
+                           ../src/utils.c
+                           ../src/verbose.c)
 
 if (${CMAKE_SYSTEM_NAME} MATCHES "Linux")
 target_link_libraries (test_header gcov)
@@ -225,6 +232,7 @@ add_executable(test_curlws test_curlws.c
                            ${SHA_FILES}
                            ../src/utf8.c
                            ../src/utils.c
+                           ../src/verbose.c
                            ../src/ws.c)
 
 if (${CMAKE_SYSTEM_NAME} MATCHES "Linux")
@@ -286,6 +294,7 @@ add_executable(test_autobahn autobahn-testee.c
                              ${SHA_FILES}
                              ../src/utf8.c
                              ../src/utils.c
+                             ../src/verbose.c
                              ../src/ws.c)
 
 
@@ -317,6 +326,7 @@ add_executable(test_autobahn_parallel autobahn-testee-parallel.c
                                       ${SHA_FILES}
                                       ../src/utf8.c
                                       ../src/utils.c
+                                      ../src/verbose.c
                                       ../src/ws.c)
 
 
@@ -342,6 +352,7 @@ add_executable(autobahn_report autobahn_report.c
                                       ${SHA_FILES}
                                       ../src/utf8.c
                                       ../src/utils.c
+                                      ../src/verbose.c
                                       ../src/ws.c)
 
 

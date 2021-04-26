@@ -33,6 +33,7 @@
 #include "cb.h"
 #include "header.h"
 #include "utils.h"
+#include "verbose.h"
 
 /*----------------------------------------------------------------------------*/
 /*                                   Macros                                   */
@@ -94,31 +95,23 @@ static size_t _header_cb(const char *buffer, size_t count, size_t nitems, void *
     curl_easy_getinfo(priv->easy, CURLINFO_RESPONSE_CODE, &http_status);
     curl_easy_getinfo(priv->easy, CURLINFO_HTTP_VERSION,  &http_version);
 
-    if (priv->cfg.verbose) {
-        fprintf(priv->cfg.verbose_stream, "< websocket header received: %zu\n", len);
-    }
+    verbose(priv, "< websocket header received: %zu\n", len);
 
     if (priv->cfg.follow_redirects) {
         /* If we are being redirected, let curl do that for us. */
         if (300 <= http_status && http_status <= 399) {
             priv->header_state.redirection = true;
-            if (priv->cfg.verbose) {
-                fprintf(priv->cfg.verbose_stream, "> websocket header ignored due to redirection\n");
-            }
+            verbose(priv, "> websocket header ignored due to redirection\n");
             return len;
         } else {
-            if (priv->cfg.verbose) {
-                fprintf(priv->cfg.verbose_stream, "> websocket header redirection set to false\n");
-            }
+            verbose(priv, "> websocket header redirection set to false\n");
             priv->header_state.redirection = false;
         }
     }
 
     /* Only accept `HTTP/1.1 101 Switching Protocols` */
     if ((101 != http_status) || (CURL_HTTP_VERSION_1_1 != http_version)) {
-        if (priv->cfg.verbose) {
-            fprintf(priv->cfg.verbose_stream, "> websocket header returning 0 due to http status\n");
-        }
+        verbose(priv, "> websocket header returning 0 due to http status\n");
         return 0;
     }
 
@@ -128,17 +121,13 @@ static size_t _header_cb(const char *buffer, size_t count, size_t nitems, void *
             priv->dispatching++;
             cb_on_close(priv, 1011, "server didn't accept the websocket upgrade", SIZE_MAX);
             priv->dispatching--;
-            if (priv->cfg.verbose) {
-                fprintf(priv->cfg.verbose_stream, "> websocket header returning 0 due to failed upgrade\n");
-            }
+            verbose(priv, "> websocket header returning 0 due to failed upgrade\n");
             return 0;
         } else {
             priv->dispatching++;
             cb_on_connect(priv, priv->header_state.ws_protocols_received);
             priv->dispatching--;
-            if (priv->cfg.verbose) {
-                fprintf(priv->cfg.verbose_stream, "> websocket header returning %zu\n", len);
-            }
+            verbose(priv, "> websocket header returning %zu\n", len);
             return len;
         }
     }
@@ -151,9 +140,7 @@ static size_t _header_cb(const char *buffer, size_t count, size_t nitems, void *
             free(priv->header_state.ws_protocols_received);
             priv->header_state.ws_protocols_received = NULL;
         }
-        if (priv->cfg.verbose) {
-            fprintf(priv->cfg.verbose_stream, "> websocket header returning %zu\n", len);
-        }
+        verbose(priv, "> websocket header returning %zu\n", len);
         return len;
     }
 
@@ -167,9 +154,7 @@ static size_t _header_cb(const char *buffer, size_t count, size_t nitems, void *
         }
     }
 
-    if (priv->cfg.verbose) {
-        fprintf(priv->cfg.verbose_stream, "> websocket header returning %zu\n", len);
-    }
+    verbose(priv, "> websocket header returning %zu\n", len);
     return len;
 }
 
@@ -238,7 +223,7 @@ static void _output_header_error(CWS *priv, const char *header, const char *expe
             truncated = (int) got_len;
             dots = "";
         }
-        fprintf(priv->cfg.verbose_stream,
+        verbose(priv,
                 "! websocket header "
                 "expected (value len=%zu): '%s: %s', got (len=%zu): '%.*s%s'\n",
                 expected_len, header, expected,

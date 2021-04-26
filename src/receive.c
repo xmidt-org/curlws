@@ -32,6 +32,7 @@
 #include "cb.h"
 #include "receive.h"
 #include "utf8.h"
+#include "verbose.h"
 #include "ws.h"
 
 /*----------------------------------------------------------------------------*/
@@ -77,15 +78,10 @@ static size_t _writefunction_cb(const char *buffer, size_t count, size_t nitems,
     CWS *priv = data;
     size_t len = count * nitems;
 
-    if (priv->cfg.verbose) {
-        fprintf(priv->cfg.verbose_stream, "< websocket bytes received: %zu\n", len);
-    }
+    verbose(priv, "< websocket bytes received: %zu\n", len);
 
     if ((priv->cfg.follow_redirects) && (priv->header_state.redirection)) {
-        if (priv->cfg.verbose) {
-            fprintf(priv->cfg.verbose_stream,
-                        "< websocket bytes ignored due to redirection\n");
-        }
+        verbose(priv, "< websocket bytes ignored due to redirection\n");
         return len;
     }
 
@@ -103,10 +99,7 @@ static size_t _writefunction_cb(const char *buffer, size_t count, size_t nitems,
         }
     }
 
-    if (priv->cfg.verbose) {
-        fprintf(priv->cfg.verbose_stream,
-                    "< websocket bytes processed: %zu\n", (count * nitems));
-    }
+    verbose(priv, "< websocket bytes processed: %zu\n", (count * nitems));
     return count * nitems;
 }
 
