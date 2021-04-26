@@ -669,6 +669,7 @@ static int _config_ws_key(CWS *priv)
 
     cws_sha1(combined, strlen(combined), sha1_value);
     cws_encode_base64(sha1_value, sizeof(sha1_value), priv->expected_key_header);
+    priv->expected_key_header_len = strlen(priv->expected_key_header);
 
     return 0;
 }

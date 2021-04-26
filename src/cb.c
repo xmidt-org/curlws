@@ -54,7 +54,8 @@
 void cb_on_connect(CWS *priv, const char *protos)
 {
     if (priv->cfg.verbose) {
-        fprintf(stderr, "< websocket on_connect protos: '%s'\n", protos);
+        fprintf(priv->cfg.verbose_stream,
+                "< websocket on_connect() protos: '%s'\n", protos);
     }
 
     if (priv->cb.on_connect_fn) {
@@ -62,7 +63,7 @@ void cb_on_connect(CWS *priv, const char *protos)
     }
 
     if (priv->cfg.verbose) {
-        fprintf(stderr, "> websocket on_connect\n");
+        fprintf(priv->cfg.verbose_stream, "> websocket on_connect()\n");
     }
 }
 
@@ -70,7 +71,17 @@ void cb_on_connect(CWS *priv, const char *protos)
 void cb_on_text(CWS *priv, const char *text, size_t len)
 {
     if (priv->cfg.verbose) {
-        fprintf(stderr, "< websocket on_text len: %zd, text: '%.*s'\n", len, (int) len, text);
+        int truncated;
+        char *dots = "...";
+
+        truncated = 40;
+        if (len <= (size_t) truncated) {
+            truncated = (int) len;
+            dots = "";
+        }
+        fprintf(priv->cfg.verbose_stream,
+                "< websocket on_text() len: %zd, text: '%.*s%s'\n", len,
+                truncated, text, dots);
     }
 
     if (priv->cb.on_text_fn) {
@@ -78,7 +89,7 @@ void cb_on_text(CWS *priv, const char *text, size_t len)
     }
 
     if (priv->cfg.verbose) {
-        fprintf(stderr, "> websocket on_text\n");
+        fprintf(priv->cfg.verbose_stream, "> websocket on_text()\n");
     }
 }
 
@@ -86,7 +97,8 @@ void cb_on_text(CWS *priv, const char *text, size_t len)
 void cb_on_binary(CWS *priv, const void *buf, size_t len)
 {
     if (priv->cfg.verbose) {
-        fprintf(stderr, "< websocket on_binary len: %zd, [buf]\n", len);
+        fprintf(priv->cfg.verbose_stream,
+                "< websocket on_binary() len: %zd, [buf]\n", len);
     }
 
     if (priv->cb.on_binary_fn) {
@@ -94,7 +106,7 @@ void cb_on_binary(CWS *priv, const void *buf, size_t len)
     }
 
     if (priv->cfg.verbose) {
-        fprintf(stderr, "> websocket on_binary\n");
+        fprintf(priv->cfg.verbose_stream, "> websocket on_binary()\n");
     }
 }
 
@@ -102,7 +114,8 @@ void cb_on_binary(CWS *priv, const void *buf, size_t len)
 void cb_on_fragment(CWS *priv, int info, const void *buf, size_t len)
 {
     if (priv->cfg.verbose) {
-        fprintf(stderr, "< websocket on_fragment info: 0x%08x, len: %zd, [buf]\n", info, len);
+        fprintf(priv->cfg.verbose_stream,
+                "< websocket on_fragment() info: 0x%08x, len: %zd, [buf]\n", info, len);
     }
 
     /* Always present since there is a default handler & clients cannot
@@ -110,7 +123,7 @@ void cb_on_fragment(CWS *priv, int info, const void *buf, size_t len)
     (*priv->cb.on_fragment_fn)(priv->cfg.user, priv, info, buf, len);
 
     if (priv->cfg.verbose) {
-        fprintf(stderr, "> websocket on_fragment\n");
+        fprintf(priv->cfg.verbose_stream, "> websocket on_fragment()\n");
     }
 }
 
@@ -118,7 +131,8 @@ void cb_on_fragment(CWS *priv, int info, const void *buf, size_t len)
 void cb_on_ping(CWS *priv, const void *buf, size_t len)
 {
     if (priv->cfg.verbose) {
-        fprintf(stderr, "< websocket on_ping len: %zd, [buf]\n", len);
+        fprintf(priv->cfg.verbose_stream,
+                "< websocket on_ping() len: %zd, [buf]\n", len);
     }
 
     /* Always present since there is a default handler & clients cannot
@@ -126,7 +140,7 @@ void cb_on_ping(CWS *priv, const void *buf, size_t len)
     (*priv->cb.on_ping_fn)(priv->cfg.user, priv, buf, len);
 
     if (priv->cfg.verbose) {
-        fprintf(stderr, "> websocket on_ping\n");
+        fprintf(priv->cfg.verbose_stream, "> websocket on_ping()\n");
     }
 }
 
@@ -134,7 +148,8 @@ void cb_on_ping(CWS *priv, const void *buf, size_t len)
 void cb_on_pong(CWS *priv, const void *buf, size_t len)
 {
     if (priv->cfg.verbose) {
-        fprintf(stderr, "< websocket on_pong len: %zd, [buf]\n", len);
+        fprintf(priv->cfg.verbose_stream,
+                "< websocket on_pong() len: %zd, [buf]\n", len);
     }
 
     if (priv->cb.on_pong_fn) {
@@ -142,7 +157,7 @@ void cb_on_pong(CWS *priv, const void *buf, size_t len)
     }
 
     if (priv->cfg.verbose) {
-        fprintf(stderr, "> websocket on_pong\n");
+        fprintf(priv->cfg.verbose_stream, "> websocket on_pong()\n");
     }
 }
 
@@ -158,7 +173,7 @@ void cb_on_close(CWS *priv, int code, const char *text, size_t len)
     }
 
     if (priv->cfg.verbose) {
-        fprintf(stderr, "< websocket on_close code: %d, len: %zd, text: '%.*s'\n",
+        fprintf(priv->cfg.verbose_stream, "< websocket on_close() code: %d, len: %zd, text: '%.*s'\n",
                 code, len, (int) len, text);
     }
 
@@ -168,7 +183,7 @@ void cb_on_close(CWS *priv, int code, const char *text, size_t len)
     }
 
     if (priv->cfg.verbose) {
-        fprintf(stderr, "> websocket on_close\n");
+        fprintf(priv->cfg.verbose_stream, "> websocket on_close()\n");
     }
 }
 

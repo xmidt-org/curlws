@@ -88,13 +88,57 @@ void test_populate_callbacks()
 }
 
 
+void check_output(FILE *f, const char *e1, const char *e2)
+{
+    char got[256];
+
+    CU_ASSERT_FATAL(NULL != f);
+    CU_ASSERT_FATAL(NULL != e1);
+    CU_ASSERT_FATAL(NULL != e2);
+
+    fflush(f);
+    rewind(f);
+
+    memset(got, 0, sizeof(got));
+    CU_ASSERT_FATAL(NULL != fgets(got, sizeof(got), f));
+    CU_ASSERT_STRING_EQUAL(e1, got);
+
+    if (0 != strcmp(e1, got)) {
+        printf("\n");
+        printf("l1 got: '%s'\n", got);
+        printf("wanted: '%s'\n", e1);
+    }
+
+    memset(got, 0, sizeof(got));
+    CU_ASSERT_FATAL(NULL != fgets(got, sizeof(got), f));
+    CU_ASSERT_STRING_EQUAL(e2, got);
+
+    if (0 != strcmp(e2, got)) {
+        printf("\n");
+        printf("l2 got: '%s'\n", got);
+        printf("wanted: '%s'\n", e2);
+    }
+
+    /* reset the stream for the next test */
+    rewind(f);
+}
+
+
 void test_defaults_dont_crash()
 {
     CWS priv;
+    FILE *f_tmp = NULL;
     struct cws_config src;
+    char got[256];
 
     memset(&priv, 0, sizeof(priv));
     memset(&src, 0, sizeof(src));
+    memset(got, 0, sizeof(got));
+
+    f_tmp = tmpfile();
+    CU_ASSERT_FATAL(NULL != f_tmp);
+
+    priv.cfg.verbose_stream = f_tmp;
 
     populate_callbacks(&priv.cb, NULL);
 
@@ -108,20 +152,73 @@ void test_defaults_dont_crash()
     cb_on_close(&priv, 0, "include a string", SIZE_MAX);
     cb_on_close(&priv, 0, "include a string", 0);
 
+    /* Make sure nothing is output */
+    CU_ASSERT_FATAL(NULL == fgets(got, sizeof(got), f_tmp));
+
     /* Check the verbose debug callback */
     priv.cfg.verbose = 3;
+
     populate_callbacks(&priv.cb, &src);
 
     /* Make sure nothing crashes if we're in verbose mode. */
     cb_on_connect(&priv, NULL);
+    check_output(f_tmp,
+                 "< websocket on_connect() protos: '(null)'\n",
+                 "> websocket on_connect()\n");
+
     cb_on_text(&priv, NULL, 0);
+    check_output(f_tmp,
+                 "< websocket on_text() len: 0, text: ''\n",
+                 "> websocket on_text()\n");
+
+    /* There is an extra 0 on purpose. */
+    cb_on_text(&priv, "0123456789012345678901234567890", 30);
+    check_output(f_tmp,
+                 "< websocket on_text() len: 30, text: '012345678901234567890123456789'\n",
+                 "> websocket on_text()\n");
+
+    /* A longer string so it's truncated */
+    cb_on_text(&priv, "01234567890123456789012345678901234567890123456789", 50);
+    check_output(f_tmp,
+                 "< websocket on_text() len: 50, text: '0123456789012345678901234567890123456789...'\n",
+                 "> websocket on_text()\n");
+
     cb_on_binary(&priv, NULL, 0);
+    check_output(f_tmp,
+                 "< websocket on_binary() len: 0, [buf]\n",
+                 "> websocket on_binary()\n");
+
     cb_on_fragment(&priv, 0, NULL, 0);
+    check_output(f_tmp,
+                 "< websocket on_fragment() info: 0x00000000, len: 0, [buf]\n",
+                 "> websocket on_fragment()\n");
+
     cb_on_ping(&priv, NULL, 0);
+    check_output(f_tmp,
+                 "< websocket on_ping() len: 0, [buf]\n",
+                 "> websocket on_ping()\n");
+
     cb_on_pong(&priv, NULL, 0);
+    check_output(f_tmp,
+                 "< websocket on_pong() len: 0, [buf]\n",
+                 "> websocket on_pong()\n");
+
     cb_on_close(&priv, 0, NULL, 0);
-    cb_on_close(&priv, 0, "include a string", SIZE_MAX);
+    check_output(f_tmp,
+                 "< websocket on_close() code: 0, len: 0, text: ''\n",
+                 "> websocket on_close()\n");
+
+    cb_on_close(&priv, 1001, "include a string", SIZE_MAX);
+    check_output(f_tmp,
+                 "< websocket on_close() code: 1001, len: 16, text: 'include a string'\n",
+                 "> websocket on_close()\n");
+
     cb_on_close(&priv, 0, "include a string", 0);
+    check_output(f_tmp,
+                 "< websocket on_close() code: 0, len: 0, text: ''\n",
+                 "> websocket on_close()\n");
+
+    fclose(f_tmp);
 }
 
 

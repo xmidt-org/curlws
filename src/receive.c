@@ -78,12 +78,12 @@ static size_t _writefunction_cb(const char *buffer, size_t count, size_t nitems,
     size_t len = count * nitems;
 
     if (priv->cfg.verbose) {
-        fprintf(stderr, "< websocket bytes received: %ld\n", len);
+        fprintf(priv->cfg.verbose_stream, "< websocket bytes received: %ld\n", len);
     }
 
     if (priv->header_state.redirection) {
         if (priv->cfg.verbose) {
-            fprintf(stderr, "< websocket bytes ignored due to redirection\n");
+            fprintf(priv->cfg.verbose_stream, "< websocket bytes ignored due to redirection\n");
         }
         return len;
     }

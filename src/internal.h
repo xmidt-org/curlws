@@ -62,6 +62,7 @@ struct cfg_set {
     /* The stream to log to. */
     FILE *verbose_stream;
 
+    /* The request websocket protocols. */
     char *ws_protocols_requested;
 };
 
@@ -137,6 +138,7 @@ struct cws_object {
 
     /* The key header that the server is expected to return. */
     char expected_key_header[WS_HTTP_EXPECTED_KEY_SIZE];
+    size_t expected_key_header_len;
 
     /* The memory configuration & pool. */
     struct mem_pool_config mem_cfg;
