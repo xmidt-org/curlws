@@ -147,7 +147,7 @@ CWScode send_frame(CWS *priv, const struct cws_frame *f)
     }
 
     if (priv->cfg.verbose) {
-        fprintf(stderr, 
+        fprintf(priv->cfg.verbose_stream, 
                 "[ websocket frame queued opcode: %s payload len: %zd ]\n",
                 frame_opcode_to_string(f), f->payload_len);
     }
@@ -159,7 +159,7 @@ CWScode send_frame(CWS *priv, const struct cws_frame *f)
         curl_easy_pause(priv->easy, priv->pause_flags);
 
         if (priv->cfg.verbose) {
-            fprintf(stderr, "[ websocket unpause sending ]\n");
+            fprintf(priv->cfg.verbose_stream, "[ websocket unpause sending ]\n");
         }
     }
     return CWSE_OK;
@@ -245,7 +245,7 @@ static size_t _readfunction_cb(char *buffer, size_t count, size_t n, void *data)
 
     if (priv->header_state.redirection) {
         if (priv->cfg.verbose) {
-            fprintf(stderr, "> websocket %zd bytes ignored due to redirection\n", len);
+            fprintf(priv->cfg.verbose_stream, "> websocket %zd bytes ignored due to redirection\n", len);
         }
         return len;
     }
@@ -255,7 +255,7 @@ static size_t _readfunction_cb(char *buffer, size_t count, size_t n, void *data)
          * shut down the connection. */
         if (priv->closed) {
             if (priv->cfg.verbose) {
-                fprintf(stderr, "> websocket closed by returning 0\n");
+                fprintf(priv->cfg.verbose_stream, "> websocket closed by returning 0\n");
             }
             return 0;
         }
@@ -263,7 +263,7 @@ static size_t _readfunction_cb(char *buffer, size_t count, size_t n, void *data)
         priv->pause_flags |= CURLPAUSE_SEND;
 
         if (priv->cfg.verbose) {
-            fprintf(stderr, "> websocket sending paused\n");
+            fprintf(priv->cfg.verbose_stream, "> websocket sending paused\n");
         }
 
         return CURL_READFUNC_PAUSE;
@@ -272,7 +272,7 @@ static size_t _readfunction_cb(char *buffer, size_t count, size_t n, void *data)
     sent = _fill_outgoing_buffer(priv, buffer, len);
 
     if (priv->cfg.verbose) {
-        fprintf(stderr, "> websocket sent: %ld\n", sent);
+        fprintf(priv->cfg.verbose_stream, "> websocket sent: %ld\n", sent);
     }
 
     return sent;

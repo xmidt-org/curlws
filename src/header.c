@@ -60,6 +60,7 @@ static void _check_accept(CWS*, const char*, size_t);
 static void _check_protocol(CWS*, const char*, size_t);
 static void _check_upgrade(CWS*, const char*, size_t);
 static void _check_connection(CWS*, const char*, size_t);
+static void _output_header_error(CWS*, const char*, const char*, size_t, const char*, size_t);
 
 /*----------------------------------------------------------------------------*/
 /*                             External Functions                             */
@@ -149,23 +150,13 @@ static void _check_accept(CWS *priv, const char *buffer, size_t len)
 {
     priv->header_state.accepted = false;
 
-    if (len != strlen(priv->expected_key_header)) {
-        if (priv->cfg.verbose) {
-            fprintf(stderr,
-                    "< websocket header 'Sec-WebSocket-Accept' "
-                    "expected %zu bytes, got %zu '%.*s'",
-                    strlen(priv->expected_key_header) - 1, len, (int)len, buffer);
-        }
-        return;
-    }
-
-    if (memcmp(priv->expected_key_header, buffer, len) != 0) {
-        if (priv->cfg.verbose) {
-            fprintf(stderr,
-                    "< websocket header 'Sec-WebSocket-Accept' "
-                    "invalid accept key '%.*s', expected '%.*s'",
-                    (int)len, buffer, (int)len, priv->expected_key_header);
-        }
+    if ((len != priv->expected_key_header_len) ||
+        (0 != memcmp(priv->expected_key_header, buffer, len)))
+    {
+        _output_header_error(priv, "Sec-WebSocket-Accept",
+                             priv->expected_key_header,
+                             priv->expected_key_header_len,
+                             buffer, len);
         return;
     }
 
@@ -188,12 +179,7 @@ static void _check_upgrade(CWS *priv, const char *buffer, size_t len)
     priv->header_state.connection_websocket = false;
 
     if (cws_strncasecmp(buffer, "websocket", len)) {
-        if (priv->cfg.verbose) {
-            fprintf(stderr,
-                    "< websocket header error 'Upgrade: %.*s'. "
-                    "Expected 'Upgrade: websocket'",
-                    (int)len, buffer);
-        }
+        _output_header_error(priv, "Upgrade", "websocket", sizeof("websocket")-1, buffer, len);
         return;
     }
 
@@ -206,12 +192,7 @@ static void _check_connection(CWS *priv, const char *buffer, size_t len)
     priv->header_state.upgraded = false;
 
     if (cws_strncasecmp(buffer, "upgrade", len)) {
-        if (priv->cfg.verbose) {
-            fprintf(stderr,
-                    "< websocket header error 'Connection: %.*s'. "
-                    "Expected 'Connection: upgrade'",
-                    (int)len, buffer);
-        }
+        _output_header_error(priv, "Connection", "upgrade", sizeof("upgrade")-1, buffer, len);
         return;
     }
 
@@ -219,3 +200,21 @@ static void _check_connection(CWS *priv, const char *buffer, size_t len)
 }
 
 
+static void _output_header_error(CWS *priv, const char *header, const char *expected,
+                                 size_t expected_len, const char *got, size_t got_len)
+{
+    if (priv->cfg.verbose) {
+        const char *dots = "...";
+        int truncated = expected_len;
+
+        if (got_len <= expected_len) {
+            truncated = (int) got_len;
+            dots = "";
+        }
+        fprintf(priv->cfg.verbose_stream,
+                "< websocket header "
+                "expected (value len=%zu): '%s: %s', got (len=%zu): '%.*s%s'\n",
+                expected_len, header, expected,
+                got_len, truncated, got, dots);
+    }
+}

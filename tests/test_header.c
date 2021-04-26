@@ -105,7 +105,7 @@ void setup_test(CWS *priv)
 }
 
 
-void test_simple()
+void test_redirection()
 {
     CWS priv;
 
@@ -133,8 +133,63 @@ void test_simple()
     CU_ASSERT(false == priv.header_state.upgraded);
     CU_ASSERT(false == priv.header_state.connection_websocket);
     CU_ASSERT(NULL == priv.header_state.ws_protocols_received);
+}
+
+
+void test_simple()
+{
+    CWS priv;
+
+    setup_test(&priv);
+
+    /* A simple, successful call. */
+    __http_code = 101;
+    __http_version = CURL_HTTP_VERSION_1_1;
+    priv.header_state.accepted = true;
+    priv.header_state.upgraded = true;
+    priv.header_state.connection_websocket = true;
+    CU_ASSERT(32 == _header_cb("HTTP/1.1 101  Switching Protocols", 32, 1, &priv));
+    CU_ASSERT(false == priv.header_state.accepted);
+    CU_ASSERT(false == priv.header_state.upgraded);
+    CU_ASSERT(false == priv.header_state.connection_websocket);
 
     snprintf(priv.expected_key_header, 29, "foobar");
+    priv.expected_key_header_len = 6;
+    CU_ASSERT(false == priv.header_state.accepted);
+    CU_ASSERT(30 == _header_cb("Sec-WebSocket-Accept:  foobar ", 30, 1, &priv));
+    CU_ASSERT(true == priv.header_state.accepted);
+
+    CU_ASSERT(false == priv.header_state.upgraded);
+    CU_ASSERT(20 == _header_cb("Connection:  upgrade", 20, 1, &priv));
+    CU_ASSERT(true == priv.header_state.upgraded);
+    CU_ASSERT(false == priv.header_state.connection_websocket);
+    CU_ASSERT(18 == _header_cb("Upgrade: websocket", 18, 1, &priv));
+    CU_ASSERT(true == priv.header_state.connection_websocket);
+
+    CU_ASSERT(2 == _header_cb("\r\n", 2, 1, &priv));
+}
+
+void test_simple_with_protocols()
+{
+    CWS priv;
+
+    setup_test(&priv);
+
+    /* A simple, successful call. */
+    __http_code = 101;
+    __http_version = CURL_HTTP_VERSION_1_1;
+    priv.header_state.accepted = true;
+    priv.header_state.upgraded = true;
+    priv.header_state.connection_websocket = true;
+    priv.header_state.ws_protocols_received = cws_strndup("chat", 4);
+    CU_ASSERT(32 == _header_cb("HTTP/1.1 101  Switching Protocols", 32, 1, &priv));
+    CU_ASSERT(false == priv.header_state.accepted);
+    CU_ASSERT(false == priv.header_state.upgraded);
+    CU_ASSERT(false == priv.header_state.connection_websocket);
+    CU_ASSERT(NULL == priv.header_state.ws_protocols_received);
+
+    snprintf(priv.expected_key_header, 29, "foobar");
+    priv.expected_key_header_len = 6;
     CU_ASSERT(false == priv.header_state.accepted);
     CU_ASSERT(30 == _header_cb("Sec-WebSocket-Accept:  foobar ", 30, 1, &priv));
     CU_ASSERT(true == priv.header_state.accepted);
@@ -155,11 +210,36 @@ void test_simple()
 }
 
 
+void check_output(FILE *f, const char *expected)
+{
+    char got[256];
+
+    CU_ASSERT_FATAL(NULL != f);
+    CU_ASSERT_FATAL(NULL != expected);
+
+    memset(got, 0, sizeof(got));
+    fflush(f);
+    rewind(f);
+    CU_ASSERT_FATAL(NULL != fgets(got, sizeof(got), f));
+    CU_ASSERT_STRING_EQUAL(expected, got);
+    //printf("\n");
+    //printf("got: '%s'\n", got);
+
+    /* reset the stream for the next test */
+    rewind(f);
+}
+
 void test_failures()
 {
     CWS priv;
+    FILE *f_tmp = NULL;
+    char got[256];
 
     setup_test(&priv);
+    memset(got, 0, sizeof(got));
+
+    f_tmp = tmpfile();
+    CU_ASSERT_FATAL(NULL != f_tmp);
 
     __http_code = 404;
     __http_version = CURL_HTTP_VERSION_1_1;
@@ -179,23 +259,62 @@ void test_failures()
     /* Too soon, the headers telling us we're connected aren't there. */
     CU_ASSERT(0 == _header_cb("\r\n", 2, 1, &priv));
 
-    /* Wrong accept string. */
+
+    /* This test must be first! */
+    /* Less out of bounds, no output. */
     snprintf(priv.expected_key_header, 29, "foobar");
+    priv.expected_key_header_len = 6;
+    priv.header_state.accepted = true;
+    CU_ASSERT(1000 == _header_cb("Sec-WebSocket-Accept:  nobarke123123123...totally_invalid", 1000, 1, &priv));
+    CU_ASSERT_FATAL(NULL == fgets(got, sizeof(got), f_tmp));
+    CU_ASSERT(false == priv.header_state.accepted);
+
+    /* Wrong accept string. */
+    priv.cfg.verbose = 1;
+    priv.cfg.verbose_stream = f_tmp;
+
+    /* different lengths */
+    snprintf(priv.expected_key_header, 29, "foobar");
+    priv.expected_key_header_len = 6;
     priv.header_state.accepted = true;
     CU_ASSERT(30 == _header_cb("Sec-WebSocket-Accept:  nobar  ", 30, 1, &priv));
     CU_ASSERT(false == priv.header_state.accepted);
+    check_output(f_tmp, "< websocket header expected (value len=6): 'Sec-WebSocket-Accept: foobar', got (len=5): 'nobar'\n");
+
+    /* Way out of bounds. */
+    snprintf(priv.expected_key_header, 29, "foobar");
+    priv.expected_key_header_len = 6;
+    priv.header_state.accepted = true;
+    CU_ASSERT(SIZE_MAX == _header_cb("Sec-WebSocket-Accept:  nobarke123123123...totally_invalid", SIZE_MAX, 1, &priv));
+    CU_ASSERT(false == priv.header_state.accepted);
+    check_output(f_tmp, "< websocket header expected (value len=6): 'Sec-WebSocket-Accept: foobar', got (len=18446744073709551592): 'nobark...'\n");
+
+    /* Less out of bounds. */
+    snprintf(priv.expected_key_header, 29, "foobar");
+    priv.expected_key_header_len = 6;
+    priv.header_state.accepted = true;
+    CU_ASSERT(1000 == _header_cb("Sec-WebSocket-Accept:  nobarke123123123...totally_invalid", 1000, 1, &priv));
+    CU_ASSERT(false == priv.header_state.accepted);
+    check_output(f_tmp, "< websocket header expected (value len=6): 'Sec-WebSocket-Accept: foobar', got (len=977): 'nobark...'\n");
+
 
     priv.header_state.accepted = true;
     CU_ASSERT(30 == _header_cb("Sec-WebSocket-Accept:  notbar ", 30, 1, &priv));
     CU_ASSERT(false == priv.header_state.accepted);
+    check_output(f_tmp, "< websocket header expected (value len=6): 'Sec-WebSocket-Accept: foobar', got (len=6): 'notbar'\n");
 
     priv.header_state.upgraded = true;
     CU_ASSERT(20 == _header_cb("Connection:  BADrade", 20, 1, &priv));
     CU_ASSERT(false == priv.header_state.upgraded);
+    check_output(f_tmp, "< websocket header expected (value len=7): 'Connection: upgrade', got (len=7): 'BADrade'\n");
 
     priv.header_state.connection_websocket = true;
     CU_ASSERT(18 == _header_cb("Upgrade: BADsocket", 18, 1, &priv));
     CU_ASSERT(false == priv.header_state.connection_websocket);
+    check_output(f_tmp, "< websocket header expected (value len=9): 'Upgrade: websocket', got (len=9): 'BADsocket'\n");
+
+    fclose(f_tmp);
+    f_tmp = NULL;
 }
 
 
@@ -206,8 +325,10 @@ void add_suites( CU_pSuite *suite )
         const char *label;
         void (*fn)(void);
     } tests[] = {
-        { .label = "simple cb Tests", .fn = test_simple        },
-        { .label = "failure Tests", .fn = test_failures },
+        { .label = "simple cb Tests               ", .fn = test_simple                },
+        { .label = "simple cb with protocols Tests", .fn = test_simple_with_protocols },
+        { .label = "redirection Tests             ", .fn = test_redirection           },
+        { .label = "failure Tests                 ", .fn = test_failures              },
         { .label = NULL, .fn = NULL }
     };
     int i;
