@@ -27,6 +27,7 @@
 /* c-mode: linux-4 */
 #include "../src/curlws.h"
 
+#include <stdarg.h>
 #include <stdbool.h>
 #include <stdint.h>
 #include <stdio.h>
@@ -43,14 +44,30 @@ struct myapp_ctx {
 
 static bool verbose = false;
 
-#define INF(fmt, ...) \
-    do { \
-        if (verbose) \
-            fprintf(stderr, "INFO: " fmt "\n", ## __VA_ARGS__); \
-    } while (0)
+static void INF(const char *fmt, ...)
+{
+    if (verbose) {
+        va_list args;
 
-#define ERR(fmt, ...) \
-    fprintf(stderr, "ERROR: " fmt "\n", ## __VA_ARGS__)
+        va_start(args, fmt);
+        fprintf(stderr, "INFO: ");
+        vfprintf(stderr, fmt, args);
+        fprintf(stderr, "\n");
+        va_end(args);
+    }
+}
+
+static void ERR(const char *fmt, ...)
+{
+    va_list args;
+
+    va_start(args, fmt);
+    fprintf(stderr, "ERROR: ");
+    vfprintf(stderr, fmt, args);
+    fprintf(stderr, "\n");
+    va_end(args);
+}
+
 
 /*
  * This is a traditional curl_multi app, see:
