@@ -15,7 +15,12 @@ jobs:
     steps:
     - name: Checkout repository
       uses: actions/checkout@v2
-
+      # Install the dependent packages
+    - name: Install packages
+      run: |
+        sudo apt update
+        sudo apt-get -y install valgrind libcunit1 libcunit1-doc libcunit1-dev libcurl4-openssl-dev jq gcovr
+ 
     - name: Initialize CodeQL
       uses: github/codeql-action/init@v1
       with:
