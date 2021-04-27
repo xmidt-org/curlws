@@ -60,5 +60,18 @@ add_subdirectory(src)
 add_subdirectory(examples)
 
 if (BUILD_TESTING)
+    #
+    # Find the required cunit library and headers
+    #
+    find_package(PkgConfig REQUIRED)
+    pkg_search_module(CUNIT REQUIRED cunit)
+
+    if( CUNIT )
+        include_directories(${CUNIT_INCLUDE_DIRS})
+        message(STATUS "Using CUnit ${CUNIT_VERSION}")
+    else()
+        # Error; with REQUIRED, pkg_search_module() will throw an error by it's own
+    endif()
+
   add_subdirectory(tests)
 endif (BUILD_TESTING)
