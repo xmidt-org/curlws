@@ -4,36 +4,55 @@ curlws provides a curl based websocket implementation.
 
 [![Build Status](https://github.com/xmidt-org/curlws/workflows/CI/badge.svg)](https://github.com/xmidt-org/curlws/actions)
 [![codecov.io](http://codecov.io/github/xmidt-org/curlws/coverage.svg?branch=main)](http://codecov.io/github/xmidt-org/curlws?branch=main)
-[![MIT License](http://img.shields.io/badge/license-MIT-blue.svg)](https://github.com/xmidt-org/curlws/blob/main/LICENSE)
 [![Quality Gate Status](https://sonarcloud.io/api/project_badges/measure?project=xmidt-org_curlws&metric=alert_status)](https://sonarcloud.io/dashboard?id=xmidt-org_curlws)
-[![Language grade: C/C++](https://img.shields.io/lgtm/grade/cpp/g/xmidt-org/curlws.svg?logo=lgtm&logoWidth=18)](https://lgtm.com/projects/g/xmidt-org/curlws/context:cpp)
-[![GitHub release](https://img.shields.io/github/release/xmidt-org/curlws.svg)](CHANGELOG.md)
+[![Language Grade: C/C++](https://img.shields.io/lgtm/grade/cpp/g/xmidt-org/curlws.svg?logo=lgtm&logoWidth=18)](https://lgtm.com/projects/g/xmidt-org/curlws/context:cpp)
+[![Autobahn Test Suite Compliance](https://img.shields.io/badge/autobahn%20websocket-strict%20compliance-blueviolet)](https://img.shields.io/badge/autobahn%20websocket-strict%20compliance-blueviolet)
+[![MIT License](http://img.shields.io/badge/license-MIT-blue.svg)](https://github.com/xmidt-org/curlws/blob/main/LICENSE)
+[![GitHub Release](https://img.shields.io/github/release/xmidt-org/curlws.svg)](CHANGELOG.md)
 
 ## Summary
 
 cURL is a leading networking library and tool for the c world, but it lacks
-websocket support.  This project provides a complementary library that uses
-cURL for the initial handshakes and then provides a simple websocket experience.
+websocket support.  `curlws` provides a complementary library that uses
+libcurl for the initial handshakes and underlying socket handling.  Using libcurl
+as the foundation provides an extremely robust, tested and powerful framework
+for `curlws`.
 
-Outside of libcurl and it's dependencies and a functional libc, this library
-does not depend on any external libraries.  SHA1 is included unless you choose
-to configure the `USE_OPENSSL_SHA` option (see below).
+Outside of libcurl, only a functional libc is required to operate.  SHA1 is even
+included unless you choose to configure the `USE_OPENSSL_SHA` option (see below).
 
-## Table of Contents
+## Getting started
 
-- [Code of Conduct](#code-of-conduct)
-- [Details](#details)
-- [Install](#install)
-- [Contributing](#contributing)
+The best place to start is the [cli](https://github.com/xmidt-org/curlws/tree/main/examples/cli)
+in the `examples/cli/` directory.  While a very simple application it shows the
+power of this little library.
 
-## Code of Conduct
+## Design Patterns
 
-This project and everyone participating in it are governed by the [XMiDT Code Of Conduct](https://xmidt.io/code_of_conduct/). 
-By participating, you agree to this Code.
+#### Single threaded by design
 
-## Details
+`curlws` is not designed to handle a multi-threaded environment.  It certainly
+can be used in one, but you will need to wrap it with the right threading magic
+based on your choices and needs.
 
-Add details here.
+#### Sane defaults, default secure
+
+Provide sane defaults.  All you need to get started is a URL and a zeroed out
+configuration structure.  If there is a choice of secure or insecure, we choose
+security and let you degrade as you see fit.
+
+#### Leverage cURL & it's design patterns
+
+While not everything was brought over from cURL, the callbacks and how you drive
+the event thread with the `curl_multi_*` code should be familiar to most folks.
+That also means there is a way to configure the cURL easy object with whatever
+parameters and commands you want that we don't have today.
+
+#### Quality and security first
+
+There is nothing worse than a library that almost works right, but just doesn't.
+The authors of `curlws` strive to be spec compliant and do so in flying colors.
+
 
 ## Building and Testing
 
@@ -81,6 +100,11 @@ make test validate coverage
 The local autobahn server reports results here: http://localhost:8080
 
 The lcov local code/branch coverage results can be found at `build/index.html`
+
+## Code of Conduct
+
+This project and everyone participating in it are governed by the [XMiDT Code Of Conduct](https://xmidt.io/code_of_conduct/). 
+By participating, you agree to this Code.
 
 
 ## Contributing
