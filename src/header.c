@@ -30,6 +30,8 @@
 #include <stdio.h>
 #include <string.h>
 
+#include <curl/curl.h>
+
 #include "cb.h"
 #include "header.h"
 #include "utils.h"
@@ -67,10 +69,14 @@ static void _output_header_error(CWS*, const char*, const char*, size_t, const c
 /*                             External Functions                             */
 /*----------------------------------------------------------------------------*/
 
-void header_init(CWS *priv)
+CURLcode header_init(CWS *priv)
 {
-    curl_easy_setopt(priv->easy, CURLOPT_HEADERFUNCTION, _header_cb);
-    curl_easy_setopt(priv->easy, CURLOPT_HEADERDATA, priv);
+    CURLcode rv;
+    
+    rv  = curl_easy_setopt(priv->easy, CURLOPT_HEADERFUNCTION, _header_cb);
+    rv |= curl_easy_setopt(priv->easy, CURLOPT_HEADERDATA, priv);
+
+    return rv;
 }
 
 

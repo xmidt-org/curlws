@@ -48,27 +48,30 @@ do {                            \
 /*                                  Mock Header                               */
 /*----------------------------------------------------------------------------*/
 
-void header_init(CWS *priv)
+CURLcode header_init(CWS *priv)
 {
     CU_ASSERT(NULL != priv);
+    return CURLE_OK;
 }
 
 /*----------------------------------------------------------------------------*/
 /*                                 Mock Receive                               */
 /*----------------------------------------------------------------------------*/
 
-void receive_init(CWS *priv)
+CURLcode receive_init(CWS *priv)
 {
     CU_ASSERT(NULL != priv);
+    return CURLE_OK;
 }
 
 /*----------------------------------------------------------------------------*/
 /*                                  Mock Send                                 */
 /*----------------------------------------------------------------------------*/
 
-void send_init(CWS *priv)
+CURLcode send_init(CWS *priv)
 {
     CU_ASSERT(NULL != priv);
+    return CURLE_OK;
 }
 
 void send_destroy(CWS *priv)

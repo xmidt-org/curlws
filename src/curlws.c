@@ -82,17 +82,17 @@
 static CWScode _normalize_close_inputs(int*, int*, const char**, size_t*);
 static int _check_curl_version(const struct cws_config*);
 CWScode _send_stream(CWS*, int, int, const void*, size_t);
-static int _config_url(CWS*, const struct cws_config*);
-static int _config_redirects(CWS*, const struct cws_config*);
-static int _config_ip_version(CWS*, const struct cws_config*);
-static int _config_interface(CWS*, const struct cws_config*);
-static int _config_security(CWS*, const struct cws_config*);
-static int _config_verbosity(CWS*, const struct cws_config*);
-static int _config_ws_workarounds(CWS*, const struct cws_config*);
-static int _config_memorypool(CWS*, const struct cws_config*);
-static int _config_ws_key(CWS*);
-static int _config_ws_protocols(CWS*, const struct cws_config*);
-static int _config_http_headers(CWS*, const struct cws_config*);
+static CURLcode _config_url(CWS*, const struct cws_config*);
+static CURLcode _config_redirects(CWS*, const struct cws_config*);
+static CURLcode _config_ip_version(CWS*, const struct cws_config*);
+static CURLcode _config_interface(CWS*, const struct cws_config*);
+static CURLcode _config_security(CWS*, const struct cws_config*);
+static CURLcode _config_verbosity(CWS*, const struct cws_config*);
+static CURLcode _config_ws_workarounds(CWS*, const struct cws_config*);
+static CURLcode _config_memorypool(CWS*, const struct cws_config*);
+static CURLcode _config_ws_key(CWS*);
+static CURLcode _config_ws_protocols(CWS*, const struct cws_config*);
+static CURLcode _config_http_headers(CWS*, const struct cws_config*);
 
 
 /*----------------------------------------------------------------------------*/
@@ -101,7 +101,7 @@ static int _config_http_headers(CWS*, const struct cws_config*);
 
 CWS *cws_create(const struct cws_config *config)
 {
-    int error = 0;
+    CURLcode status = CURLE_OK;
     CWS *priv = NULL;
 
     if (!config) {
@@ -126,29 +126,27 @@ CWS *cws_create(const struct cws_config *config)
     priv->cfg.user = config->user;
 
     populate_callbacks(&priv->cb, config);
-    error |= _config_memorypool(priv, config);
-    error |= _config_url(priv, config);
-    error |= _config_security(priv, config);
-    error |= _config_interface(priv, config);
-    error |= _config_redirects(priv, config);
-    error |= _config_ip_version(priv, config);
-
-    header_init(priv);
-    receive_init(priv);
-    send_init(priv);
-
-    error |= _config_verbosity(priv, config);
-    error |= _config_ws_workarounds(priv, config);
-    error |= _config_ws_key(priv);
-    error |= _config_ws_protocols(priv, config);
-    error |= _config_http_headers(priv, config);
+    status |= _config_memorypool(priv, config);
+    status |= _config_url(priv, config);
+    status |= _config_security(priv, config);
+    status |= _config_interface(priv, config);
+    status |= _config_redirects(priv, config);
+    status |= _config_ip_version(priv, config);
+    status |= header_init(priv);
+    status |= receive_init(priv);
+    status |= send_init(priv);
+    status |= _config_verbosity(priv, config);
+    status |= _config_ws_workarounds(priv, config);
+    status |= _config_ws_key(priv);
+    status |= _config_ws_protocols(priv, config);
+    status |= _config_http_headers(priv, config);
 
     /* You can overwrite anything you want, but be very careful! */
     if (config->configure) {
         (*config->configure)(priv->cfg.user, priv, priv->easy);
     }
 
-    if (error) {
+    if (CURLE_OK != status) {
         cws_destroy(priv);
         return NULL;
     }
@@ -442,28 +440,26 @@ CWScode _send_stream(CWS *priv, int type, int info, const void *data, size_t len
 /*----------------------------------------------------------------------------*/
 /*                      Internal Configuration Functions                      */
 /*----------------------------------------------------------------------------*/
-static int _config_url(CWS *priv, const struct cws_config *config)
+static CURLcode _config_url(CWS *priv, const struct cws_config *config)
 {
     if (config->url) {
         priv->cfg.url = cws_rewrite_url(config->url);
         if (priv->cfg.url) {
-            if (CURLE_OK == curl_easy_setopt(priv->easy, CURLOPT_URL, priv->cfg.url)) {
-                return 0;
-            }
+            return curl_easy_setopt(priv->easy, CURLOPT_URL, priv->cfg.url);
         }
     }
 
-    return -1;
+    return ~CURLE_OK;
 }
 
 
-static int _config_redirects(CWS *priv, const struct cws_config *config)
+static CURLcode _config_redirects(CWS *priv, const struct cws_config *config)
 {
     CURLcode rv = CURLE_OK;
 
     /* Invalid, too low */
     if (config->max_redirects < -1) {
-        return -1;
+        return ~CURLE_OK;
     }
 
     /* Setup redirect limits. */
@@ -474,11 +470,11 @@ static int _config_redirects(CWS *priv, const struct cws_config *config)
         priv->cfg.follow_redirects = true;
     }
 
-    return (CURLE_OK == rv) ? 0 : -1;
+    return rv;
 }
 
 
-static int _config_ip_version(CWS *priv, const struct cws_config *config)
+static CURLcode _config_ip_version(CWS *priv, const struct cws_config *config)
 {
     CURLcode rv = CURLE_OK;
 
@@ -496,11 +492,11 @@ static int _config_ip_version(CWS *priv, const struct cws_config *config)
         rv |= curl_easy_setopt(priv->easy, CURLOPT_IPRESOLVE, resolve);
     }
 
-    return (CURLE_OK == rv) ? 0 : -1;
+    return rv;
 }
 
 
-static int _config_interface(CWS *priv, const struct cws_config *config)
+static CURLcode _config_interface(CWS *priv, const struct cws_config *config)
 {
     CURLcode rv = CURLE_OK;
 
@@ -508,11 +504,11 @@ static int _config_interface(CWS *priv, const struct cws_config *config)
         rv |= curl_easy_setopt(priv->easy, CURLOPT_INTERFACE, config->interface);
     }
 
-    return (CURLE_OK == rv) ? 0 : -1;
+    return rv;
 }
 
 
-static int _config_security(CWS *priv, const struct cws_config *config)
+static CURLcode _config_security(CWS *priv, const struct cws_config *config)
 {
     CURLcode rv = CURLE_OK;
     long tls_version = CURL_SSLVERSION_MAX_DEFAULT;
@@ -534,17 +530,17 @@ static int _config_security(CWS *priv, const struct cws_config *config)
         rv = ~CURLE_OK;
     }
 
-    return (CURLE_OK == rv) ? 0 : -1;
+    return rv;
 }
 
 
 
-static int _config_verbosity(CWS *priv, const struct cws_config *config)
+static CURLcode _config_verbosity(CWS *priv, const struct cws_config *config)
 {
     CURLcode rv = CURLE_OK;
 
     if ((config->verbose < 0) || (3 < config->verbose)) {
-        return -1;
+        return ~CURLE_OK;
     }
 
     priv->cfg.verbose_stream = stderr;
@@ -560,11 +556,11 @@ static int _config_verbosity(CWS *priv, const struct cws_config *config)
         }
     }
 
-    return (CURLE_OK == rv) ? 0 : -1;
+    return rv;
 }
 
 
-static int _config_ws_workarounds(CWS *priv, const struct cws_config *config)
+static CURLcode _config_ws_workarounds(CWS *priv, const struct cws_config *config)
 {
     struct curl_slist *p;
     CURLcode rv = CURLE_OK;
@@ -602,11 +598,11 @@ static int _config_ws_workarounds(CWS *priv, const struct cws_config *config)
     if (1 == config->expect) {
         p = curl_slist_append(priv->headers, "Expect: 101");
         if (!p) {
-            return -1;
+            return ~CURLE_OK;
         }
         priv->headers = p;
     } else if (0 != config->expect) {
-        return -1;
+        return ~CURLE_OK;
     }
 
     /*
@@ -617,17 +613,17 @@ static int _config_ws_workarounds(CWS *priv, const struct cws_config *config)
      */
     p = curl_slist_append(priv->headers, "Transfer-Encoding:");
     if (!p) {
-        return -1;
+        return ~CURLE_OK;
     }
     priv->headers = p;
 
     /* END: work around CURL to get WebSocket. */
 
-    return (CURLE_OK == rv) ? 0 : -1;
+    return rv;
 }
 
 
-static int _config_memorypool(CWS *priv, const struct cws_config *config)
+static CURLcode _config_memorypool(CWS *priv, const struct cws_config *config)
 {
     size_t max_payload_size;
 
@@ -644,11 +640,11 @@ static int _config_memorypool(CWS *priv, const struct cws_config *config)
 
     priv->mem = mem_init_pool(&priv->mem_cfg);
 
-    return 0;
+    return CURLE_OK;
 }
 
 
-static int _config_ws_key(CWS *priv)
+static CURLcode _config_ws_key(CWS *priv)
 {
     const char guid[] = "258EAFA5-E914-47DA-95CA-C5AB0DC85B11";
     const char header[] = "Sec-WebSocket-Key: ";
@@ -669,7 +665,7 @@ static int _config_ws_key(CWS *priv)
 
     tmp = curl_slist_append(priv->headers, send);
     if (!tmp) {
-        return -1;
+        return ~CURLE_OK;
     }
 
     priv->headers = tmp;
@@ -679,42 +675,42 @@ static int _config_ws_key(CWS *priv)
     cws_encode_base64(sha1_value, sizeof(sha1_value), priv->expected_key_header);
     priv->expected_key_header_len = strlen(priv->expected_key_header);
 
-    return 0;
+    return CURLE_OK;
 }
 
-static int _config_ws_protocols(CWS *priv, const struct cws_config *config)
+static CURLcode _config_ws_protocols(CWS *priv, const struct cws_config *config)
 {
     struct curl_slist *tmp;
     char *buf;
 
     if (!config->websocket_protocols) {
-        return 0;
+        return CURLE_OK;
     }
 
     buf = cws_strmerge("Sec-WebSocket-Protocol: ", config->websocket_protocols);
     if (!buf) {
-        return -1;
+        return ~CURLE_OK;
     }
 
     tmp = curl_slist_append(priv->headers, buf);
     free(buf);
 
     if (!tmp) {
-        return -1;
+        return ~CURLE_OK;
     }
 
     priv->headers = tmp;
 
     priv->cfg.ws_protocols_requested = cws_strdup(config->websocket_protocols);
     if (!priv->cfg.ws_protocols_requested) {
-        return -1;
+        return ~CURLE_OK;
     }
 
-    return 0;
+    return CURLE_OK;
 }
 
 
-static int _config_http_headers(CWS *priv, const struct cws_config *config)
+static CURLcode _config_http_headers(CWS *priv, const struct cws_config *config)
 {
     const char *disallowed[] = {
         "Connection:",
@@ -741,7 +737,7 @@ static int _config_http_headers(CWS *priv, const struct cws_config *config)
     for (size_t i = 0; i < sizeof(ws_headers) / sizeof(ws_headers[0]); i++) {
         p = curl_slist_append(priv->headers, ws_headers[i]);
         if (!p) {
-            return -1;
+            return ~CURLE_OK;
         }
         priv->headers = p;
     }
@@ -753,13 +749,13 @@ static int _config_http_headers(CWS *priv, const struct cws_config *config)
         /* Validate the extra header is ok */
         for (size_t i = 0; i < sizeof(disallowed) / sizeof(disallowed[0]); i++) {
             if (cws_has_prefix(extra->data, strlen(extra->data), disallowed[i])) {
-                return -1;
+                return ~CURLE_OK;
             }
         }
 
         p = curl_slist_append(priv->headers, extra->data);
         if (!p) {
-            return -1;
+            return ~CURLE_OK;
         }
         priv->headers = p;
         extra = extra->next;
@@ -767,5 +763,5 @@ static int _config_http_headers(CWS *priv, const struct cws_config *config)
 
     rv |= curl_easy_setopt(priv->easy, CURLOPT_HTTPHEADER, priv->headers);
 
-    return (CURLE_OK == rv) ? 0 : -1;
+    return rv;
 }

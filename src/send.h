@@ -30,6 +30,8 @@
 #include <stddef.h>
 #include <stdint.h>
 
+#include <curl/curl.h>
+
 #include "frame.h"
 #include "internal.h"
 
@@ -39,7 +41,7 @@
  *
  * @param priv the curlws object to configure
  */
-void send_init(CWS *priv);
+CURLcode send_init(CWS *priv);
 
 
 /**
