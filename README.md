@@ -27,6 +27,8 @@ The best place to start is the [cli](https://github.com/xmidt-org/curlws/tree/ma
 in the `examples/cli/` directory.  While a very simple application it shows the
 power of this little library.
 
+You can find the api here: https://github.com/xmidt-org/curlws/blob/main/src/curlws.h
+
 ## Design Patterns
 
 #### Single threaded by design
