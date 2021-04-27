@@ -27,6 +27,8 @@
 #ifndef __RECEIVE_H__
 #define __RECEIVE_H__
 
+#include <curl/curl.h>
+
 #include "internal.h"
 
 /**
@@ -34,7 +36,7 @@
  *
  * @param priv the curlws object configure
  */
-void receive_init(CWS *priv);
+CURLcode receive_init(CWS *priv);
 
 #endif
 

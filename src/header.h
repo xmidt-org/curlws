@@ -27,6 +27,8 @@
 #ifndef __HEADER_H__
 #define __HEADER_H__
 
+#include <curl/curl.h>
+
 #include "internal.h"
 
 /**
@@ -34,7 +36,7 @@
  *
  * @param priv the curlws object configure
  */
-void header_init(CWS *priv);
+CURLcode header_init(CWS *priv);
 
 #endif
 

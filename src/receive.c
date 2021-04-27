@@ -29,6 +29,8 @@
 #include <stddef.h>
 #include <string.h>
 
+#include <curl/curl.h>
+
 #include "cb.h"
 #include "receive.h"
 #include "utf8.h"
@@ -60,10 +62,14 @@ static inline size_t _min_size_t(size_t, size_t);
 /*----------------------------------------------------------------------------*/
 /*                             External Functions                             */
 /*----------------------------------------------------------------------------*/
-void receive_init(CWS *priv)
+CURLcode receive_init(CWS *priv)
 {
-    curl_easy_setopt(priv->easy, CURLOPT_WRITEFUNCTION, _writefunction_cb);
-    curl_easy_setopt(priv->easy, CURLOPT_WRITEDATA, priv);
+    CURLcode rv;
+
+    rv  = curl_easy_setopt(priv->easy, CURLOPT_WRITEFUNCTION, _writefunction_cb);
+    rv |= curl_easy_setopt(priv->easy, CURLOPT_WRITEDATA, priv);
+
+    return rv;
 }
 
 /*----------------------------------------------------------------------------*/

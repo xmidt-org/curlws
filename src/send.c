@@ -31,6 +31,8 @@
 #include <stdio.h>
 #include <string.h>
 
+#include <curl/curl.h>
+
 #include "internal.h"
 #include "frame.h"
 #include "send.h"
@@ -68,10 +70,14 @@ static size_t _readfunction_cb(char*, size_t, size_t, void*);
 /*                             External Functions                             */
 /*----------------------------------------------------------------------------*/
 
-void send_init(CWS *priv)
+CURLcode send_init(CWS *priv)
 {
-    curl_easy_setopt(priv->easy, CURLOPT_READFUNCTION, _readfunction_cb);
-    curl_easy_setopt(priv->easy, CURLOPT_READDATA, priv);
+    CURLcode rv;
+
+    rv  = curl_easy_setopt(priv->easy, CURLOPT_READFUNCTION, _readfunction_cb);
+    rv |= curl_easy_setopt(priv->easy, CURLOPT_READDATA, priv);
+
+    return rv;
 }
 
 
