@@ -1,6 +1,6 @@
 # curlws
 
-curlws provides a curl based websocket implementation.
+curlws provides a cURL based websocket implementation.
 
 [![Build Status](https://github.com/xmidt-org/curlws/workflows/CI/badge.svg)](https://github.com/xmidt-org/curlws/actions)
 [![codecov.io](http://codecov.io/github/xmidt-org/curlws/coverage.svg?branch=main)](http://codecov.io/github/xmidt-org/curlws?branch=main)
