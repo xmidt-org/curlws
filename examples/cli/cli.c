@@ -237,8 +237,10 @@ static bool is_opt(const char *in, const char *s1, const char *s2)
         return ((0 == strcmp(in, s1)) || (0 == strcmp(in, s2))) ? true : false;
     } else if (s2) {
         return (0 == strcmp(in, s2)) ? true : false;
+    } else if (s1) {
+        return (0 == strcmp(in, s1)) ? true : false;
     }
-    return (0 == strcmp(in, s1)) ? true : false;
+    return false;
 }
 
 
