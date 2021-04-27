@@ -44,7 +44,7 @@ add_executable(test_memory test_memory.c ../src/memory.c)
 if (${CMAKE_SYSTEM_NAME} MATCHES "Linux")
 target_link_libraries (test_memory gcov)
 endif()
-target_link_libraries (test_memory cunit)
+target_link_libraries (test_memory ${CUNIT_LIBRARIES})
 target_link_libraries (test_memory)
 # ---------------------------------------------------------------------------- #
 
@@ -57,7 +57,7 @@ add_executable(test_utils test_utils.c ../src/utils.c)
 if (${CMAKE_SYSTEM_NAME} MATCHES "Linux")
 target_link_libraries (test_utils gcov)
 endif()
-target_link_libraries (test_utils cunit)
+target_link_libraries (test_utils ${CUNIT_LIBRARIES})
 target_link_libraries (test_utils)
 # ---------------------------------------------------------------------------- #
 
@@ -70,7 +70,7 @@ add_executable(test_notice test_notice.c ../src/notice.c)
 if (${CMAKE_SYSTEM_NAME} MATCHES "Linux")
 target_link_libraries (test_notice gcov)
 endif()
-target_link_libraries (test_notice cunit)
+target_link_libraries (test_notice ${CUNIT_LIBRARIES})
 target_link_libraries (test_notice)
 # ---------------------------------------------------------------------------- #
 
@@ -83,7 +83,7 @@ add_executable(test_sha1 test_sha1.c ${SHA_FILES})
 if (${CMAKE_SYSTEM_NAME} MATCHES "Linux")
 target_link_libraries (test_sha1 gcov)
 endif()
-target_link_libraries (test_sha1 cunit)
+target_link_libraries (test_sha1 ${CUNIT_LIBRARIES})
 target_link_libraries (test_sha1 ${OPENSSL_LIBRARIES})
 # ---------------------------------------------------------------------------- #
 
@@ -96,7 +96,7 @@ add_executable(test_frame test_frame.c ../src/frame.c)
 if (${CMAKE_SYSTEM_NAME} MATCHES "Linux")
 target_link_libraries (test_frame gcov)
 endif()
-target_link_libraries (test_frame cunit)
+target_link_libraries (test_frame ${CUNIT_LIBRARIES})
 # ---------------------------------------------------------------------------- #
 
 
@@ -108,7 +108,7 @@ add_executable(test_frame_senders test_frame_senders.c ../src/frame_senders.c)
 if (${CMAKE_SYSTEM_NAME} MATCHES "Linux")
 target_link_libraries (test_frame_senders gcov)
 endif()
-target_link_libraries (test_frame_senders cunit)
+target_link_libraries (test_frame_senders ${CUNIT_LIBRARIES})
 # ---------------------------------------------------------------------------- #
 
 
@@ -120,7 +120,7 @@ add_executable(test_data_block_sender test_data_block_sender.c ../src/data_block
 if (${CMAKE_SYSTEM_NAME} MATCHES "Linux")
 target_link_libraries (test_data_block_sender gcov)
 endif()
-target_link_libraries (test_data_block_sender cunit)
+target_link_libraries (test_data_block_sender ${CUNIT_LIBRARIES})
 # ---------------------------------------------------------------------------- #
 
 
@@ -134,7 +134,7 @@ add_executable(test_handlers test_handlers.c
 if (${CMAKE_SYSTEM_NAME} MATCHES "Linux")
 target_link_libraries (test_handlers gcov)
 endif()
-target_link_libraries (test_handlers cunit)
+target_link_libraries (test_handlers ${CUNIT_LIBRARIES})
 target_link_libraries (test_handlers ${CURL_LIBRARIES})
 # ---------------------------------------------------------------------------- #
 
@@ -152,7 +152,7 @@ add_executable(test_receive test_receive.c
 if (${CMAKE_SYSTEM_NAME} MATCHES "Linux")
 target_link_libraries (test_receive gcov)
 endif()
-target_link_libraries (test_receive cunit)
+target_link_libraries (test_receive ${CUNIT_LIBRARIES})
 target_link_libraries (test_receive)
 # ---------------------------------------------------------------------------- #
 
@@ -170,7 +170,7 @@ add_executable(test_autobahn_27 test_autobahn_27.c
 if (${CMAKE_SYSTEM_NAME} MATCHES "Linux")
 target_link_libraries (test_autobahn_27 gcov)
 endif()
-target_link_libraries (test_autobahn_27 cunit)
+target_link_libraries (test_autobahn_27 ${CUNIT_LIBRARIES})
 target_link_libraries (test_autobahn_27)
 # ---------------------------------------------------------------------------- #
 
@@ -186,7 +186,7 @@ add_executable(test_send test_send.c
 if (${CMAKE_SYSTEM_NAME} MATCHES "Linux")
 target_link_libraries (test_send gcov)
 endif()
-target_link_libraries (test_send cunit)
+target_link_libraries (test_send ${CUNIT_LIBRARIES})
 target_link_libraries (test_send)
 # ---------------------------------------------------------------------------- #
 
@@ -202,7 +202,7 @@ add_executable(test_header test_header.c
 if (${CMAKE_SYSTEM_NAME} MATCHES "Linux")
 target_link_libraries (test_header gcov)
 endif()
-target_link_libraries (test_header cunit)
+target_link_libraries (test_header ${CUNIT_LIBRARIES})
 target_link_libraries (test_header)
 # ---------------------------------------------------------------------------- #
 
@@ -215,7 +215,7 @@ add_executable(test_utf8 test_utf8.c ../src/utf8.c)
 if (${CMAKE_SYSTEM_NAME} MATCHES "Linux")
 target_link_libraries (test_utf8 gcov)
 endif()
-target_link_libraries (test_utf8 cunit)
+target_link_libraries (test_utf8 ${CUNIT_LIBRARIES})
 target_link_libraries (test_utf8)
 # ---------------------------------------------------------------------------- #
 
@@ -238,7 +238,7 @@ add_executable(test_curlws test_curlws.c
 if (${CMAKE_SYSTEM_NAME} MATCHES "Linux")
 target_link_libraries (test_curlws gcov)
 endif()
-target_link_libraries (test_curlws cunit)
+target_link_libraries (test_curlws ${CUNIT_LIBRARIES})
 target_link_libraries (test_curlws ${OPENSSL_LIBRARIES})
 # ---------------------------------------------------------------------------- #
 
