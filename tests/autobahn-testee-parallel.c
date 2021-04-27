@@ -27,6 +27,7 @@
 /* c-mode: linux-4 */
 #include "../src/curlws.h"
 
+#include <stdarg.h>
 #include <stdbool.h>
 #include <stdint.h>
 #include <stdio.h>
@@ -52,14 +53,29 @@ struct myapp_ctx {
 
 static bool verbose = false;
 
-#define INF(fmt, ...) \
-    do { \
-        if (verbose) \
-            fprintf(stderr, "INFO: " fmt "\n", ## __VA_ARGS__); \
-    } while (0)
+static void INF(const char *fmt, ...)
+{
+    if (verbose) {
+        va_list args;
 
-#define ERR(fmt, ...) \
-    fprintf(stderr, "ERROR: " fmt "\n", ## __VA_ARGS__)
+        va_start(args, fmt);
+        fprintf(stderr, "INFO: ");
+        vfprintf(stderr, fmt, args);
+        fprintf(stderr, "\n");
+        va_end(args);
+    }
+}
+
+static void ERR(const char *fmt, ...)
+{
+    va_list args;
+
+    va_start(args, fmt);
+    fprintf(stderr, "ERROR: ");
+    vfprintf(stderr, fmt, args);
+    fprintf(stderr, "\n");
+    va_end(args);
+}
 
 /*
  * This is a traditional curl_multi app, see:
@@ -336,7 +352,9 @@ static void on_close(void *data, CWS *ws, int reason, const char *reason_text, s
 int main(int argc, char *argv[]) {
     const char *base_url;
     unsigned start_test, end_test, current_test;
-    int i, exitval, opt = 1;
+    int i;
+    int exitval = 0;
+    int opt = 1;
     struct myapp_ctx myapp_ctx;
     struct ws_list *p = NULL;
 
