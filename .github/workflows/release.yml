@@ -13,22 +13,34 @@ jobs:
       - uses: actions/checkout@v2
         with:
           fetch-depth: 0
+      - name: Determine repo name
+        run: |
+          echo "repo_name=$(echo '${{ github.repository }}' | awk -F '/' '{print $2}')" >> $GITHUB_ENV
+          echo "version=${GITHUB_REF#refs/tags/}" >> $GITHUB_ENV
+          echo "release_slug=$(echo '${{ github.repository }}' | awk -F '/' '{print $2}')-${GITHUB_REF#refs/tags/v}" >> $GITHUB_ENV
+        shell: bash
+      - name: Create tarball and sha256
+        run: |
+          git archive --format=tar.gz -o ${release_slug}.tar.gz --prefix=${release_slug}/ ${version}
+          git archive --format=zip -o ${release_slug}.zip --prefix=${release_slug}/ ${version}
+          sha256sum ${release_slug}.tar.gz ${release_slug}.zip > ${release_slug}-sha256sums.txt
+          mkdir artifacts
+          cp ${release_slug}* artifacts/.
       - name: Prepare Release Body
         id: prep
         run: |
-          export VERSION=${GITHUB_REF#refs/tags/}
-          export NOTES=$(cat CHANGELOG.md | perl -0777 -ne 'print "$1\n" if /.*## \[${VERSION}\]\s(.*?)\s+## \[(v\d+.\d+.\d+)\].*/s')
+          export version=${GITHUB_REF#refs/tags/}
+          export NOTES=$(cat CHANGELOG.md | perl -0777 -ne 'print "$1\n" if /.*## \[${version}\]\s(.*?)\s+## \[(v\d+.\d+.\d+)\].*/s')
           export TODAY=`date +'%m/%d/%Y'`
-          echo ::set-output name=rname::$(echo ${VERSION} ${TODAY})
+          echo ::set-output name=rname::$(echo ${version} ${TODAY})
           echo ::set-output name=body::${NOTES}
       - name: create release
         id: create_release
-        uses: actions/create-release@v1
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }} # This token is provided by Actions, you do not need to create your own token
+        uses: ncipollo/release-action@v1
         with:
-          tag_name: ${{ github.ref }}
+          name: ${{ steps.prep.outputs.rname }}
           draft: false
           prerelease: false
-          release_name: ${{ steps.prep.outputs.rname }}
-          body: ${{ steps.prep.outputs.body }}
+          bodyFile: ${{ steps.prep.outputs.body }}
+          artifacts: "artifacts/*"
+          token: ${{ secrets.GITHUB_TOKEN }} # This token is provided by Actions, you do not need to create your own token
