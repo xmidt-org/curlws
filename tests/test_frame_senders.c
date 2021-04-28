@@ -74,10 +74,10 @@ void test_frame_sender_control()
     CU_ASSERT(CWSE_INVALID_OPTIONS == frame_sender_control(&priv, -1, NULL, 0));
     CU_ASSERT(CWSE_INVALID_OPTIONS == frame_sender_control(&priv, CWS_PING|CWS_PONG, NULL, 0));
 
-    priv.closed = true;
+    priv.close_state = CLOSE_QUEUED;
     CU_ASSERT(CWSE_CLOSED_CONNECTION == frame_sender_control(&priv, CWS_PING, NULL, 0));
 
-    priv.closed = false;
+    priv.close_state = 0;
     CU_ASSERT(CWSE_APP_DATA_LENGTH_TOO_LONG == frame_sender_control(&priv, CWS_PING, "ignore", 1000));
 
     /* Valid, but empty payloads. */
@@ -113,10 +113,10 @@ void test_frame_sender_data()
     CU_ASSERT(CWSE_INVALID_OPTIONS == frame_sender_data(&priv, -1, NULL, 0));
     CU_ASSERT(CWSE_INVALID_OPTIONS == frame_sender_data(&priv, CWS_CONT|CWS_TEXT, NULL, 0));
 
-    priv.closed = true;
+    priv.close_state = CLOSE_QUEUED;
     CU_ASSERT(CWSE_CLOSED_CONNECTION == frame_sender_data(&priv, CWS_TEXT|CWS_FIRST, NULL, 0));
 
-    priv.closed = false;
+    priv.close_state = 0;
     CU_ASSERT(CWSE_STREAM_CONTINUITY_ISSUE == frame_sender_data(&priv, CWS_CONT, "ignore", 5));
 
     CU_ASSERT(CWSE_INVALID_OPTIONS == frame_sender_data(&priv, CWS_CONT|CWS_FIRST, "ignore", 5));

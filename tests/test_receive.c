@@ -45,6 +45,14 @@ CURLcode curl_easy_setopt(CURL *easy, CURLoption option, ... )
 }
 
 
+CURLcode curl_easy_pause(CURL *easy, int bitmask)
+{
+    (void) easy;
+    (void) bitmask;
+    return CURLE_OK;
+}
+
+
 struct mock_cws_close {
     int code;
     const char *reason;
@@ -63,7 +71,7 @@ CWScode cws_close(CWS *priv, int code, const char *reason, size_t len)
 
     if (__cws_close_goal) {
         CU_ASSERT(NULL != priv);
-        priv->closed = true;
+        priv->close_state = CLOSE_QUEUED;
         CU_ASSERT(__cws_close_goal->code == code);
         CU_ASSERT(__cws_close_goal->len == len);
         /* Make sure the string lengths actually are the same ... */

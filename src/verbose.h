@@ -35,5 +35,9 @@
  */
 void verbose(CWS *priv, const char *format, ...);
 
+/**
+ * Print out the close status of the connection.
+ */
+void verbose_close(CWS *priv);
 #endif
 

@@ -62,6 +62,22 @@ void verbose(CWS *priv, const char *format, ...)
     }
 }
 
+
+void verbose_close(CWS *priv)
+{
+    if (!priv->close_state) {
+        verbose(priv, "[ websocket connection state: active ]\n");
+    } else if ((CLOSED|CLOSE_SENT|CLOSE_QUEUED|CLOSE_RECEIVED) == priv->close_state) {
+        verbose(priv, "[ websocket connection state: (closed)   closed  sent  queued  received ]\n");
+    } else {
+        verbose(priv, "[ websocket connection state: (closing) %cclosed %csent %cqueued %creceived ]\n",
+                (CLOSED         & priv->close_state) ? ' ' : '!',
+                (CLOSE_SENT     & priv->close_state) ? ' ' : '!',
+                (CLOSE_QUEUED   & priv->close_state) ? ' ' : '!',
+                (CLOSE_RECEIVED & priv->close_state) ? ' ' : '!' );
+    }
+}
+
 /*----------------------------------------------------------------------------*/
 /*                             Internal functions                             */
 /*----------------------------------------------------------------------------*/
