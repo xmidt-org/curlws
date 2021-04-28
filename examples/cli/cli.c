@@ -25,10 +25,12 @@
  */
 #include "../../src/curlws.h"
 
+#include <signal.h>
 #include <stdbool.h>
 #include <stddef.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <stdint.h>
 #include <string.h>
 
 /*----------------------------------------------------------------------------*/
@@ -44,12 +46,13 @@
 /*----------------------------------------------------------------------------*/
 /*                            File Scoped Variables                           */
 /*----------------------------------------------------------------------------*/
-/* none */
+static int shutdown_ws = 0;
 
 /*----------------------------------------------------------------------------*/
 /*                             Function Prototypes                            */
 /*----------------------------------------------------------------------------*/
-static void main_loop(CURLM *multi);
+static void handle_sigint(int);
+static void main_loop(CWS*, CURLM*);
 static bool is_opt(const char*, const char*, const char*);
 
 static void on_connect(void*, CWS*, const char*);
@@ -139,6 +142,8 @@ int main(int argc, char *argv[]) {
         }
     }
 
+    signal(SIGINT, handle_sigint);
+
     /* Create the curl global context. */
     curl_global_init(CURL_GLOBAL_DEFAULT);
 
@@ -153,7 +158,7 @@ int main(int argc, char *argv[]) {
             /* Add the websocket to the multi handler. */
             if (CURLM_OK == cws_multi_add_handle(ws, multi)) {
                 /* Run the main loop until we are done. */
-                main_loop(multi);
+                main_loop(ws, multi);
                 cws_multi_remove_handle(ws, multi);
             }
             curl_multi_cleanup(multi);
@@ -167,7 +172,12 @@ int main(int argc, char *argv[]) {
 /*----------------------------------------------------------------------------*/
 /*                             Internal functions                             */
 /*----------------------------------------------------------------------------*/
-static void main_loop(CURLM *multi)
+static void handle_sigint(int sig)
+{
+    shutdown_ws = 1;
+}
+
+static void main_loop(CWS *ws, CURLM *multi)
 {
     int still_running = 0;
 
@@ -217,6 +227,11 @@ static void main_loop(CURLM *multi)
         default: /* action */
             curl_multi_perform(multi, &still_running);
             break;
+        }
+
+        if (1 == shutdown_ws) {
+            cws_close(ws, 1001, "Program stopping.", SIZE_MAX);
+            shutdown_ws = 2;
         }
 
         /* See how the transfers went */
