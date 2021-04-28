@@ -763,6 +763,21 @@ void test_destroy_failures()
 
     /* Simulate a failure during creation. */
     ws = (CWS*) calloc(1, sizeof(CWS));
+    CU_ASSERT_FATAL(NULL != ws);
+    cws_destroy(ws);
+
+    /* Make sure NULL doesn't crash us. */
+    cws_destroy(NULL);
+
+    /* Make sure we bail without cleaning up when dispatching. */
+    ws = (CWS*) calloc(1, sizeof(CWS));
+    CU_ASSERT_FATAL(NULL != ws);
+    ws->dispatching = 1;
+    ws->header_state.ws_protocols_received = cws_strdup("data");
+    cws_destroy(ws);
+    CU_ASSERT(NULL != ws->header_state.ws_protocols_received);
+
+    ws->dispatching = 0;
     cws_destroy(ws);
 }
 
