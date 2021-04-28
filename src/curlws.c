@@ -44,6 +44,7 @@
 #include "sha1.h"
 #include "utils.h"
 #include "utf8.h"
+#include "verbose.h"
 #include "ws.h"
 
 /*----------------------------------------------------------------------------*/
@@ -264,7 +265,10 @@ CWScode cws_close(CWS *priv, int code, const char *reason, size_t len)
     }
 
     rv = frame_sender_control(priv, options, p, len);
-    priv->closed = true;
+    if (!(CLOSE_QUEUED & priv->close_state)) {
+        priv->close_state |= CLOSE_QUEUED;
+        verbose_close(priv);
+    }
     return rv;
 }
 

@@ -57,6 +57,7 @@
 /*----------------------------------------------------------------------------*/
 static size_t _writefunction_cb(const char*, size_t, size_t, void*);
 static void _cws_process_frame(CWS*, const char**, size_t*);
+static void _error_close(CWS *priv, int, const char*, size_t);
 static inline size_t _min_size_t(size_t, size_t);
 
 /*----------------------------------------------------------------------------*/
@@ -97,7 +98,7 @@ static size_t _writefunction_cb(const char *buffer, size_t count, size_t nitems,
         return len;
     }
 
-    if (priv->closed) {
+    if (CLOSE_RECEIVED & priv->close_state) {
         verbose(priv, "< websocket bytes ignored due to closed connection\n");
         return len;
     }
@@ -108,7 +109,7 @@ static size_t _writefunction_cb(const char *buffer, size_t count, size_t nitems,
         _cws_process_frame(priv, &buffer, &len);
 
         /* Either it's closed now or we made no progress.  Move on. */
-        if ((priv->closed) || (len == prev_len)) {
+        if ((len == prev_len) || (CLOSE_RECEIVED & priv->close_state)) {
             break;
         }
     }
@@ -126,8 +127,7 @@ static void _handle_close(CWS *priv, struct recv *r)
 
     if (1 == len) {
         /* Invalid as 0 or 2+ bytes are needed */
-        status = 1002;
-        cws_close(priv, status, "invalid close payload length", SIZE_MAX);
+        _error_close(priv, 1002, "invalid close payload length", SIZE_MAX);
         return;
     }
 
@@ -136,8 +136,7 @@ static void _handle_close(CWS *priv, struct recv *r)
 
         status = r->control.buf[0] << 8 | r->control.buf[1];
         if (!is_close_code_valid(status)) {
-            status = 1002;
-            cws_close(priv, status, "invalid close reason", SIZE_MAX);
+            _error_close(priv, 1002, "invalid close reason", SIZE_MAX);
             return;
         }
 
@@ -148,19 +147,19 @@ static void _handle_close(CWS *priv, struct recv *r)
 
         prev_len = len;
         if ((0 != utf8_validate(s, &len)) || (prev_len != len)) {
-            cws_close(priv, 1007, NULL, 0);
+            _error_close(priv, 1007, NULL, 0);
             return;
         }
     }
 
     cb_on_close(priv, status, s, len);
 
-    if (!priv->closed) {
-        if (1005 == status) {
-            status = 0;
-        }
-        cws_close(priv, status, s, 0);
+    /* If it has already been sent, this call will return as a failure and
+     * that is ok. */
+    if (1005 == status) {
+        status = 0;
     }
+    _error_close(priv, status, s, 0);
 }
 
 
@@ -204,7 +203,7 @@ static struct cws_frame* _process_frame_header(CWS *priv, const char **buf, size
 
     delta = 0;
     if (frame_decode(frame, h->buf, h->used, &delta)) {
-        cws_close(priv, 1002, NULL, 0);
+        _error_close(priv, 1002, NULL, 0);
         return NULL;
     }
 
@@ -218,7 +217,7 @@ static struct cws_frame* _process_frame_header(CWS *priv, const char **buf, size
     }
 
     if (0 != frame_validate(frame, FRAME_DIR_S2C)) {
-        cws_close(priv, 1002, NULL, 0);
+        _error_close(priv, 1002, NULL, 0);
         return NULL;
     }
 
@@ -296,7 +295,7 @@ static int _process_text_stream(CWS *priv, const char *buf, size_t len,
              * waiting for the entire character.  This makes us autobahn
              * compliant. */
             if (false == utf8_maybe_valid(r->utf8.buf, r->utf8.used)) {
-                cws_close(priv, 1007, NULL, 0);
+                _error_close(priv, 1007, NULL, 0);
                 return -1;
             }
 
@@ -309,7 +308,7 @@ static int _process_text_stream(CWS *priv, const char *buf, size_t len,
             if ((0 != utf8_validate(r->utf8.buf, &valid)) ||
                 (r->utf8.used != valid))
             {
-                cws_close(priv, 1007, NULL, 0);
+                _error_close(priv, 1007, NULL, 0);
                 return -1;
             }
 
@@ -327,7 +326,7 @@ static int _process_text_stream(CWS *priv, const char *buf, size_t len,
          * bytes needed to complete a character at the start.  There could be
          * incomplete UTF8 characters at the end. */
         if (0 != utf8_validate(*buf_to_send, &valid)) {
-            cws_close(priv, 1007, NULL, 0);
+            _error_close(priv, 1007, NULL, 0);
             return -1;
         }
 
@@ -339,7 +338,7 @@ static int _process_text_stream(CWS *priv, const char *buf, size_t len,
             /* If this is the last buffer of the last frame and we have extra
              * characters, then we have a problem and must close error out. */
             if ((r->frame->fin) && (r->frame->payload_len <= len)) {
-                cws_close(priv, 1007, NULL, 0);
+                _error_close(priv, 1007, NULL, 0);
                 return -1;
             }
 
@@ -456,7 +455,7 @@ static void _cws_process_frame(CWS *priv, const char **buffer, size_t *len)
                 r->fragment_info &= ~CWS_NONCTRL_MASK;
                 r->fragment_info |= CWS_CONT;
             } else {
-                cws_close(priv, 1002, NULL, 0);
+                _error_close(priv, 1002, NULL, 0);
                 return;
             }
         }
@@ -473,6 +472,25 @@ static void _cws_process_frame(CWS *priv, const char **buffer, size_t *len)
     }
 }
 
+
+static void _error_close(CWS *priv, int code, const char *reason, size_t len)
+{
+    if (!(CLOSE_RECEIVED & priv->close_state)) {
+        priv->close_state |= CLOSE_RECEIVED;
+        verbose_close(priv);
+
+        cws_close(priv, code, reason, len);
+
+        /* No matter what, the send code must close the connection. */
+        if (priv->pause_flags & CURLPAUSE_SEND) {
+
+            priv->pause_flags &= ~CURLPAUSE_SEND;
+            curl_easy_pause(priv->easy, priv->pause_flags);
+
+            verbose(priv, "[ websocket unpause sending ]\n");
+        }
+    }
+}
 
 
 static inline size_t _min_size_t(size_t a, size_t b)

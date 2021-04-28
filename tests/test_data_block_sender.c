@@ -77,10 +77,10 @@ void test_data_block_sender()
     CU_ASSERT(CWSE_INVALID_OPTIONS == data_block_sender(&priv, CWS_BINARY|CWS_TEXT, NULL, 0));
     CU_ASSERT(CWSE_INVALID_OPTIONS == data_block_sender(&priv, CWS_TEXT|CWS_FIRST, NULL, 0));
 
-    priv.closed = true;
+    priv.close_state = CLOSED;
     CU_ASSERT(CWSE_CLOSED_CONNECTION == data_block_sender(&priv, CWS_TEXT, NULL, 0));
 
-    priv.closed = false;
+    priv.close_state = 0;
     do {
         struct mock vector = {
             .rv = CWSE_OK,

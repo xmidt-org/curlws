@@ -45,6 +45,15 @@ CURLcode curl_easy_setopt(CURL *easy, CURLoption option, ... )
     return CURLE_OK;
 }
 
+
+CURLcode curl_easy_pause(CURL *easy, int bitmask)
+{
+    (void) easy;
+    (void) bitmask;
+    return CURLE_OK;
+}
+
+
 struct mock_ping {
     const char *data;
     size_t len;

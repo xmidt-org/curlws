@@ -219,6 +219,8 @@ static size_t _fill_outgoing_buffer(CWS *priv, char *buffer, size_t len)
 
             /* Don't send any more data after we send a close frame. */
             if (is_close) {
+                priv->close_state |= CLOSE_SENT;
+                verbose_close(priv);
                 data_to_send = 0;
                 send_destroy(priv);
             }
@@ -253,7 +255,9 @@ static size_t _readfunction_cb(char *buffer, size_t count, size_t n, void *data)
     if (NULL == priv->send) {
         /* When the connection is closed, we should return 0 to tell curl to
          * shut down the connection. */
-        if (priv->closed) {
+        if (READY_TO_CLOSE(priv->close_state)) {
+            priv->close_state |= CLOSED;
+            verbose_close(priv);
             verbose(priv, "> websocket closed by returning 0\n");
             return 0;
         }

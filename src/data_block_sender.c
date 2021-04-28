@@ -68,7 +68,7 @@ CWScode data_block_sender(CWS *priv, int options, const void *data, size_t len)
             return CWSE_INVALID_OPTIONS;
     }
 
-    if (priv->closed) {
+    if (priv->close_state) {
         return CWSE_CLOSED_CONNECTION;
     }
 

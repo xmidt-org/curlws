@@ -83,7 +83,7 @@ CWScode frame_sender_control(CWS *priv, int options, const void *data, size_t le
             return CWSE_INVALID_OPTIONS;
     }
 
-    if (priv->closed) {
+    if (CLOSE_QUEUED & priv->close_state) {
         return CWSE_CLOSED_CONNECTION;
     }
 
@@ -149,7 +149,7 @@ CWScode frame_sender_data(CWS *priv, int options, const void *data, size_t len)
             return CWSE_INVALID_OPTIONS;
     }
 
-    if (priv->closed) {
+    if (priv->close_state) {
         return CWSE_CLOSED_CONNECTION;
     }
 

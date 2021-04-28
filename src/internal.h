@@ -42,6 +42,13 @@
 /*----------------------------------------------------------------------------*/
 #define IGNORE_UNUSED(x) (void) x
 
+#define CLOSE_RECEIVED      0x0010
+#define CLOSE_QUEUED        0x0020
+#define CLOSE_SENT          0x0040
+#define CLOSED              0x0080
+#define READY_TO_CLOSE(x)   \
+    ((CLOSE_SENT|CLOSE_RECEIVED) == ((CLOSED|CLOSE_SENT|CLOSE_RECEIVED) & x))
+
 /*----------------------------------------------------------------------------*/
 /*                               Data Structures                              */
 /*----------------------------------------------------------------------------*/
@@ -161,12 +168,12 @@ struct cws_object {
 
     /* Connection State flags */
     uint8_t dispatching;
-    uint8_t pause_flags;
+    int pause_flags;
 
     /* The header state structure */
     struct header_map header_state;
 
-    bool closed;
+    int close_state;
 };
 
 /*----------------------------------------------------------------------------*/
