@@ -42,6 +42,12 @@
 /*                               Data Structures                              */
 /*----------------------------------------------------------------------------*/
 /* none */
+struct my_cfg {
+    long ip_resolve;
+    long tls_version;
+    bool insecure;
+    const char *interface;
+};
 
 /*----------------------------------------------------------------------------*/
 /*                            File Scoped Variables                           */
@@ -55,6 +61,7 @@ static void handle_sigint(int);
 static void main_loop(CWS*, CURLM*);
 static bool is_opt(const char*, const char*, const char*);
 
+static CURLcode configure(void*, CWS*, CURL*);
 static void on_connect(void*, CWS*, const char*);
 static void on_text(void*, CWS*, const char*, size_t);
 static void on_binary(void*, CWS*, const void*, size_t);
@@ -68,9 +75,16 @@ int main(int argc, char *argv[]) {
     CWS *ws;
     CURLM *multi;
     long max_redirs = -1;
+    struct my_cfg custom;
+
+    memset(&custom, 0, sizeof(custom));
+    custom.ip_resolve = CURL_IPRESOLVE_WHATEVER;
+    custom.tls_version = CURL_SSLVERSION_MAX_DEFAULT;
 
     /* Select the defaults for curlws & overwrite them as needed. */
     memset(&cfg, 0, sizeof(cfg));
+    cfg.user = &custom;
+    cfg.configure = configure;
 
     /* Provide the four most useful callbacks for reference. */
     cfg.on_connect = on_connect;
@@ -81,9 +95,9 @@ int main(int argc, char *argv[]) {
     /* Very simple args parser. */
     for (int i = 1; i < argc; i++) {
         if (is_opt(argv[i], "-4", NULL)) {
-            cfg.ip_version = 4;
+            custom.ip_resolve = CURL_IPRESOLVE_V4;
         } else if (is_opt(argv[i], "-6", NULL)) {
-            cfg.ip_version = 6;
+            custom.ip_resolve = CURL_IPRESOLVE_V6;
         } else if (is_opt(argv[i], NULL, "--compliance")) {
             printf("%s", cws_get_notice());
             return 0;
@@ -112,9 +126,9 @@ int main(int argc, char *argv[]) {
             cfg.extra_headers = curl_slist_append(cfg.extra_headers, argv[i]);
         } else if (is_opt(argv[i], NULL, "--interface")) {
             i++;
-            cfg.interface = argv[i];
+            custom.interface = argv[i];
         } else if (is_opt(argv[i], "-k", "--insecure")) {
-            cfg.insecure_ok = CURLWS_INSECURE_MODE;
+            custom.insecure = true;
         } else if (is_opt(argv[i], "-L", "--location")) {
             cfg.max_redirects = -1;
         } else if (is_opt(argv[i], NULL, "--max-payload")) {
@@ -124,7 +138,7 @@ int main(int argc, char *argv[]) {
             i++;
             max_redirs = atol(argv[i]);
         } else if (is_opt(argv[i], NULL, "--tlsv1.2")) {
-            cfg.tls_version = CURL_SSLVERSION_MAX_TLSv1_2;
+            custom.tls_version = CURL_SSLVERSION_MAX_TLSv1_2;
         } else if (is_opt(argv[i], "-v", "--verbose")) {
             cfg.verbose++;
         } else if (is_opt(argv[i], NULL, "--ws_protos")) {
@@ -242,6 +256,27 @@ static void main_loop(CWS *ws, CURLM *multi)
             }
         }
     } while (still_running);
+}
+
+
+static CURLcode configure(void *user, CWS *ws, CURL *easy)
+{
+    struct my_cfg *cfg = (struct my_cfg*) user;
+    CURLcode rv;
+
+    rv  = curl_easy_setopt(easy, CURLOPT_IPRESOLVE, cfg->ip_resolve);
+    rv |= curl_easy_setopt(easy, CURLOPT_SSLVERSION, cfg->tls_version);
+
+    if (cfg->insecure) {
+        rv |= curl_easy_setopt(easy, CURLOPT_SSL_VERIFYHOST, 0L);
+        rv |= curl_easy_setopt(easy, CURLOPT_SSL_VERIFYPEER, 0L);
+    }
+
+    if (cfg->interface) {
+        rv |= curl_easy_setopt(easy, CURLOPT_INTERFACE, cfg->interface);
+    }
+
+    return rv;
 }
 
 

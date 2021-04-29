@@ -85,8 +85,6 @@ static int _check_curl_version(const struct cws_config*);
 CWScode _send_stream(CWS*, int, int, const void*, size_t);
 static CURLcode _config_url(CWS*, const struct cws_config*);
 static CURLcode _config_redirects(CWS*, const struct cws_config*);
-static CURLcode _config_ip_version(CWS*, const struct cws_config*);
-static CURLcode _config_interface(CWS*, const struct cws_config*);
 static CURLcode _config_security(CWS*, const struct cws_config*);
 static CURLcode _config_verbosity(CWS*, const struct cws_config*);
 static CURLcode _config_ws_workarounds(CWS*, const struct cws_config*);
@@ -130,9 +128,7 @@ CWS *cws_create(const struct cws_config *config)
     status |= _config_memorypool(priv, config);
     status |= _config_url(priv, config);
     status |= _config_security(priv, config);
-    status |= _config_interface(priv, config);
     status |= _config_redirects(priv, config);
-    status |= _config_ip_version(priv, config);
     status |= header_init(priv);
     status |= receive_init(priv);
     status |= send_init(priv);
@@ -144,7 +140,7 @@ CWS *cws_create(const struct cws_config *config)
 
     /* You can overwrite anything you want, but be very careful! */
     if (config->configure) {
-        (*config->configure)(priv->cfg.user, priv, priv->easy);
+        status |= (*config->configure)(priv->cfg.user, priv, priv->easy);
     }
 
     if (CURLE_OK != status) {
@@ -478,63 +474,12 @@ static CURLcode _config_redirects(CWS *priv, const struct cws_config *config)
 }
 
 
-static CURLcode _config_ip_version(CWS *priv, const struct cws_config *config)
-{
-    CURLcode rv = CURLE_OK;
-
-    if (0 != config->ip_version) {
-        long resolve;
-
-        if (4 == config->ip_version) {
-            resolve = CURL_IPRESOLVE_V4;
-        } else if (6 == config->ip_version) {
-            resolve = CURL_IPRESOLVE_V6;
-        } else {
-            return -1;
-        }
-
-        rv |= curl_easy_setopt(priv->easy, CURLOPT_IPRESOLVE, resolve);
-    }
-
-    return rv;
-}
-
-
-static CURLcode _config_interface(CWS *priv, const struct cws_config *config)
-{
-    CURLcode rv = CURLE_OK;
-
-    if (NULL != config->interface) {
-        rv |= curl_easy_setopt(priv->easy, CURLOPT_INTERFACE, config->interface);
-    }
-
-    return rv;
-}
-
-
 static CURLcode _config_security(CWS *priv, const struct cws_config *config)
 {
-    CURLcode rv = CURLE_OK;
-    long tls_version = CURL_SSLVERSION_MAX_DEFAULT;
-
-    if (config->tls_version) {
-        tls_version = config->tls_version;
-    }
+    (void) config;
 
     /* Force a reasonably modern version of TLS */
-    rv |= curl_easy_setopt(priv->easy, CURLOPT_SSLVERSION, tls_version);
-
-    /* If you **really** must run in insecure mode, ok... but seriously this
-     * is dangerous. */
-
-    if (0x7269736b == config->insecure_ok) {
-        rv |= curl_easy_setopt(priv->easy, CURLOPT_SSL_VERIFYPEER, 0L);
-        rv |= curl_easy_setopt(priv->easy, CURLOPT_SSL_VERIFYHOST, 0L);
-    } else if (0 != config->insecure_ok) {
-        rv = ~CURLE_OK;
-    }
-
-    return rv;
+    return curl_easy_setopt(priv->easy, CURLOPT_SSLVERSION, CURL_SSLVERSION_MAX_DEFAULT);
 }
 
 
