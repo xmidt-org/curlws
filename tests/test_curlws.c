@@ -69,13 +69,14 @@ do {                                            \
 #define MY_HTTP_VERSION         2
 
 int __my_cfg_fn_seen = 0;
-void my_cfg_fn(void *user, CWS *handle, CURL *easy)
+CURLcode my_cfg_fn(void *user, CWS *handle, CURL *easy)
 {
     CU_ASSERT(NULL == user);
     CU_ASSERT(NULL != handle);
     CU_ASSERT(NULL != easy);
 
     __my_cfg_fn_seen++;
+    return CURLE_OK;
 }
 
 
@@ -393,170 +394,6 @@ void test_create_redirect()
         "CURLOPT_SSLVERSION     : " xstr(MY_CURL_SSLVERSION_TLS),
         "CURLOPT_FOLLOWLOCATION : 1",
         "CURLOPT_MAXREDIRS      : 10",
-        "CURLOPT_HTTP_VERSION   : " xstr(MY_HTTP_VERSION),
-        "CURLOPT_UPLOAD         : 1",
-        "CURLOPT_CUSTOMREQUEST  : GET",
-        "CURLOPT_FORBID_REUSE   : 1",
-        "CURLOPT_FRESH_CONNECT  : 1",
-        "Transfer-Encoding:",
-        "Sec-WebSocket-Key: tluJnnQlu3K8f3LD4vsxcQ==",
-        "Connection: Upgrade",
-        "Upgrade: websocket",
-        "Sec-WebSocket-Version: 13");
-}
-
-
-void test_create_interface()
-{
-    CWS *ws;
-    struct cws_config cfg;
-
-    memset(&cfg, 0, sizeof(cfg));
-    cfg.url = "wss://example.com";
-    reset_setopt();
-
-    /* Any interface value is accepted. */
-    cfg.interface = "not_really_valid";
-    ws = cws_create(&cfg);
-    CU_ASSERT_FATAL(NULL != ws);
-    cws_destroy(ws);
-    validate_and_reset(
-        "CURLOPT_URL            : https://example.com",
-        "CURLOPT_SSLVERSION     : " xstr(MY_CURL_SSLVERSION_TLS),
-        "CURLOPT_INTERFACE      : not_really_valid",
-        "CURLOPT_HTTP_VERSION   : " xstr(MY_HTTP_VERSION),
-        "CURLOPT_UPLOAD         : 1",
-        "CURLOPT_CUSTOMREQUEST  : GET",
-        "CURLOPT_FORBID_REUSE   : 1",
-        "CURLOPT_FRESH_CONNECT  : 1",
-        "Transfer-Encoding:",
-        "Sec-WebSocket-Key: tluJnnQlu3K8f3LD4vsxcQ==",
-        "Connection: Upgrade",
-        "Upgrade: websocket",
-        "Sec-WebSocket-Version: 13");
-}
-
-
-void test_create_ip()
-{
-    CWS *ws;
-    struct cws_config cfg;
-    int invalid[] = { -1, 1, 2, 3, 5, 7, 8, 9, 10 };
-
-    memset(&cfg, 0, sizeof(cfg));
-    cfg.url = "wss://example.com";
-    reset_setopt();
-
-    /* Invalid ip option */
-    for (size_t i = 0; i < sizeof(invalid)/sizeof(int); i++) {
-        cfg.ip_version = invalid[i];
-        ws = cws_create(&cfg);
-        CU_ASSERT(NULL == ws);
-        reset_setopt();
-    }
-
-    /* Valid ip options */
-    cfg.ip_version = 4;
-    ws = cws_create(&cfg);
-    CU_ASSERT_FATAL(NULL != ws);
-    cws_destroy(ws);
-    validate_and_reset(
-        "CURLOPT_URL            : https://example.com",
-        "CURLOPT_SSLVERSION     : " xstr(MY_CURL_SSLVERSION_TLS),
-        "CURLOPT_IPRESOLVE      : " xstr(CURL_IPRESOLVE_V4),
-        "CURLOPT_HTTP_VERSION   : " xstr(MY_HTTP_VERSION),
-        "CURLOPT_UPLOAD         : 1",
-        "CURLOPT_CUSTOMREQUEST  : GET",
-        "CURLOPT_FORBID_REUSE   : 1",
-        "CURLOPT_FRESH_CONNECT  : 1",
-        "Transfer-Encoding:",
-        "Sec-WebSocket-Key: tluJnnQlu3K8f3LD4vsxcQ==",
-        "Connection: Upgrade",
-        "Upgrade: websocket",
-        "Sec-WebSocket-Version: 13");
-
-    cfg.ip_version = 6;
-    ws = cws_create(&cfg);
-    CU_ASSERT_FATAL(NULL != ws);
-    cws_destroy(ws);
-    validate_and_reset(
-        "CURLOPT_URL            : https://example.com",
-        "CURLOPT_SSLVERSION     : " xstr(MY_CURL_SSLVERSION_TLS),
-        "CURLOPT_IPRESOLVE      : " xstr(CURL_IPRESOLVE_V6),
-        "CURLOPT_HTTP_VERSION   : " xstr(MY_HTTP_VERSION),
-        "CURLOPT_UPLOAD         : 1",
-        "CURLOPT_CUSTOMREQUEST  : GET",
-        "CURLOPT_FORBID_REUSE   : 1",
-        "CURLOPT_FRESH_CONNECT  : 1",
-        "Transfer-Encoding:",
-        "Sec-WebSocket-Key: tluJnnQlu3K8f3LD4vsxcQ==",
-        "Connection: Upgrade",
-        "Upgrade: websocket",
-        "Sec-WebSocket-Version: 13");
-}
-
-
-void test_create_insecure()
-{
-    CWS *ws;
-    struct cws_config cfg;
-
-    memset(&cfg, 0, sizeof(cfg));
-    cfg.url = "wss://example.com";
-    reset_setopt();
-
-    /* Invalid security option */
-    cfg.insecure_ok = 1;
-    ws = cws_create(&cfg);
-    CU_ASSERT(NULL == ws);
-    reset_setopt();
-
-    /* Valid security option - no security */
-    cfg.insecure_ok = CURLWS_INSECURE_MODE;
-    ws = cws_create(&cfg);
-    CU_ASSERT_FATAL(NULL != ws);
-    cws_destroy(ws);
-    validate_and_reset(
-        "CURLOPT_URL            : https://example.com",
-        "CURLOPT_SSLVERSION     : " xstr(MY_CURL_SSLVERSION_TLS),
-        "CURLOPT_SSL_VERIFYPEER : 0",
-        "CURLOPT_SSL_VERIFYHOST : 0",
-        "CURLOPT_HTTP_VERSION   : " xstr(MY_HTTP_VERSION),
-        "CURLOPT_UPLOAD         : 1",
-        "CURLOPT_CUSTOMREQUEST  : GET",
-        "CURLOPT_FORBID_REUSE   : 1",
-        "CURLOPT_FRESH_CONNECT  : 1",
-        "Transfer-Encoding:",
-        "Sec-WebSocket-Key: tluJnnQlu3K8f3LD4vsxcQ==",
-        "Connection: Upgrade",
-        "Upgrade: websocket",
-        "Sec-WebSocket-Version: 13");
-
-    cfg.insecure_ok = 0;
-    ws = cws_create(&cfg);
-    CU_ASSERT_FATAL(NULL != ws);
-    cws_destroy(ws);
-    validate_and_reset(
-        "CURLOPT_URL            : https://example.com",
-        "CURLOPT_SSLVERSION     : " xstr(MY_CURL_SSLVERSION_TLS),
-        "CURLOPT_HTTP_VERSION   : " xstr(MY_HTTP_VERSION),
-        "CURLOPT_UPLOAD         : 1",
-        "CURLOPT_CUSTOMREQUEST  : GET",
-        "CURLOPT_FORBID_REUSE   : 1",
-        "CURLOPT_FRESH_CONNECT  : 1",
-        "Transfer-Encoding:",
-        "Sec-WebSocket-Key: tluJnnQlu3K8f3LD4vsxcQ==",
-        "Connection: Upgrade",
-        "Upgrade: websocket",
-        "Sec-WebSocket-Version: 13");
-
-    cfg.tls_version = CURL_SSLVERSION_TLSv1_0;
-    ws = cws_create(&cfg);
-    CU_ASSERT_FATAL(NULL != ws);
-    cws_destroy(ws);
-    validate_and_reset(
-        "CURLOPT_URL            : https://example.com",
-        "CURLOPT_SSLVERSION     : 4",
         "CURLOPT_HTTP_VERSION   : " xstr(MY_HTTP_VERSION),
         "CURLOPT_UPLOAD         : 1",
         "CURLOPT_CUSTOMREQUEST  : GET",
@@ -964,9 +801,6 @@ void add_suites( CU_pSuite *suite )
         { .label = "create: basic Tests",         .fn = test_create_basic          },
         { .label = "create: config cb Tests",     .fn = test_create_config_cb      },
         { .label = "create: redirect Tests",      .fn = test_create_redirect       },
-        { .label = "create: interface Tests",     .fn = test_create_interface      },
-        { .label = "create: force IP ver Tests",  .fn = test_create_ip             },
-        { .label = "create: insecure Tests",      .fn = test_create_insecure       },
         { .label = "create: ws protos Tests",     .fn = test_create_ws_protos      },
         { .label = "create: expect Tests",        .fn = test_create_expect         },
         { .label = "create: payload size Tests",  .fn = test_create_payload_size   },

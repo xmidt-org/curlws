@@ -74,7 +74,7 @@ void test_populate_callbacks()
     src.on_ping     = (void (*)(void*, CWS*, const void*, size_t)) 5;
     src.on_pong     = (void (*)(void*, CWS*, const void*, size_t)) 6;
     src.on_close    = (void (*)(void*, CWS*, int, const char*, size_t)) 7;
-    src.configure   = (void (*)(void*, CWS*, CURL*)) 8;
+    src.configure   = (CURLcode (*)(void*, CWS*, CURL*)) 8;
 
     populate_callbacks(&priv.cb, &src);
     CU_ASSERT(priv.cb.on_connect_fn  == (void (*)(void*, CWS*, const char*)) 1);

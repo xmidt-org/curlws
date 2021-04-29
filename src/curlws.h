@@ -45,9 +45,6 @@ extern "C" {
 #define CWS_FIRST       0x01000000
 #define CWS_LAST        0x02000000
 
-/* The constant used to enable insecure mode. */
-#define CURLWS_INSECURE_MODE 0x7269736b
-
 /* All possible error codes from all the curlws functions. Future versions
  * may return other values.
  *
@@ -108,12 +105,6 @@ struct cws_config {
      * for a specific maximum number. */
     long max_redirects;
 
-    /* Sets the interface name to use as the outgoing network interface.
-     * Follows these rules if not NULL:
-     *      https://curl.se/libcurl/c/CURLOPT_INTERFACE.html
-     */
-    const char *interface;
-
     /* Set the verbosity level.  You hardly ever want this set in production
      * use, you will almost always want this when you debug/report problems.
      *
@@ -129,31 +120,6 @@ struct cws_config {
      * debug if requested.
      */
     FILE *verbose_stream;
-
-    /* Set the IP version to use when connecting.
-     *  0 is system default
-     *  4 forces IPv4
-     *  6 forces IPv6
-     */
-    int ip_version;
-
-    /* If set to CURLWS_INSECURE_MODE, this forces the connection establishment
-     * to ignore hostname validation logic and other protective measures.
-     * Functionally equivalent to using -k with the curl cli.  Any other value
-     * defaults to the secure validation of host/peer names. */
-    int insecure_ok;
-
-    /* If unset this library defaults secure and chooses to apply the best
-     * available TLS depending on the version of curl.
-     *
-     * CURL_SSLVERSION_MAX_DEFAULT [7.54.0 +)
-     * CURL_SSLVERSION_TLSv1_3     [7.52.0 - 7.54.0)
-     * CURL_SSLVERSION_TLSv1_2     [7.50.2 - 7.52.0)
-     *
-     * See the CURLOPT_SSLVERSION details for options you may set here.
-     * https://curl.se/libcurl/c/CURLOPT_SSLVERSION.html
-     */
-    long tls_version;
 
     /* The various websocket protocols in a single string format.
      * Something like "chat", "superchat", "superchat,chat" ...
@@ -303,36 +269,40 @@ struct cws_config {
     void (*on_close)(void *user, CWS *handle, int code, const char *reason, size_t len);
 
     /**
+     * This callback provides the way to configure all the parameters CURL has
+     * to offer that are not needed by the curlws library.
+     *
      * ----------------------------------------------------------------------
-     * WARNING!  Using this method for configuration can result in unexpected
-     * results.  Use only if needed.
+     * WARNING!  Do not change any of the following CURLOPT values unless you
+     *           really know what you are doing.  These are used by curlws to
+     *           make the websocket function.
      * ----------------------------------------------------------------------
      *
-     * Called to enable the configuration of the connection using uncommonly
-     * needed curl_easy_setopt() based options.  Generally do not use the
-     * following options or options that interfere with their behavior:
-     *      CURLOPT_HEADER, 
-     *      CURLOPT_WILDCARDMATCH,
-     *      CURLOPT_NOSIGNAL,
-     *      CURLOPT_HEADERDATA,
-     *      CURLOPT_HEADERFUNCTION,
-     *      CURLOPT_WRITEDATA
-     *      CURLOPT_WRITEFUNCTION
+     * Do not set these values:
+     *      CURLOPT_CUSTOMREQUEST
+     *      CURLOPT_FOLLOWLOCATION
+     *      CURLOPT_FORBID_REUSE
+     *      CURLOPT_FRESH_CONNECT
+     *      CURLOPT_HEADER
+     *      CURLOPT_HEADERDATA
+     *      CURLOPT_HEADERFUNCTION
+     *      CURLOPT_HTTPHEADER
+     *      CURLOPT_HTTP_VERSION
+     *      CURLOPT_MAXREDIRS
+     *      CURLOPT_NOSIGNAL
      *      CURLOPT_READDATA
      *      CURLOPT_READFUNCTION
+     *      CURLOPT_STDERR
      *      CURLOPT_TIMEOUT
-     *      CURLOPT_URL
-     *      CURLOPT_HTTP_VERSION
      *      CURLOPT_UPLOAD
-     *      CURLOPT_CUSTOMREQUEST
-     *      CURLOPT_HTTPHEADER
+     *      CURLOPT_URL
+     *      CURLOPT_VERBOSE
+     *      CURLOPT_WRITEDATA
+     *      CURLOPT_WRITEFUNCTION
      *
-     * ----------------------------------------------------------------------
-     * You are responsible for ensuring the proper behavior of any settings
-     * specified via this interface!  You have been warned!
-     * ----------------------------------------------------------------------
+     * Return any value besides CURLE_OK to signal an error.
      */
-    void (*configure)(void *user, CWS *handle, CURL *easy);
+    CURLcode (*configure)(void *user, CWS *handle, CURL *easy);
 
     /* User provided data that is passed into the callbacks via the data arg. */
     void *user;
