@@ -315,7 +315,7 @@ void run_test( struct test_vector *v )
 
     p = v->in;
     for (size_t i = 0; i < v->block_count; i++) {
-        size_t rv = _writefunction_cb(p, v->blocks[i], 1, &priv);
+        size_t rv = _receive_cb(p, v->blocks[i], 1, &priv);
 
         if (rv != v->rv[i]) {
             printf("%s - '%.*s' byte count: %d got: %zd\n", v->test_name,

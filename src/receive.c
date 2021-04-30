@@ -55,7 +55,7 @@
 /*----------------------------------------------------------------------------*/
 /*                             Function Prototypes                            */
 /*----------------------------------------------------------------------------*/
-static size_t _writefunction_cb(const char*, size_t, size_t, void*);
+static size_t _receive_cb(const char*, size_t, size_t, void*);
 static void _cws_process_frame(CWS*, const char**, size_t*);
 static void _error_close(CWS *priv, int, const char*, size_t);
 static inline size_t _min_size_t(size_t, size_t);
@@ -67,7 +67,7 @@ CURLcode receive_init(CWS *priv)
 {
     CURLcode rv;
 
-    rv  = curl_easy_setopt(priv->easy, CURLOPT_WRITEFUNCTION, _writefunction_cb);
+    rv  = curl_easy_setopt(priv->easy, CURLOPT_WRITEFUNCTION, _receive_cb);
     rv |= curl_easy_setopt(priv->easy, CURLOPT_WRITEDATA, priv);
 
     return rv;
@@ -80,7 +80,7 @@ CURLcode receive_init(CWS *priv)
 /**
  * This is the callback used by curl.
  */
-static size_t _writefunction_cb(const char *buffer, size_t count, size_t nitems, void *data)
+static size_t _receive_cb(const char *buffer, size_t count, size_t nitems, void *data)
 {
     CWS *priv = data;
     size_t len = count * nitems;

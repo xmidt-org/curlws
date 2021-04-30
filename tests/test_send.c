@@ -129,13 +129,13 @@ void test_simple()
 
     /* Ignore redirection */
     priv.header_state.redirection = true;
-    CU_ASSERT(40 == _readfunction_cb((char*) buffer, 40, 1, &priv));
+    CU_ASSERT(40 == _send_cb((char*) buffer, 40, 1, &priv));
     priv.header_state.redirection = false;
 
     /* Test the empty send queue --> pause things behavior */
     CU_ASSERT(NULL == priv.send);
     CU_ASSERT(0 == priv.pause_flags);
-    CU_ASSERT(CURL_READFUNC_PAUSE == _readfunction_cb((char*) buffer, 40, 1, &priv));
+    CU_ASSERT(CURL_READFUNC_PAUSE == _send_cb((char*) buffer, 40, 1, &priv));
     CU_ASSERT(CURLPAUSE_SEND == priv.pause_flags);
 
     /* Send 2 frames in a large enough buffer - starting from paused state */
@@ -143,7 +143,7 @@ void test_simple()
     CU_ASSERT(CWSE_OK == send_frame(&priv, &f[0]));
     CU_ASSERT(CWSE_OK == send_frame(&priv, &f[1]));
     CU_ASSERT(CWSE_OK == send_frame(&priv, &f[2]));
-    CU_ASSERT(31 == _readfunction_cb((char*) buffer, 40, 1, &priv));
+    CU_ASSERT(31 == _send_cb((char*) buffer, 40, 1, &priv));
 
     for (size_t i = 0; i < sizeof(expect); i++) {
         CU_ASSERT(expect[i] == buffer[i]);
@@ -186,7 +186,7 @@ void test_small_buffer()
     setup_test(&priv);
 
     CU_ASSERT(CWSE_OK == send_frame(&priv, &f[0]));
-    CU_ASSERT(10 == _readfunction_cb((char*) buffer, 10, 1, &priv));
+    CU_ASSERT(10 == _send_cb((char*) buffer, 10, 1, &priv));
 
     for (size_t i = 0; i < sizeof(expect); i++) {
         CU_ASSERT(expect[i] == buffer[i]);
