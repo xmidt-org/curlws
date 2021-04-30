@@ -115,7 +115,7 @@ struct mock_stream {
 };
 
 static struct mock_stream *__on_fragment_goal = NULL;
-static void on_fragment(void *data, CWS *handle, int info, const void *buffer, size_t len)
+static int on_fragment(void *data, CWS *handle, int info, const void *buffer, size_t len)
 {
     (void) data;
 
@@ -153,6 +153,8 @@ static void on_fragment(void *data, CWS *handle, int info, const void *buffer, s
             __on_fragment_goal = NULL;
         }
     }
+
+    return 0;
 }
 
 
@@ -165,7 +167,7 @@ struct mock_close {
 };
 
 static struct mock_close *__on_close_goal = NULL;
-static void on_close(void *data, CWS *handle, int code, const char *reason, size_t len)
+static int on_close(void *data, CWS *handle, int code, const char *reason, size_t len)
 {
     (void) data;
 
@@ -196,6 +198,8 @@ static void on_close(void *data, CWS *handle, int code, const char *reason, size
             __on_close_goal = NULL;
         }
     }
+
+    return 0;
 }
 
 
@@ -207,7 +211,7 @@ struct mock_ping {
 };
 
 static struct mock_ping *__on_ping_goal = NULL;
-static void on_ping(void *data, CWS *handle, const void *buffer, size_t len)
+static int on_ping(void *data, CWS *handle, const void *buffer, size_t len)
 {
     (void) data;
 
@@ -228,6 +232,8 @@ static void on_ping(void *data, CWS *handle, const void *buffer, size_t len)
             __on_ping_goal = NULL;
         }
     }
+
+    return 0;
 }
 
 
@@ -239,7 +245,7 @@ struct mock_pong {
 };
 
 static struct mock_pong *__on_pong_goal = NULL;
-static void on_pong(void *data, CWS *handle, const void *buffer, size_t len)
+static int on_pong(void *data, CWS *handle, const void *buffer, size_t len)
 {
     (void) data;
 
@@ -260,6 +266,8 @@ static void on_pong(void *data, CWS *handle, const void *buffer, size_t len)
             __on_pong_goal = NULL;
         }
     }
+
+    return 0;
 }
 
 

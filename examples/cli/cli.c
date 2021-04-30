@@ -62,10 +62,10 @@ static void main_loop(CWS*, CURLM*);
 static bool is_opt(const char*, const char*, const char*);
 
 static CURLcode configure(void*, CWS*, CURL*);
-static void on_connect(void*, CWS*, const char*);
-static void on_text(void*, CWS*, const char*, size_t);
-static void on_binary(void*, CWS*, const void*, size_t);
-static void on_close(void*, CWS*, int, const char*, size_t);
+static int on_connect(void*, CWS*, const char*);
+static int on_text(void*, CWS*, const char*, size_t);
+static int on_binary(void*, CWS*, const void*, size_t);
+static int on_close(void*, CWS*, int, const char*, size_t);
 
 /*----------------------------------------------------------------------------*/
 /*                             External Functions                             */
@@ -295,28 +295,32 @@ static bool is_opt(const char *in, const char *s1, const char *s2)
 
 
 /* The custom on_connect handler for this instance of the websocket code. */
-static void on_connect(void *user, CWS *ws, const char *protos)
+static int on_connect(void *user, CWS *ws, const char *protos)
 {
     printf("on_connect(user, ws, '%s')\n", (NULL == protos) ? "" : protos );
     (void) user;
     (void) ws;
 
     /* TODO: ADD YOUR CODE HERE! */
+
+    return 0;
 }
 
 /* The custom on_text handler for this instance of the websocket code. */
-static void on_text(void *user, CWS *ws, const char *text, size_t len)
+static int on_text(void *user, CWS *ws, const char *text, size_t len)
 {
     printf("on_text(user, ws, '%.*s', %zd)\n", (int) len, text, len);
     (void) user;
     (void) ws;
 
     /* TODO: ADD YOUR CODE HERE! */
+
+    return 0;
 }
 
 
 /* The custom on_binary handler for this instance of the websocket code. */
-static void on_binary(void *user, CWS *ws, const void *buf, size_t len)
+static int on_binary(void *user, CWS *ws, const void *buf, size_t len)
 {
     printf("on_binary(user, ws, buf, %zd)\n", len);
     (void) user;
@@ -324,17 +328,21 @@ static void on_binary(void *user, CWS *ws, const void *buf, size_t len)
     (void) buf;
 
     /* TODO: ADD YOUR CODE HERE! */
+
+    return 0;
 }
 
 
 /* The custom on_close handler for this instance of the websocket code. */
-static void on_close(void *user, CWS *ws, int code, const char *reason, size_t len)
+static int on_close(void *user, CWS *ws, int code, const char *reason, size_t len)
 {
     printf("on_close(user, ws, %d, '%.*s', %zd)\n", code, (int) len, reason, len);
     (void) user;
     (void) ws;
 
     /* TODO: ADD YOUR CODE HERE! */
+
+    return 0;
 }
 
 

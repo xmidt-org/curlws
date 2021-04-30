@@ -51,8 +51,8 @@
 /*----------------------------------------------------------------------------*/
 /*                             Function Prototypes                            */
 /*----------------------------------------------------------------------------*/
-static void _default_on_fragment(void*, CWS*, int, const void*, size_t);
-static void _default_on_ping(void*, CWS*, const void*, size_t);
+static int _default_on_fragment(void*, CWS*, int, const void*, size_t);
+static int _default_on_ping(void*, CWS*, const void*, size_t);
 
 /*----------------------------------------------------------------------------*/
 /*                             External Functions                             */
@@ -93,7 +93,7 @@ void populate_callbacks(struct callbacks *dest, const struct cws_config *src)
 
 /*----------------------------------------------------------------------------*/
 
-static void _default_on_fragment(void *user, CWS *priv, int info, const void *buffer, size_t len)
+static int _default_on_fragment(void *user, CWS *priv, int info, const void *buffer, size_t len)
 {
     int one_frame = (CWS_FIRST | CWS_LAST);
 
@@ -134,13 +134,17 @@ static void _default_on_fragment(void *user, CWS *priv, int info, const void *bu
             priv->stream_buffer_len = 0;
         }
     }
+
+    return 0;
 }
 
 
 
-static void _default_on_ping(void *user, CWS *priv, const void *buffer, size_t len)
+static int _default_on_ping(void *user, CWS *priv, const void *buffer, size_t len)
 {
     IGNORE_UNUSED(user);
 
     cws_pong(priv, buffer, len);
+
+    return 0;
 }

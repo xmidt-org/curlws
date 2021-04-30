@@ -251,20 +251,21 @@ static bool check_utf8(const char *text) {
     return true;
 }
 
-static void on_connect(void *data, CWS *ws, const char *websocket_protocols) {
+static int on_connect(void *data, CWS *ws, const char *websocket_protocols) {
     INF("connected, websocket_protocols='%s'", websocket_protocols);
     (void)data;
     (void)ws;
+
+    return 0;
 }
 
-static void on_text(void *data, CWS *ws, const char *text, size_t len) {
+static int on_text(void *data, CWS *ws, const char *text, size_t len) {
     if (0 < len) {
         char *tmp = (char*) malloc(len+1);
         memcpy(tmp, text, len);
         tmp[len] = '\0';
         if (!check_utf8(tmp)) {
-            cws_close(ws, 1007, "invalid UTF-8", SIZE_MAX);
-            return;
+            return 1007;
         }
         free(tmp);
     }
@@ -272,9 +273,10 @@ static void on_text(void *data, CWS *ws, const char *text, size_t len) {
     INF("TEXT %zd bytes={ '%s' }", len, text);
     cws_send_blk_text(ws, text, len);
     (void)data;
+    return 0;
 }
 
-static void on_binary(void *data, CWS *ws, const void *mem, size_t len) {
+static int on_binary(void *data, CWS *ws, const void *mem, size_t len) {
     const uint8_t *bytes = mem;
     size_t i;
 
@@ -292,21 +294,27 @@ static void on_binary(void *data, CWS *ws, const void *mem, size_t len) {
 
     cws_send_blk_binary(ws, mem, len);
     (void)data;
+
+    return 0;
 }
 
-static void on_ping(void *data, CWS *ws, const void *reason, size_t len) {
+static int on_ping(void *data, CWS *ws, const void *reason, size_t len) {
     INF("PING %zd bytes='%.*s'", len, (int) len, (const char*) reason);
     cws_pong(ws, reason, len);
     (void)data;
+
+    return 0;
 }
 
-static void on_pong(void *data, CWS *ws, const void *reason, size_t len) {
+static int on_pong(void *data, CWS *ws, const void *reason, size_t len) {
     INF("PONG %zd bytes='%.*s'", len, (int) len, (const char*) reason);
     (void)data;
     (void)ws;
+
+    return 0;
 }
 
-static void on_close(void *data, CWS *ws, int reason, const char *reason_text, size_t len) {
+static int on_close(void *data, CWS *ws, int reason, const char *reason_text, size_t len) {
     struct myapp_ctx *ctx = data;
 
     INF("CLOSE=%4d %zd bytes '%s'", reason, len, reason_text);
@@ -318,10 +326,11 @@ static void on_close(void *data, CWS *ws, int reason, const char *reason_text, s
         tmp[len] = '\0';
         if (!check_utf8(reason_text)) {
             cws_close(ws, 1007, "invalid UTF-8", SIZE_MAX);
-            return;
+            return 0;
         }
         free(tmp);
     }
+    return 0;
 }
 
 int main(int argc, char *argv[]) {

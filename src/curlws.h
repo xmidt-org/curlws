@@ -82,6 +82,9 @@ typedef struct cws_object CWS;
  */
 struct cws_config {
 
+    /* User provided data that is passed into the callbacks via the data arg. */
+    void *user;
+
     /* The initial URL to connect to. */
     const char *url;
 
@@ -139,19 +142,68 @@ struct cws_config {
     size_t max_payload_size;
 
     /**
+     * This callback provides the way to configure all the parameters CURL has
+     * to offer that are not needed by the curlws library.
+     *
+     * ----------------------------------------------------------------------
+     * WARNING!  Do not change any of the following CURLOPT values unless you
+     *           really know what you are doing.  These are used by curlws to
+     *           make the websocket function.
+     * ----------------------------------------------------------------------
+     *
+     * (Unless you really know what you are doing)
+     * Do not set these values:
+     *      CURLOPT_CUSTOMREQUEST
+     *      CURLOPT_FOLLOWLOCATION
+     *      CURLOPT_FORBID_REUSE
+     *      CURLOPT_FRESH_CONNECT
+     *      CURLOPT_HEADER
+     *      CURLOPT_HEADERDATA
+     *      CURLOPT_HEADERFUNCTION
+     *      CURLOPT_HTTPHEADER
+     *      CURLOPT_HTTP_VERSION
+     *      CURLOPT_MAXREDIRS
+     *      CURLOPT_NOSIGNAL
+     *      CURLOPT_READDATA
+     *      CURLOPT_READFUNCTION
+     *      CURLOPT_STDERR
+     *      CURLOPT_TIMEOUT
+     *      CURLOPT_UPLOAD
+     *      CURLOPT_URL
+     *      CURLOPT_VERBOSE
+     *      CURLOPT_WRITEDATA
+     *      CURLOPT_WRITEFUNCTION
+     *
+     * Return CURLE_OK to proceed without errors, or any value besides CURLE_OK
+     * to signal an error.
+     */
+    CURLcode (*configure)(void *user, CWS *handle, CURL *easy);
+
+    /**
      * Called upon connection, websocket_protocols contains what
      * server reported as 'Sec-WebSocket-Protocol:'.
      *
-     * @note It is not validated if matches the proposed protocols.
+     * @note The provided protcols field is not validated against the requested
+     *       protocols.  It is up the the logic in on_connect to determine
+     *       if the connection should proceed or be terminated.
+     *
+     * @note The list of response codes can be found here:
+     *      https://tools.ietf.org/html/rfc6455#section-7.4.1
+     *
+     * @note Close code 1010 will often be returned by the function.
      *
      * @param user      the user data specified in this configuration
      * @param handle    handle for this websocket
      * @param protocols the websocket protocols from the server
+     *
+     * @return 0 if you would like to proceed, any other value terminates
+     *         the connection.  If a valid close reason is returned that close
+     *         reason is used, otherwise a default close reason is used.
      */
-    void (*on_connect)(void *user, CWS *handle, const char *protocols);
+    int (*on_connect)(void *user, CWS *handle, const char *protocols);
 
     /**
-     * Reports UTF-8 text messages.
+     * This callback provides the UTF-8 text messages when they are received.
      *
      * @note The text field is guaranteed to be NULL (\0) terminated, but the
      *       UTF-8 is not validated. If it's invalid, consider closing the
@@ -163,11 +215,15 @@ struct cws_config {
      * @param handle handle for this websocket
      * @param text   the text string being returned
      * @param len    the length of the text string (include trailing '\0')
+     *
+     * @return 0 if you would like to proceed, any other value terminates
+     *         the connection.  If a valid close reason is returned that close
+     *         reason is used, otherwise a default close reason is used.
      */
-    void (*on_text)(void *user, CWS *handle, const char *text, size_t len);
+    int (*on_text)(void *user, CWS *handle, const char *text, size_t len);
 
     /**
-     * Reports binary data.
+     * This callback provides the binary when it is received.
      *
      * @note If (*on_fragment) is set, this callback behavior is disabled.
      *
@@ -175,12 +231,16 @@ struct cws_config {
      * @param handle handle for this websocket
      * @param buffer the data being returned
      * @param len    the length of the data
+     *
+     * @return 0 if you would like to proceed, any other value terminates
+     *         the connection.  If a valid close reason is returned that close
+     *         reason is used, otherwise a default close reason is used.
      */
-    void (*on_binary)(void *user, CWS *handle, const void *buffer, size_t len);
+    int (*on_binary)(void *user, CWS *handle, const void *buffer, size_t len);
 
     /**
-     * Reports data in a steaming style of interface for the non-control
-     * messages.
+     * This callback provides data in a steaming style of interface for
+     * non-control data messages.
      *
      * @note Control messages may be interleved with the data messages as this
      *       is part of the websocket specification.
@@ -227,8 +287,12 @@ struct cws_config {
      *                 CWS_FIRST | CWS_LAST (if fragment is first, last or both)
      * @param buffer the data being returned (may be NULL)
      * @param len    the length of the data (may be 0)
+     *
+     * @return 0 if you would like to proceed, any other value terminates
+     *         the connection.  If a valid close reason is returned that close
+     *         reason is used, otherwise a default close reason is used.
      */
-    void (*on_fragment)(void *user, CWS *handle, int info, const void *buffer, size_t len);
+    int (*on_fragment)(void *user, CWS *handle, int info, const void *buffer, size_t len);
 
     /**
      * Reports PING.
@@ -240,8 +304,12 @@ struct cws_config {
      * @param handle handle for this websocket
      * @param buffer the data provided in the ping message
      * @param len    the length of the data
+     *
+     * @return 0 if you would like to proceed, any other value terminates
+     *         the connection.  If a valid close reason is returned that close
+     *         reason is used, otherwise a default close reason is used.
      */
-    void (*on_ping)(void *user, CWS *handle, const void *buffer, size_t len);
+    int (*on_ping)(void *user, CWS *handle, const void *buffer, size_t len);
 
     /**
      * Reports PONG.
@@ -250,8 +318,12 @@ struct cws_config {
      * @param handle handle for this websocket
      * @param buffer the data provided in the pong message
      * @param len    the length of the data
+     *
+     * @return 0 if you would like to proceed, any other value terminates
+     *         the connection.  If a valid close reason is returned that close
+     *         reason is used, otherwise a default close reason is used.
      */
-    void (*on_pong)(void *user, CWS *handle, const void *buffer, size_t len);
+    int (*on_pong)(void *user, CWS *handle, const void *buffer, size_t len);
 
     /**
      * Reports server closed the connection with the given reason.
@@ -265,47 +337,12 @@ struct cws_config {
      *               https://tools.ietf.org/html/rfc6455#section-7.4.1
      * @param reason the optional reason text (could be NULL)
      * @param len    the length of the optional reason (could be 0)
+     *
+     * @return 0 if you would like to proceed, any other value terminates
+     *         the connection.  If a valid close reason is returned that close
+     *         reason is used, otherwise a default close reason is used.
      */
-    void (*on_close)(void *user, CWS *handle, int code, const char *reason, size_t len);
-
-    /**
-     * This callback provides the way to configure all the parameters CURL has
-     * to offer that are not needed by the curlws library.
-     *
-     * ----------------------------------------------------------------------
-     * WARNING!  Do not change any of the following CURLOPT values unless you
-     *           really know what you are doing.  These are used by curlws to
-     *           make the websocket function.
-     * ----------------------------------------------------------------------
-     *
-     * Do not set these values:
-     *      CURLOPT_CUSTOMREQUEST
-     *      CURLOPT_FOLLOWLOCATION
-     *      CURLOPT_FORBID_REUSE
-     *      CURLOPT_FRESH_CONNECT
-     *      CURLOPT_HEADER
-     *      CURLOPT_HEADERDATA
-     *      CURLOPT_HEADERFUNCTION
-     *      CURLOPT_HTTPHEADER
-     *      CURLOPT_HTTP_VERSION
-     *      CURLOPT_MAXREDIRS
-     *      CURLOPT_NOSIGNAL
-     *      CURLOPT_READDATA
-     *      CURLOPT_READFUNCTION
-     *      CURLOPT_STDERR
-     *      CURLOPT_TIMEOUT
-     *      CURLOPT_UPLOAD
-     *      CURLOPT_URL
-     *      CURLOPT_VERBOSE
-     *      CURLOPT_WRITEDATA
-     *      CURLOPT_WRITEFUNCTION
-     *
-     * Return any value besides CURLE_OK to signal an error.
-     */
-    CURLcode (*configure)(void *user, CWS *handle, CURL *easy);
-
-    /* User provided data that is passed into the callbacks via the data arg. */
-    void *user;
+    int (*on_close)(void *user, CWS *handle, int code, const char *reason, size_t len);
 };
 
 
