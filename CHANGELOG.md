@@ -20,4 +20,4 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 - Initial creation
 
 [Unreleased]: https://github.com/xmidt-org/curlws/compare/v1.0.0..HEAD
-[Unreleased]: https://github.com/xmidt-org/curlws/compare/v0.0.0..v1.0.0
+[v1.0.0]: https://github.com/xmidt-org/curlws/compare/v0.0.0..v1.0.0
