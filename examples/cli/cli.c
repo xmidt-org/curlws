@@ -1,27 +1,6 @@
 /*
- * Copyright (c) 2021 Comcast Cable Communications Management, LLC
- *
- * Permission is hereby granted, free of charge, to any person
- * obtaining a copy of this software and associated documentation
- * files (the "Software"), to deal in the Software without
- * restriction, including without limitation the rights to use, copy,
- * modify, merge, publish, distribute, sublicense, and/or sell copies
- * of the Software, and to permit persons to whom the Software is
- * furnished to do so, subject to the following conditions:
- *
- * The above copyright notice and this permission notice shall be
- * included in all copies or substantial portions of the Software.
- *
- * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
- * EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
- * MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
- * NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS
- * BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN
- * ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN
- * CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
- * SOFTWARE.
- *
- * https://opensource.org/licenses/MIT
+ * SPDX-FileCopyrightText: 2021 Comcast Cable Communications Management, LLC
+ * SPDX-License-Identifier: MIT
  */
 #include "../../src/curlws.h"
 
@@ -98,16 +77,12 @@ int main(int argc, char *argv[]) {
             custom.ip_resolve = CURL_IPRESOLVE_V4;
         } else if (is_opt(argv[i], "-6", NULL)) {
             custom.ip_resolve = CURL_IPRESOLVE_V6;
-        } else if (is_opt(argv[i], NULL, "--compliance")) {
-            printf("%s", cws_get_notice());
-            return 0;
         } else if (is_opt(argv[i], NULL, "--expect-101")) {
             cfg.expect = 1;
         } else if (is_opt(argv[i], "-h", "--help")) {
             printf("Usage: %s [options...] <url>\n"
                    " -4                       Resolve names to IPv4 addresses\n"
                    " -6                       Resolve names to IPv6 addresses\n"
-                   "     --compliance         Provide license/usage details about the program\n"
                    "     --expect-101         Set the Expect: 101 (some servers need this, others do not)\n"
                    " -h, --help               This help text\n"
                    " -H, --header    <header> Pass custom header to server\n"

@@ -1,3 +1,7 @@
+<!--
+SPDX-FileCopyrightText: 2021 Comcast Cable Communications Management, LLC
+SPDX-License-Identifier: MIT
+-->
 # Changelog
 All notable changes to this project will be documented in this file.
 

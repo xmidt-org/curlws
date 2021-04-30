@@ -1,28 +1,8 @@
 /*
- * Copyright (C) 2016 Gustavo Sverzut Barbieri
- * Copyright (c) 2021 Comcast Cable Communications Management, LLC
+ * SPDX-FileCopyrightText: 2016 Gustavo Sverzut Barbieri
+ * SPDX-FileCopyrightText: 2021 Comcast Cable Communications Management, LLC
  *
- * Permission is hereby granted, free of charge, to any person
- * obtaining a copy of this software and associated documentation
- * files (the "Software"), to deal in the Software without
- * restriction, including without limitation the rights to use, copy,
- * modify, merge, publish, distribute, sublicense, and/or sell copies
- * of the Software, and to permit persons to whom the Software is
- * furnished to do so, subject to the following conditions:
- *
- * The above copyright notice and this permission notice shall be
- * included in all copies or substantial portions of the Software.
- *
- * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
- * EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
- * MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
- * NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS
- * BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN
- * ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN
- * CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
- * SOFTWARE.
- *
- * https://opensource.org/licenses/MIT
+ * SPDX-License-Identifier: MIT
  */
 /* c-mode: linux-4 */
 
@@ -594,15 +574,6 @@ CWScode cws_send_strm_binary(CWS *handle, int info, const void *data, size_t len
  * @retval CWSE_BAD_FUNCTION_ARGUMENT
  */
 CWScode cws_send_strm_text(CWS *handle, int info, const char *s, size_t len);
-
-
-/**
- * Provide a mechanism for software that includes this library to easily be in
- * compliance with the terms for the license & notice.
- *
- * @retval returns a string of the notice details that should not be free()d
- */
-const char* cws_get_notice();
 
 #ifdef __cplusplus
 }
