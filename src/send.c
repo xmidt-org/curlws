@@ -64,7 +64,7 @@ struct cws_buf_queue {
 /*----------------------------------------------------------------------------*/
 /*                             Function Prototypes                            */
 /*----------------------------------------------------------------------------*/
-static size_t _readfunction_cb(char*, size_t, size_t, void*);
+static size_t _send_cb(char*, size_t, size_t, void*);
 
 /*----------------------------------------------------------------------------*/
 /*                             External Functions                             */
@@ -74,7 +74,7 @@ CURLcode send_init(CWS *priv)
 {
     CURLcode rv;
 
-    rv  = curl_easy_setopt(priv->easy, CURLOPT_READFUNCTION, _readfunction_cb);
+    rv  = curl_easy_setopt(priv->easy, CURLOPT_READFUNCTION, _send_cb);
     rv |= curl_easy_setopt(priv->easy, CURLOPT_READDATA, priv);
 
     return rv;
@@ -241,7 +241,7 @@ static size_t _fill_outgoing_buffer(CWS *priv, char *buffer, size_t len)
  *
  * @return the number of bytes provided or CURL_READFUNC_PAUSE
  */
-static size_t _readfunction_cb(char *buffer, size_t count, size_t n, void *data)
+static size_t _send_cb(char *buffer, size_t count, size_t n, void *data)
 {
     CWS *priv = data;
     size_t len = count * n;

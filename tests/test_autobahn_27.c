@@ -198,7 +198,7 @@ void test_27()
 
     p = in;
     for (size_t i = 0; i < sizeof(list)/sizeof(size_t); i++) {
-        if (list[i] != _writefunction_cb(p, list[i], 1, &priv)) {
+        if (list[i] != _receive_cb(p, list[i], 1, &priv)) {
             printf("Failed to accept the bytes.\n");
         }
         p += list[i];
