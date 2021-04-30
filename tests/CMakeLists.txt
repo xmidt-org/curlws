@@ -1,25 +1,5 @@
-#   Copyright 2021 Comcast Cable Communications Management, LLC
-#
-#   Permission is hereby granted, free of charge, to any person obtaining
-#   a copy of this software and associated documentation files (the
-#   "Software"), to deal in the Software without restriction, including
-#   without limitation the rights to use, copy, modify, merge, publish,
-#   distribute, sublicense, and/or sell copies of the Software, and to
-#   permit persons to whom the Software is furnished to do so, subject to
-#   the following conditions:
-#
-#   The above copyright notice and this permission notice shall be
-#   included in all copies or substantial portions of the Software.
-#
-#   THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
-#   EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
-#   MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
-#   NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE
-#   LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION
-#   OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION
-#   WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
-#
-#   https://opensource.org/licenses/MIT
+# SPDX-FileCopyrightText: 2021 Comcast Cable Communications Management, LLC
+# SPDX-License-Identifier: MIT
 
 if(NOT DISABLE_VALGRIND)
 set (MEMORY_CHECK valgrind --leak-check=full --show-reachable=yes  --error-exitcode=1 -v)
@@ -59,19 +39,6 @@ target_link_libraries (test_utils gcov)
 endif()
 target_link_libraries (test_utils ${CUNIT_LIBRARIES})
 target_link_libraries (test_utils)
-# ---------------------------------------------------------------------------- #
-
-
-# ---------------------------------------------------------------------------- #
-add_test(NAME Test_Notice COMMAND ${MEMORY_CHECK} ./test_notice ${CMAKE_SOURCE_DIR}/NOTICE )
-
-add_executable(test_notice test_notice.c ../src/notice.c)
-
-if (${CMAKE_SYSTEM_NAME} MATCHES "Linux")
-target_link_libraries (test_notice gcov)
-endif()
-target_link_libraries (test_notice ${CUNIT_LIBRARIES})
-target_link_libraries (test_notice)
 # ---------------------------------------------------------------------------- #
 
 
@@ -366,7 +333,7 @@ target_link_libraries (autobahn_report ${OPENSSL_LIBRARIES} ${CURL_LIBRARIES})
 
 add_custom_target(validate
                   COMMAND ./autobahn_report ws://localhost:9001
-                  COMMAND ${CMAKE_SOURCE_DIR}/tests/check_autobahn_results.sh -f ${CMAKE_SOURCE_DIR}/reports/clients/index.json)
+                  COMMAND ${CMAKE_SOURCE_DIR}/tools/check_autobahn_results.sh -f ${CMAKE_SOURCE_DIR}/reports/clients/index.json)
 
 add_custom_target(coverage
                   COMMAND lcov -q --capture

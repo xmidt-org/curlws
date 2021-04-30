@@ -1,3 +1,6 @@
+# SPDX-FileCopyrightText: 2021 Comcast Cable Communications Management, LLC
+# SPDX-License-Identifier: MIT
+
 name: CI
 
 on:
@@ -26,7 +29,7 @@ jobs:
 
       - name: Start Autobahn Docker
         run: |
-          docker run --rm -v "$GITHUB_WORKSPACE/tests:/config" -v "$GITHUB_WORKSPACE/reports:/reports" -p 9001:9001 --name fuzzingserver crossbario/autobahn-testsuite &
+          docker run --rm -v "$GITHUB_WORKSPACE/tools:/config" -v "$GITHUB_WORKSPACE/reports:/reports" -p 9001:9001 --name fuzzingserver crossbario/autobahn-testsuite &
 
       # Install the dependent packages
       - name: Install packages
@@ -59,8 +62,7 @@ jobs:
       - name: Check Autobahn Tests
         working-directory: build
         run: |
-          ./tests/autobahn_report ws://localhost:9001
-          ../tests/check_autobahn_results.sh -f $GITHUB_WORKSPACE/reports/clients/index.json
+          make validate
 
       - name: Merge GCOV Reports for Sonarcloud
         working-directory: build

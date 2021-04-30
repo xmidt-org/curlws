@@ -1,3 +1,7 @@
+<!--
+SPDX-FileCopyrightText: 2021 Comcast Cable Communications Management, LLC
+SPDX-License-Identifier: MIT
+-->
 # curlws
 
 curlws provides a cURL based websocket implementation.
@@ -63,7 +67,7 @@ The authors of `curlws` strive to be spec compliant and do so in flying colors.
 This requires docker.
 
 ```
-./tests/autobahn.sh
+./tools/autobahn.sh
 ```
 
 ### Build the code

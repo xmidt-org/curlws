@@ -1,0 +1,20 @@
+Format: https://www.debian.org/doc/packaging-manuals/copyright-format/1.0/
+Upstream-Name: curlws
+Upstream-Contact: Weston Schmidt <weston_schmidt@alumni.purdue.edu>
+Source: https://github.com/xmidt-org/curlws
+
+Files: .whitesource
+Copyright: 2021 Comcast Cable Communications Managem
+License: MIT
+
+Files: AUTHORS
+Copyright: 2021 Comcast Cable Communications Managem
+License: MIT
+
+Files: NOTICE
+Copyright: 2021 Comcast Cable Communications Managem
+License: MIT
+
+Files: tools/fuzzingserver.json
+Copyright: 2021 Comcast Cable Communications Managem
+License: MIT
