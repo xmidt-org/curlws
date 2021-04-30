@@ -145,11 +145,6 @@ void test_create_verbose()
     CU_ASSERT(NULL == ws);
     reset_setopt();
 
-    cfg.verbose = 12;
-    ws = cws_create(&cfg);
-    CU_ASSERT(NULL == ws);
-    reset_setopt();
-
     /* Valid options */
     cfg.verbose = 1;
     ws = cws_create(&cfg);
@@ -231,6 +226,28 @@ void test_create_verbose()
         "Connection: Upgrade",
         "Upgrade: websocket",
         "Sec-WebSocket-Version: 13");
+
+    cfg.verbose = 11;
+    cfg.verbose_stream = NULL;
+    ws = cws_create(&cfg);
+    CU_ASSERT_FATAL(NULL != ws);
+    CU_ASSERT(3 == ws->cfg.verbose);
+    cws_destroy(ws);
+    validate_and_reset(
+        "CURLOPT_URL            : https://example.com",
+        "CURLOPT_SSLVERSION     : " xstr(MY_CURL_SSLVERSION_TLS),
+        "CURLOPT_VERBOSE        : 1",
+        "CURLOPT_HTTP_VERSION   : " xstr(MY_HTTP_VERSION),
+        "CURLOPT_UPLOAD         : 1",
+        "CURLOPT_CUSTOMREQUEST  : GET",
+        "CURLOPT_FORBID_REUSE   : 1",
+        "CURLOPT_FRESH_CONNECT  : 1",
+        "Transfer-Encoding:",
+        "Sec-WebSocket-Key: tluJnnQlu3K8f3LD4vsxcQ==",
+        "Connection: Upgrade",
+        "Upgrade: websocket",
+        "Sec-WebSocket-Version: 13");
+
 
     cfg.verbose = 0;
     ws = cws_create(&cfg);

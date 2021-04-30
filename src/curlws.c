@@ -488,7 +488,7 @@ static CURLcode _config_verbosity(CWS *priv, const struct cws_config *config)
 {
     CURLcode rv = CURLE_OK;
 
-    if ((config->verbose < 0) || (3 < config->verbose)) {
+    if (config->verbose < 0) {
         return ~CURLE_OK;
     }
 
@@ -503,6 +503,10 @@ static CURLcode _config_verbosity(CWS *priv, const struct cws_config *config)
         if (config->verbose_stream) {
             rv |= curl_easy_setopt(priv->easy, CURLOPT_STDERR, priv->cfg.verbose_stream);
         }
+    }
+
+    if (3 < priv->cfg.verbose) {
+        priv->cfg.verbose = 3;
     }
 
     return rv;
