@@ -45,6 +45,31 @@ CWScode cws_pong(CWS *handle, const void *data, size_t len)
 }
 
 
+static int __close_called = 0;
+static int __close_code = 0;
+CWScode cws_close(CWS *handle, int code, const char *reason, size_t len)
+{
+    IGNORE_UNUSED(handle);
+    IGNORE_UNUSED(code);
+    IGNORE_UNUSED(reason);
+    IGNORE_UNUSED(len);
+    __close_called++;
+    __close_code = code;
+
+    return CWSE_OK;
+}
+
+static int __on_pong_rv = 0;
+int on_pong(void *user, CWS *handle, const void *p, size_t len)
+{
+    IGNORE_UNUSED(user);
+    IGNORE_UNUSED(handle);
+    IGNORE_UNUSED(p);
+    IGNORE_UNUSED(len);
+
+    return __on_pong_rv;
+}
+
 /*----------------------------------------------------------------------------*/
 /*                               Test Functions                               */
 /*----------------------------------------------------------------------------*/
@@ -67,23 +92,23 @@ void test_populate_callbacks()
 
     populate_callbacks(&priv.cb, &src);
 
-    src.on_connect  = (void (*)(void*, CWS*, const char*)) 1;
-    src.on_text     = (void (*)(void*, CWS*, const char*, size_t)) 2;
-    src.on_binary   = (void (*)(void*, CWS*, const void*, size_t)) 3;
-    src.on_fragment = (void (*)(void*, CWS*, int, const void*, size_t)) 4;
-    src.on_ping     = (void (*)(void*, CWS*, const void*, size_t)) 5;
-    src.on_pong     = (void (*)(void*, CWS*, const void*, size_t)) 6;
-    src.on_close    = (void (*)(void*, CWS*, int, const char*, size_t)) 7;
+    src.on_connect  = (int (*)(void*, CWS*, const char*)) 1;
+    src.on_text     = (int (*)(void*, CWS*, const char*, size_t)) 2;
+    src.on_binary   = (int (*)(void*, CWS*, const void*, size_t)) 3;
+    src.on_fragment = (int (*)(void*, CWS*, int, const void*, size_t)) 4;
+    src.on_ping     = (int (*)(void*, CWS*, const void*, size_t)) 5;
+    src.on_pong     = (int (*)(void*, CWS*, const void*, size_t)) 6;
+    src.on_close    = (int (*)(void*, CWS*, int, const char*, size_t)) 7;
     src.configure   = (CURLcode (*)(void*, CWS*, CURL*)) 8;
 
     populate_callbacks(&priv.cb, &src);
-    CU_ASSERT(priv.cb.on_connect_fn  == (void (*)(void*, CWS*, const char*)) 1);
-    CU_ASSERT(priv.cb.on_text_fn     == (void (*)(void*, CWS*, const char*, size_t)) 2);
-    CU_ASSERT(priv.cb.on_binary_fn   == (void (*)(void*, CWS*, const void*, size_t)) 3);
-    CU_ASSERT(priv.cb.on_fragment_fn == (void (*)(void*, CWS*, int, const void*, size_t)) 4);
-    CU_ASSERT(priv.cb.on_ping_fn     == (void (*)(void*, CWS*, const void*, size_t)) 5);
-    CU_ASSERT(priv.cb.on_pong_fn     == (void (*)(void*, CWS*, const void*, size_t)) 6);
-    CU_ASSERT(priv.cb.on_close_fn    == (void (*)(void*, CWS*, int, const char*, size_t)) 7);
+    CU_ASSERT(priv.cb.on_connect_fn  == (int (*)(void*, CWS*, const char*)) 1);
+    CU_ASSERT(priv.cb.on_text_fn     == (int (*)(void*, CWS*, const char*, size_t)) 2);
+    CU_ASSERT(priv.cb.on_binary_fn   == (int (*)(void*, CWS*, const void*, size_t)) 3);
+    CU_ASSERT(priv.cb.on_fragment_fn == (int (*)(void*, CWS*, int, const void*, size_t)) 4);
+    CU_ASSERT(priv.cb.on_ping_fn     == (int (*)(void*, CWS*, const void*, size_t)) 5);
+    CU_ASSERT(priv.cb.on_pong_fn     == (int (*)(void*, CWS*, const void*, size_t)) 6);
+    CU_ASSERT(priv.cb.on_close_fn    == (int (*)(void*, CWS*, int, const char*, size_t)) 7);
 
 }
 
@@ -121,6 +146,30 @@ void check_output(FILE *f, const char *e1, const char *e2)
 
     /* reset the stream for the next test */
     rewind(f);
+}
+
+
+void test_close_on_rv()
+{
+    CWS priv;
+
+    memset(&priv, 0, sizeof(priv));
+
+    populate_callbacks(&priv.cb, NULL);
+
+    priv.cb.on_pong_fn = on_pong;
+
+    __on_pong_rv = -1;
+    __close_called = 0;
+    cb_on_pong(&priv, NULL, 0);
+    CU_ASSERT(1 == __close_called);
+    CU_ASSERT(1011 == __close_code);
+
+    __on_pong_rv = 1000;
+    __close_called = 0;
+    cb_on_pong(&priv, NULL, 0);
+    CU_ASSERT(1 == __close_called);
+    CU_ASSERT(1000 == __close_code);
 }
 
 
@@ -229,6 +278,7 @@ void add_suites( CU_pSuite *suite )
         void (*fn)(void);
     } tests[] = {
         { .label = "Test populate_callbacks()",  .fn = test_populate_callbacks  },
+        { .label = "Test close on non-zero rv",  .fn = test_close_on_rv         },
         { .label = "Test defaults don't crash",  .fn = test_defaults_dont_crash },
         { .label = NULL, .fn = NULL }
     };

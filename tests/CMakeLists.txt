@@ -129,7 +129,8 @@ add_test(NAME Test_Handlers COMMAND ${MEMORY_CHECK} ./test_handlers)
 
 add_executable(test_handlers test_handlers.c
                              ../src/cb.c
-                             ../src/verbose.c)
+                             ../src/verbose.c
+                             ../src/ws.c)
 
 if (${CMAKE_SYSTEM_NAME} MATCHES "Linux")
 target_link_libraries (test_handlers gcov)
@@ -197,7 +198,8 @@ add_test(NAME Test_Header COMMAND ${MEMORY_CHECK} ./test_header)
 add_executable(test_header test_header.c
                            ../src/cb.c
                            ../src/utils.c
-                           ../src/verbose.c)
+                           ../src/verbose.c
+                           ../src/ws.c)
 
 if (${CMAKE_SYSTEM_NAME} MATCHES "Linux")
 target_link_libraries (test_header gcov)

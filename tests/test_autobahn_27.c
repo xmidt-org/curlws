@@ -64,7 +64,7 @@ struct mock_ping {
 
 
 static struct mock_ping *__on_ping_goal = NULL;
-static void on_ping(void *data, CWS *handle, const void *buffer, size_t len)
+static int on_ping(void *data, CWS *handle, const void *buffer, size_t len)
 {
     (void) data;
 
@@ -80,6 +80,8 @@ static void on_ping(void *data, CWS *handle, const void *buffer, size_t len)
     }
     __on_ping_goal->seen++;
     __on_ping_goal = __on_ping_goal->next;
+
+    return 0;
 }
 
 

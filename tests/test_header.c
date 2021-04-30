@@ -72,20 +72,35 @@ CURLcode curl_easy_getinfo(CURL *easy, CURLINFO info, ... )
     return CURLE_OK;
 }
 
-void on_connect(void *data, CWS *priv, const char *websocket_protocols)
+CWScode cws_close(CWS *handle, int code, const char *reason, size_t len)
+{
+    IGNORE_UNUSED(handle);
+    IGNORE_UNUSED(code);
+    IGNORE_UNUSED(reason);
+    IGNORE_UNUSED(len);
+
+    return CWSE_OK;
+}
+
+
+int on_connect(void *data, CWS *priv, const char *websocket_protocols)
 {
     (void) data;
     (void) priv;
     (void) websocket_protocols;
+
+    return 0;
 }
 
-void on_close(void *data, CWS *priv, int code, const char *reason, size_t len)
+int on_close(void *data, CWS *priv, int code, const char *reason, size_t len)
 {
     (void) data;
     (void) priv;
     (void) code;
     (void) reason;
     (void) len;
+
+    return 0;
 }
 
 void _cws_cleanup(CWS *priv)
