@@ -45,7 +45,7 @@ install (FILES
 
 set_target_properties(curlws PROPERTIES
         OUTPUT_NAME curlws
-        SOVERSION "0.0.0")
+        SOVERSION ${VERSION})
 
 install(TARGETS curlws
         RUNTIME DESTINATION bin
