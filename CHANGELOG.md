@@ -10,6 +10,11 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 
 ## [Unreleased]
 
+## [v1.0.1]
+- Fix the .so version to be 1.0.1
+- Add a CI time check to validate that the .so version matches the release
+- Refine codecov.io's coverage statistics.
+
 ## [v1.0.0]
 - Autobahn compliant websocket implementation
 - Example cli: `examples/cli/cli.c`
@@ -19,5 +24,6 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 ## [v0.0.0]
 - Initial creation
 
-[Unreleased]: https://github.com/xmidt-org/curlws/compare/v1.0.0..HEAD
+[Unreleased]: https://github.com/xmidt-org/curlws/compare/v1.0.1..HEAD
+[v1.0.1]: https://github.com/xmidt-org/curlws/compare/v1.0.0..v1.0.1
 [v1.0.0]: https://github.com/xmidt-org/curlws/compare/v0.0.0..v1.0.0
