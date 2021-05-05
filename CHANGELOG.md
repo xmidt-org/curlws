@@ -10,6 +10,19 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 
 ## [Unreleased]
 
+## [v1.0.2]
+
+### Changed
+
+ - Changed the versioning to be for the project, not the .so file.  [Issue #59](https://github.com/xmidt-org/curlws/issues/59)
+ - Updated the Github tag workflow to validate that the CHANGELOG.md and the cmake
+   project version are the same.
+ - Mark the .whitesource file copyright owner as unsure.
+
+### Added
+
+ - curlwsver.h with versioning
+
 ## [v1.0.1]
 - Fix the .so version to be 1.0.1
 - Add a CI time check to validate that the .so version matches the release
@@ -24,6 +37,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 ## [v0.0.0]
 - Initial creation
 
-[Unreleased]: https://github.com/xmidt-org/curlws/compare/v1.0.1..HEAD
+[Unreleased]: https://github.com/xmidt-org/curlws/compare/v1.0.2..HEAD
+[v1.0.2]: https://github.com/xmidt-org/curlws/compare/v1.0.2..v1.0.2
 [v1.0.1]: https://github.com/xmidt-org/curlws/compare/v1.0.0..v1.0.1
 [v1.0.0]: https://github.com/xmidt-org/curlws/compare/v0.0.0..v1.0.0
