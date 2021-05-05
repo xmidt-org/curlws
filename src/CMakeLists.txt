@@ -24,6 +24,9 @@ target_sources(curlws
         ws.c
 )
 
+configure_file(curlwsver.h.in
+               ${CMAKE_CURRENT_BINARY_DIR}/curlwsver.h)
+
 if (USE_OPENSSL_SHA)
     MESSAGE(STATUS "Using Openssl for SHA1")
     target_sources(curlws
@@ -40,12 +43,12 @@ else()
 endif()
 
 install (FILES
+         ${CMAKE_CURRENT_BINARY_DIR}/curlwsver.h
          ${CMAKE_CURRENT_SOURCE_DIR}/curlws.h
          DESTINATION include/curlws)
 
 set_target_properties(curlws PROPERTIES
-        OUTPUT_NAME curlws
-        SOVERSION ${VERSION})
+        OUTPUT_NAME curlws)
 
 install(TARGETS curlws
         RUNTIME DESTINATION bin

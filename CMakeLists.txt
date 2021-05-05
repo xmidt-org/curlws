@@ -1,9 +1,11 @@
 # SPDX-FileCopyrightText: 2021 Comcast Cable Communications Management, LLC
 # SPDX-License-Identifier: MIT
 
-project(curlws)
 cmake_minimum_required(VERSION 3.13)
-set(VERSION "1.0.1")
+
+project(curlws VERSION 1.0.2)
+
+math(EXPR curlws_BITWISE_VERSION "${curlws_VERSION_MAJOR} << 16 | ${curlws_VERSION_MINOR} << 8 | ${curlws_VERSION_PATCH}" OUTPUT_FORMAT HEXADECIMAL)
 
 add_definitions(-std=c99)
 set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Werror -Wall -Wpedantic")
@@ -27,7 +29,7 @@ endif()
 # Find the required libcurl library and headers
 #
 include(FindPkgConfig)
-pkg_check_modules(CURL libcurl REQUIRED)
+pkg_check_modules(CURL libcurl REQUIRED libcurl>=7.50.2)
 include_directories(
   SYSTEM ${CURL_INCLUDE_DIRS}
 )
