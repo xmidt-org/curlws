@@ -4,17 +4,17 @@ Upstream-Contact: Weston Schmidt <weston_schmidt@alumni.purdue.edu>
 Source: https://github.com/xmidt-org/curlws
 
 Files: .whitesource
-Copyright: 2021 Comcast Cable Communications Managem
+Copyright: 2021 Unsure
 License: MIT
 
 Files: AUTHORS
-Copyright: 2021 Comcast Cable Communications Managem
+Copyright: 2021 Comcast Cable Communications Management
 License: MIT
 
 Files: NOTICE
-Copyright: 2021 Comcast Cable Communications Managem
+Copyright: 2021 Comcast Cable Communications Management
 License: MIT
 
 Files: tools/fuzzingserver.json
-Copyright: 2021 Comcast Cable Communications Managem
+Copyright: 2021 Comcast Cable Communications Management
 License: MIT
