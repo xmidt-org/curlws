@@ -43,15 +43,29 @@ target_link_libraries (test_utils)
 
 
 # ---------------------------------------------------------------------------- #
-add_test(NAME Test_SHA1 COMMAND ${MEMORY_CHECK} ./test_sha1)
+add_test(NAME Test_SHA1_internal COMMAND ${MEMORY_CHECK} ./test_sha1_internal)
 
-add_executable(test_sha1 test_sha1.c ${SHA_FILES})
+add_executable(test_sha1_internal test_sha1.c ../src/sha1/sha1.c ../src/sha1_internal.c)
 
 if (${CMAKE_SYSTEM_NAME} MATCHES "Linux")
-target_link_libraries (test_sha1 gcov)
+target_link_libraries (test_sha1_internal gcov)
 endif()
-target_link_libraries (test_sha1 ${CUNIT_LIBRARIES})
-target_link_libraries (test_sha1 ${OPENSSL_LIBRARIES})
+target_link_libraries (test_sha1_internal ${CUNIT_LIBRARIES})
+# ---------------------------------------------------------------------------- #
+
+
+# ---------------------------------------------------------------------------- #
+if( OPENSSL_FOUND )
+add_test(NAME Test_SHA1_openssl COMMAND ${MEMORY_CHECK} ./test_sha1_openssl)
+
+add_executable(test_sha1_openssl test_sha1.c ../src/sha1_openssl.c)
+
+if (${CMAKE_SYSTEM_NAME} MATCHES "Linux")
+target_link_libraries (test_sha1_openssl gcov)
+endif()
+target_link_libraries (test_sha1_openssl ${CUNIT_LIBRARIES})
+target_link_libraries (test_sha1_openssl ${OPENSSL_LIBRARIES})
+endif()
 # ---------------------------------------------------------------------------- #
 
 
