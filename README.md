@@ -22,9 +22,6 @@ libcurl for the initial handshakes and underlying socket handling.  Using libcur
 as the foundation provides an extremely robust, tested and powerful framework
 for `curlws`.
 
-Outside of libcurl, only a functional libc is required to operate.  SHA1 is even
-included unless you choose to configure the `USE_OPENSSL_SHA` option (see below).
-
 ## Getting started
 
 The best place to start is the [cli](https://github.com/xmidt-org/curlws/tree/main/examples/cli)

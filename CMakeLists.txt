@@ -9,8 +9,9 @@ project(curlws VERSION 1.0.2)
 
 include(BitwiseVersion)
 include(CTest)
-include(LicenseLinterTarget)
 include(Coverage)
+include(LicenseLinterTarget)
+include(FindTrowerBase64)
 
 add_definitions(-std=c99)
 set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Werror -Wall -Wpedantic")
@@ -30,6 +31,8 @@ else()
     message(STATUS "Using Internal SHA1 version.")
 endif()
 
+add_library(curlws SHARED "")
+
 
 #
 # Find the required libcurl library and headers
@@ -38,8 +41,7 @@ include(FindPkgConfig)
 pkg_check_modules(CURL libcurl REQUIRED libcurl>=7.50.2)
 include_directories(SYSTEM ${CURL_INCLUDE_DIRS})
 
-
-add_library(curlws SHARED "")
+find_trower_base64(PATH ${TROWER_PATH}  VERSION "1.2.0"  GIT_TAG "")
 
 add_subdirectory(src)
 add_subdirectory(examples)

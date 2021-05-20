@@ -294,6 +294,7 @@ void test_create_basic()
     CU_ASSERT_FATAL(NULL != ws);
 
     /* Validate the expected header based on a fixed random number */
+    printf("got: '%s' ? '%s'\n", ws->expected_key_header, "4522FSSIYHASSkUaUouiInl8Cvk=");
     CU_ASSERT_STRING_EQUAL(ws->expected_key_header, "4522FSSIYHASSkUaUouiInl8Cvk=");
     cws_destroy(ws);
     validate_and_reset(

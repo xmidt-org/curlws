@@ -156,7 +156,7 @@ void test_simple()
     CU_ASSERT(false == priv.header_state.upgraded);
     CU_ASSERT(false == priv.header_state.connection_websocket);
 
-    snprintf(priv.expected_key_header, 29, "foobar");
+    priv.expected_key_header = "foobar";
     priv.expected_key_header_len = 6;
     CU_ASSERT(false == priv.header_state.accepted);
     CU_ASSERT(30 == _header_cb("Sec-WebSocket-Accept:  foobar ", 30, 1, &priv));
@@ -191,7 +191,7 @@ void test_simple_with_protocols()
     CU_ASSERT(false == priv.header_state.connection_websocket);
     CU_ASSERT(NULL == priv.header_state.ws_protocols_received);
 
-    snprintf(priv.expected_key_header, 29, "foobar");
+    priv.expected_key_header = "foobar";
     priv.expected_key_header_len = 6;
     CU_ASSERT(false == priv.header_state.accepted);
     CU_ASSERT(30 == _header_cb("Sec-WebSocket-Accept:  foobar ", 30, 1, &priv));
@@ -282,7 +282,7 @@ void test_failures()
 
     /* This test must be first! */
     /* Less out of bounds, no output. */
-    snprintf(priv.expected_key_header, 29, "foobar");
+    priv.expected_key_header = "foobar";
     priv.expected_key_header_len = 6;
     priv.header_state.accepted = true;
     CU_ASSERT(1000 == _header_cb("Sec-WebSocket-Accept:  nobarke123123123...totally_invalid", 1000, 1, &priv));
@@ -294,7 +294,7 @@ void test_failures()
     priv.cfg.verbose_stream = f_tmp;
 
     /* different lengths */
-    snprintf(priv.expected_key_header, 29, "foobar");
+    priv.expected_key_header = "foobar";
     priv.expected_key_header_len = 6;
     priv.header_state.accepted = true;
     CU_ASSERT(30 == _header_cb("Sec-WebSocket-Accept:  nobar  ", 30, 1, &priv));
@@ -303,7 +303,7 @@ void test_failures()
                  "! websocket header expected (value len=6): 'Sec-WebSocket-Accept: foobar', got (len=5): 'nobar'\n");
 
     /* Way out of bounds. */
-    snprintf(priv.expected_key_header, 29, "foobar");
+    priv.expected_key_header = "foobar";
     priv.expected_key_header_len = 6;
     priv.header_state.accepted = true;
     CU_ASSERT(SIZE_MAX == _header_cb("Sec-WebSocket-Accept:  nobarke123123123...totally_invalid", SIZE_MAX, 1, &priv));
@@ -312,7 +312,7 @@ void test_failures()
                  "! websocket header expected (value len=6): 'Sec-WebSocket-Accept: foobar', got (len=18446744073709551592): 'nobark...'\n");
 
     /* Less out of bounds. */
-    snprintf(priv.expected_key_header, 29, "foobar");
+    priv.expected_key_header = "foobar";
     priv.expected_key_header_len = 6;
     priv.header_state.accepted = true;
     CU_ASSERT(1000 == _header_cb("Sec-WebSocket-Accept:  nobarke123123123...totally_invalid", 1000, 1, &priv));

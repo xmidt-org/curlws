@@ -223,6 +223,7 @@ target_link_libraries (test_curlws gcov)
 endif()
 target_link_libraries (test_curlws ${CUNIT_LIBRARIES})
 target_link_libraries (test_curlws ${OPENSSL_LIBRARIES})
+target_link_libraries (test_curlws ${TROWER_LIBRARIES})
 # ---------------------------------------------------------------------------- #
 
 
@@ -285,6 +286,7 @@ if (${CMAKE_SYSTEM_NAME} MATCHES "Linux")
 target_link_libraries (test_autobahn gcov)
 endif()
 target_link_libraries (test_autobahn ${OPENSSL_LIBRARIES} ${CURL_LIBRARIES})
+target_link_libraries (test_autobahn ${TROWER_LIBRARIES})
 # ---------------------------------------------------------------------------- #
 
 
@@ -317,6 +319,7 @@ if (${CMAKE_SYSTEM_NAME} MATCHES "Linux")
 target_link_libraries (test_autobahn_parallel gcov)
 endif()
 target_link_libraries (test_autobahn_parallel ${OPENSSL_LIBRARIES} ${CURL_LIBRARIES})
+target_link_libraries (test_autobahn_parallel ${TROWER_LIBRARIES})
 # ---------------------------------------------------------------------------- #
 
 # ---------------------------------------------------------------------------- #
@@ -343,6 +346,7 @@ if (${CMAKE_SYSTEM_NAME} MATCHES "Linux")
 target_link_libraries (autobahn_report gcov)
 endif()
 target_link_libraries (autobahn_report ${OPENSSL_LIBRARIES} ${CURL_LIBRARIES})
+target_link_libraries (autobahn_report ${TROWER_LIBRARIES})
 # ---------------------------------------------------------------------------- #
 
 add_custom_target(validate
