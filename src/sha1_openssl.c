@@ -31,21 +31,24 @@
 /*----------------------------------------------------------------------------*/
 /*                             External Functions                             */
 /*----------------------------------------------------------------------------*/
-void cws_sha1(const void *in, size_t len, void *out)
+int cws_sha1(const void *in, size_t len, void *out)
 {
-    static const EVP_MD *md = NULL;
-    EVP_MD_CTX *ctx = NULL;
+    int rv = -1;
+    EVP_MD_CTX *ctx = EVP_MD_CTX_create();
 
-    if (!md) {
-        OpenSSL_add_all_digests();
-        md = EVP_get_digestbyname("sha1");
+    if (ctx
+        && (1 == EVP_DigestInit_ex(ctx, EVP_sha1(), NULL))
+        && (1 == EVP_DigestUpdate(ctx, in, len))
+        && (1 == EVP_DigestFinal_ex(ctx, out, NULL)))
+    {
+        rv = 0;
     }
 
-    ctx = EVP_MD_CTX_create();
-    EVP_DigestInit_ex(ctx, md, NULL);
-    EVP_DigestUpdate(ctx, in, len);
-    EVP_DigestFinal_ex(ctx, out, NULL);
-    EVP_MD_CTX_destroy(ctx);
+    if (ctx) {
+        EVP_MD_CTX_destroy(ctx);
+    }
+
+    return rv;
 }
 
 

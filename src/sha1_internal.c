@@ -32,16 +32,21 @@
 /*----------------------------------------------------------------------------*/
 /*                             External Functions                             */
 /*----------------------------------------------------------------------------*/
-void cws_sha1(const void *in, size_t len, void *out)
+int cws_sha1(const void *in, size_t len, void *out)
 {
+    int rv = -1;
     SHA1Context ctx;
     uint8_t md[SHA1HashSize];
 
-    SHA1Reset(&ctx);
-    SHA1Input(&ctx, (const uint8_t*) in, (unsigned int) len);
-    SHA1Result(&ctx, md);
+    if ((shaSuccess == SHA1Reset(&ctx))
+        && (shaSuccess == SHA1Input(&ctx, (const uint8_t*) in, (unsigned int) len))
+        && (shaSuccess == SHA1Result(&ctx, md)))
+    {
+        memcpy(out, md, SHA1HashSize);
+        rv = 0;
+    }
 
-    memcpy(out, md, SHA1HashSize);
+    return rv;
 }
 
 
