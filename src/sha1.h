@@ -17,7 +17,9 @@
  * @param in    the buffer to SHA-1 over
  * @param len   the length of the in buffer in bytes
  * @param out   the pointer to the preallocated buffer that holds the output
+ *
+ * @return 0 on success, any other value is a failure
  */
-void cws_sha1(const void *in, size_t len, void *out);
+int cws_sha1(const void *in, size_t len, void *out);
 #endif
 

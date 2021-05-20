@@ -604,7 +604,10 @@ static CURLcode _config_ws_key(CWS *priv)
     priv->headers = tmp;
     snprintf(combined, sizeof(combined), "%s%s", b64_key, guid);
 
-    cws_sha1(combined, strlen(combined), sha1_value);
+    if (0 != cws_sha1(combined, strlen(combined), sha1_value)) {
+        return ~CURLE_OK;
+    }
+
     cws_encode_base64(sha1_value, sizeof(sha1_value), priv->expected_key_header);
     priv->expected_key_header_len = strlen(priv->expected_key_header);
 
