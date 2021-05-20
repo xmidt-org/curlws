@@ -3,9 +3,14 @@
 
 cmake_minimum_required(VERSION 3.13)
 
+set(CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake;${CMAKE_MODULE_PATH}")
+
 project(curlws VERSION 1.0.2)
 
-math(EXPR curlws_BITWISE_VERSION "${curlws_VERSION_MAJOR} << 16 | ${curlws_VERSION_MINOR} << 8 | ${curlws_VERSION_PATCH}" OUTPUT_FORMAT HEXADECIMAL)
+include(BitwiseVersion)
+include(CTest)
+include(LicenseLinterTarget)
+include(Coverage)
 
 add_definitions(-std=c99)
 set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Werror -Wall -Wpedantic")
@@ -30,11 +35,7 @@ endif()
 #
 include(FindPkgConfig)
 pkg_check_modules(CURL libcurl REQUIRED libcurl>=7.50.2)
-include_directories(
-  SYSTEM ${CURL_INCLUDE_DIRS}
-)
-
-include(CTest)
+include_directories(SYSTEM ${CURL_INCLUDE_DIRS})
 
 
 add_library(curlws SHARED "")
@@ -43,22 +44,6 @@ add_subdirectory(src)
 add_subdirectory(examples)
 
 if (BUILD_TESTING)
-    #
-    # Find the required cunit library and headers
-    #
-    find_package(PkgConfig REQUIRED)
-    pkg_search_module(CUNIT REQUIRED cunit)
-
-    if( CUNIT )
-        include_directories(${CUNIT_INCLUDE_DIRS})
-        message(STATUS "Using CUnit ${CUNIT_VERSION}")
-    else()
-        # Error; with REQUIRED, pkg_search_module() will throw an error by it's own
-    endif()
-
-  add_subdirectory(tests)
+    include(FindCunit)
+    add_subdirectory(tests)
 endif (BUILD_TESTING)
-
-add_custom_target(license
-                  COMMAND reuse lint
-                  WORKING_DIRECTORY ${CMAKE_SOURCE_DIR})
