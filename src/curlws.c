@@ -593,26 +593,36 @@ static CURLcode _config_ws_key(CWS *priv)
     char *b64_key = NULL;
     char *combined = NULL;
     char *send = NULL;
-    char *ekh = NULL;
-    size_t ekhl = 0;
 
     cws_random(priv, random_value, sizeof(random_value));
 
     b64_key = b64_encode_with_alloc(random_value, sizeof(random_value), NULL);
-
-    if (b64_key
-        && (NULL != (send = cws_strmerge(header, b64_key)))
-        && (NULL != (tmp = curl_slist_append(priv->headers, send)))
-        && (NULL != (priv->headers = tmp))
-        && (NULL != (combined = cws_strmerge(b64_key, guid)))
-        && (0 == cws_sha1(combined, strlen(combined), sha1_md))
-        && (NULL != (ekh = b64_encode_with_alloc(sha1_md, sizeof(sha1_md), &ekhl))))
-    {
-        priv->expected_key_header = ekh;
-        priv->expected_key_header_len = ekhl;
-        rv = CURLE_OK;
+    if (!b64_key) {
+        return rv;
     }
 
+    send = cws_strmerge(header, b64_key);
+    combined = cws_strmerge(b64_key, guid);
+    if (!send || !combined) {
+        goto err;
+    }
+
+    if (0 != cws_sha1(combined, strlen(combined), sha1_md)) {
+        goto err;
+    }
+
+    tmp = curl_slist_append(priv->headers, send);
+    if (!tmp) {
+        goto err;
+    }
+    priv->headers = tmp;
+
+    priv->expected_key_header = b64_encode_with_alloc(sha1_md, sizeof(sha1_md),
+                                                      &priv->expected_key_header_len);
+
+    rv = CURLE_OK;
+
+err:
     if (b64_key) {
         free( b64_key );
     }
