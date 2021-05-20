@@ -10,6 +10,12 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 
 ## [Unreleased]
 
+ - Switch over to use an improved version of trower-base64.
+ - Improve the SHA1 error checking.
+ - Build and test all SHA1 implementations.
+ - Update the cmake files to use latest versions from xmidt projects.
+ - Update github actions to use latest sonarcloud & verify signature.
+
 ## [v1.0.2]
 
 ### Changed

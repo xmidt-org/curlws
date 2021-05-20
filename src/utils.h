@@ -12,20 +12,6 @@
 #include <stdint.h>
 
 /**
- * Encodes a buffer of a specified length as a base64 encoded string.
- *
- * @note: The output buffer provided MUST be at least large enough to contain
- *        the encoded string and a trailing '\0' or a buffer overflow will
- *        occur.
- *
- * @param in    the input buffer
- * @param len   the input buffer length in bytes
- * @param out   the output buffer (MUST be large enough to encode into)
- */
-void cws_encode_base64(const void *in, const size_t len, char *out);
-
-
-/**
  * Trims the whitespace from the beginning and end of a string.  Returns a
  * pointer to the start of the first non-whitespace character and a length to
  * the last non-whitespace character.

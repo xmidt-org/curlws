@@ -126,7 +126,7 @@ struct cws_object {
     struct curl_slist *headers;
 
     /* The key header that the server is expected to return. */
-    char expected_key_header[WS_HTTP_EXPECTED_KEY_SIZE];
+    char *expected_key_header;
     size_t expected_key_header_len;
 
     /* The memory configuration & pool. */

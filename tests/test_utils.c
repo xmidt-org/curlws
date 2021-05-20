@@ -149,35 +149,6 @@ void test_cws_rewrite_url()
 }
 
 
-void test_cws_encode_base64()
-{
-    struct {
-        const char *in;
-        size_t len;
-        const char *out;
-    } tests[] = {
-        { .in = "http",        .len = 0,    .out = ""      },
-        { .in = "http",        .len = 1,    .out = "aA=="  },
-        { .in = "http",        .len = 2,    .out = "aHQ="  },
-        { .in = "http",        .len = 3,    .out = "aHR0"  },
-        { .in = "http",        .len = 4,    .out = "aHR0cA=="  },
-        { .in = NULL, .out = NULL }
-    };
-
-    int i;
-
-    for (i = 0; NULL != tests[i].in; i++) {
-        char tmp[60];
-
-        //printf("Testing: %d - '%s' -> '%s'\n", i, tests[i].in, tests[i].out);
-
-        cws_encode_base64(tests[i].in, tests[i].len, tmp);
-        CU_ASSERT(NULL != tmp);
-        CU_ASSERT_STRING_EQUAL(tmp, tests[i].out);
-    }
-}
-
-
 void add_suites( CU_pSuite *suite )
 {
     *suite = CU_add_suite( "utils.c tests", NULL, NULL );
@@ -187,7 +158,6 @@ void add_suites( CU_pSuite *suite )
     CU_add_test( *suite, "cws_strncasecmp() Tests", test_cws_strncasecmp );
     CU_add_test( *suite, "cws_trim() Tests", test_cws_trim );
     CU_add_test( *suite, "cws_has_prefix() Tests", test_cws_has_prefix );
-    CU_add_test( *suite, "cws_encode_base64() Tests", test_cws_encode_base64 );
 }
 
 

@@ -10,6 +10,7 @@
 #include <string.h>
 
 #include <curl/curl.h>
+#include <trower-base64/base64.h>
 
 #include "curlws.h"
 #include "data_block_sender.h"
@@ -152,6 +153,9 @@ void cws_destroy(CWS *priv)
         }
         if (priv->header_state.ws_protocols_received) {
             free(priv->header_state.ws_protocols_received);
+        }
+        if (priv->expected_key_header) {
+            free(priv->expected_key_header);
         }
 
         send_destroy(priv);
@@ -579,39 +583,57 @@ static CURLcode _config_memorypool(CWS *priv, const struct cws_config *config)
 
 static CURLcode _config_ws_key(CWS *priv)
 {
+    CURLcode rv = ~CURLE_OK;
     const char guid[] = "258EAFA5-E914-47DA-95CA-C5AB0DC85B11";
     const char header[] = "Sec-WebSocket-Key: ";
 
-    struct curl_slist *tmp = NULL;
-    uint8_t sha1_value[20];
+    uint8_t sha1_md[20];
     uint8_t random_value[16];
-    char b64_key[25];           /* b64(16 bytes) = 24 bytes + 1 for '\0' */
- 
-    /* For the next two values: -1 because only 1 trailing '\0' is needed */
-    char combined[sizeof(b64_key) + sizeof(guid) - 1];
-    char send[sizeof(header) + sizeof(b64_key) - 1];
+    struct curl_slist *tmp = NULL;
+    char *b64_key = NULL;
+    char *combined = NULL;
+    char *send = NULL;
 
     cws_random(priv, random_value, sizeof(random_value));
-    cws_encode_base64(random_value, sizeof(random_value), b64_key);
 
-    snprintf(send, sizeof(send), "%s%s", header, b64_key);
+    b64_key = b64_encode_with_alloc(random_value, sizeof(random_value), NULL);
+    if (!b64_key) {
+        return rv;
+    }
+
+    send = cws_strmerge(header, b64_key);
+    combined = cws_strmerge(b64_key, guid);
+    if (!send || !combined) {
+        goto err;
+    }
+
+    if (0 != cws_sha1(combined, strlen(combined), sha1_md)) {
+        goto err;
+    }
 
     tmp = curl_slist_append(priv->headers, send);
     if (!tmp) {
-        return ~CURLE_OK;
+        goto err;
     }
-
     priv->headers = tmp;
-    snprintf(combined, sizeof(combined), "%s%s", b64_key, guid);
 
-    if (0 != cws_sha1(combined, strlen(combined), sha1_value)) {
-        return ~CURLE_OK;
+    priv->expected_key_header = b64_encode_with_alloc(sha1_md, sizeof(sha1_md),
+                                                      &priv->expected_key_header_len);
+
+    rv = CURLE_OK;
+
+err:
+    if (b64_key) {
+        free( b64_key );
+    }
+    if (combined) {
+        free( combined );
+    }
+    if (send) {
+        free( send );
     }
 
-    cws_encode_base64(sha1_value, sizeof(sha1_value), priv->expected_key_header);
-    priv->expected_key_header_len = strlen(priv->expected_key_header);
-
-    return CURLE_OK;
+    return rv;
 }
 
 static CURLcode _config_ws_protocols(CWS *priv, const struct cws_config *config)
