@@ -57,6 +57,13 @@ char* cws_rewrite_url(const char *url);
 
 
 /**
+ * strnlen() is a non-standard libc function.  To be most portable, this library
+ * provides it's own implementation for this simple function.
+ */
+size_t cws_strnlen(const char *s, size_t maxlen);
+
+
+/**
  * strdup() is a non-standard libc function.  To be most portable, this library
  * provides it's own implementation for this simple function.
  */
@@ -67,14 +74,14 @@ char* cws_strdup(const char *s);
  * strndup() is a non-standard libc function.  To be most portable, this library
  * provides it's own implementation for this simple function.
  */
-char* cws_strndup(const char *s, size_t n);
+char* cws_strndup(const char *s, size_t maxlen);
 
 
 /**
  * strncasecmp() is a non-standard libc function.  To be most portable, this
  * library provides it's own implementation for this simple function.
  */
-int cws_strncasecmp(const char *s1, const char *s2, size_t n);
+int cws_strncasecmp(const char *s1, const char *s2, size_t maxlen);
 
 
 /**
