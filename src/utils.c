@@ -92,35 +92,30 @@ char* cws_rewrite_url(const char *url)
 }
 
 
-char* cws_strdup(const char *s)
+size_t cws_strnlen(const char *s, size_t maxlen)
 {
-    char *rv = NULL;
-
-    if (s) {
-        size_t len;
-
-        len = strlen(s) + 1;
-        rv = (char*) malloc( len );
-        if (rv) {
-            memcpy(rv, s, len);
+    for (size_t i = 0; i < maxlen; i++) {
+        if ('\0' == s[i]) {
+            return i;
         }
     }
 
-    return rv;
+    return maxlen;
 }
 
 
-char* cws_strndup(const char *s, size_t n)
+char* cws_strdup(const char *s)
+{
+    return cws_strndup(s, SIZE_MAX);
+}
+
+
+char* cws_strndup(const char *s, size_t maxlen)
 {
     char *rv = NULL;
 
-    if ((NULL != s) && (0 < n)) {
-        size_t len;
-
-        len = strlen(s);
-        if (n < len) {
-            len = n;
-        }
+    if (s && (0 < maxlen)) {
+        size_t len = cws_strnlen(s, maxlen);
 
         rv = (char*) malloc(len + 1); /* +1 for trailing '\0' */
         if (rv) {
