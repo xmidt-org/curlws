@@ -8,7 +8,7 @@ curlws provides a cURL based websocket implementation.
 
 [![Build Status](https://github.com/xmidt-org/curlws/workflows/CI/badge.svg)](https://github.com/xmidt-org/curlws/actions)
 [![codecov.io](http://codecov.io/github/xmidt-org/curlws/coverage.svg?branch=main)](http://codecov.io/github/xmidt-org/curlws?branch=main)
-[![Coverity](https://img.shields.io/coverity/scan/23251.svg)]("https://scan.coverity.com/projects/xmidt-org-wrp-c)
+[![Coverity](https://img.shields.io/coverity/scan/23251.svg)](https://scan.coverity.com/projects/xmidt-org-wrp-c)
 [![Quality Gate Status](https://sonarcloud.io/api/project_badges/measure?project=xmidt-org_curlws&metric=alert_status)](https://sonarcloud.io/dashboard?id=xmidt-org_curlws)
 [![Language Grade: C/C++](https://img.shields.io/lgtm/grade/cpp/g/xmidt-org/curlws.svg?logo=lgtm&logoWidth=18)](https://lgtm.com/projects/g/xmidt-org/curlws/context:cpp)
 [![Autobahn Test Suite Compliance](https://img.shields.io/badge/autobahn%20websocket-strict%20compliance-blueviolet)](https://img.shields.io/badge/autobahn%20websocket-strict%20compliance-blueviolet)
