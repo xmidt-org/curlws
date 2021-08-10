@@ -1,9 +1,6 @@
-#
-# SPDX-FileCopyrightText: 2016 Gustavo Sverzut Barbieri
-# SPDX-FileCopyrightText: 2021 Comcast Cable Communications Management, LLC
-#
-# SPDX-License-Identifier: MIT
-#
+// SPDX-FileCopyrightText: 2016 Gustavo Sverzut Barbieri
+// SPDX-FileCopyrightText: 2021 Comcast Cable Communications Management, LLC
+// SPDX-License-Identifier: MIT
 
 #ifndef _CURLWS_VERSION_H_
 #define _CURLWS_VERSION_H_ 1

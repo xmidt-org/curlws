@@ -11,8 +11,9 @@
 
 #include <CUnit/Basic.h>
 #include <curl/curl.h>
+#include <curlws/curlws.h>
 
-#include "../src/curlws.h"
+
 #include "../src/internal.h"
 #include "../src/frame_senders.h"
 
@@ -619,6 +620,11 @@ void test_destroy_failures()
 
 void test_close()
 {
+    const char *really_long = /* 200 long */
+        "--------------------------------------------------"
+        "--------------------------------------------------"
+        "--------------------------------------------------"
+        "--------------------------------------------------";
     CWS ws;
     struct mock_sender test[] = {
         { .options = CWS_CLOSE,              .data = "\x03\xe9goodbye", .len = 9, .rv = CWSE_OK, .seen = 0, .more = 1 },
@@ -641,7 +647,7 @@ void test_close()
 
     CU_ASSERT(CWSE_INVALID_UTF8 == cws_close(&ws, 1001, "\x80\x00", SIZE_MAX));
     CU_ASSERT(CWSE_INVALID_UTF8 == cws_close(&ws, 1001, "abcd\xc4", 5));
-    CU_ASSERT(CWSE_APP_DATA_LENGTH_TOO_LONG == cws_close(&ws, 1001, "really long", 200));
+    CU_ASSERT(CWSE_APP_DATA_LENGTH_TOO_LONG == cws_close(&ws, 1001, really_long, 200));
 
     CU_ASSERT(CWSE_OK == cws_close(&ws, 1001, "goodbye", SIZE_MAX));
     CU_ASSERT(CWSE_OK == cws_close(&ws, 0, NULL, 0));

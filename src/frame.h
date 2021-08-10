@@ -10,7 +10,8 @@
 #include <stdint.h>
 #include <stddef.h>
 
-#include "curlws.h"
+#include <curlws/curlws.h>
+
 #include "ws.h"
 
 

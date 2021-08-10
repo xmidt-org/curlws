@@ -4,11 +4,11 @@
  *
  * SPDX-License-Identifier: MIT
  */
-#include "../src/curlws.h"
-
 #include <stddef.h>
 #include <stdio.h>
 #include <string.h>
+
+#include <curlws/curlws.h>
 
 /*----------------------------------------------------------------------------*/
 /*                                   Macros                                   */
