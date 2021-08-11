@@ -76,6 +76,10 @@ jobs:
         working-directory: build
         run: |
           ninja coverage
+
+      - name: Sonarcloud Report Generation
+        working-directory: build
+        run: |
           #ninja coverage-sonarqube ## for now this isn't supported
           gcovr --sonarqube sonarqube.xml -r ..
 
