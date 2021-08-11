@@ -224,8 +224,9 @@ if not meson.is_subproject()
     run_target('autobahn_collect',
                command: [autobahn_report, 'ws://localhost:9001'])
 
+    results = find_program('tools/check_autobahn_results.sh')
     run_target('autobahn_validate',
-               command: ['../tools/check_autobahn_results.sh'])
+               command: [results])
   endif
 
   # Only attach valtrind to non-autobahn tests, otherwise it takes too long
