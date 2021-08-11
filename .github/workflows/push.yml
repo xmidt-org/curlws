@@ -27,6 +27,10 @@ jobs:
         with:
           fetch-depth: 0
 
+      - name: Start Autobahn Docker
+        run: |
+          docker run --rm -v "$GITHUB_WORKSPACE/tools:/config" -v "$GITHUB_WORKSPACE/reports:/reports" -p 9001:9001 --name fuzzingserver crossbario/autobahn-testsuite &
+
       - name: Update packages
         run: |
           sudo apt update
@@ -57,10 +61,6 @@ jobs:
         working-directory: build
         run: |
           build-wrapper-linux-x86/build-wrapper-linux-x86-64 --out-dir bw-output ninja all
-
-      - name: Start Autobahn Docker
-        run: |
-          docker run --rm -v "$GITHUB_WORKSPACE/tools:/config" -v "$GITHUB_WORKSPACE/reports:/reports" -p 9001:9001 --name fuzzingserver crossbario/autobahn-testsuite &
 
       - name: Test
         working-directory: build
