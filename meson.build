@@ -32,11 +32,11 @@ subdir('include/'+meson.project_name())
 ################################################################################
 curl_dep             = dependency('libcurl',       version: '>=7.50.2')
 libtrower_base64_dep = dependency('trower-base64', version: '>=1.2.7')
+openssl_dep = dependency('openssl', version: '>=1.1.1', required: false)
 
 all_dep = [curl_dep, libtrower_base64_dep]
 
 if 'openssl' == get_option('sha1-provider')
-  openssl_dep = dependency('openssl', version: '>=1.1.1')
   all_dep += openssl_dep
 endif
 
@@ -97,8 +97,6 @@ endif
 if not meson.is_subproject()
   test_args = ['-fprofile-arcs', '-g', '-ftest-coverage', '-O0']
   cunit_dep = dependency('cunit')
-
-  # openssl version
 
   # Work through the non-autobahn tests
   tests = {
@@ -177,6 +175,16 @@ if not meson.is_subproject()
            suite: ['main'])
     endif
   endforeach
+
+  if openssl_dep.found()
+    test('test_sh1_openssl',
+         executable('test_sh1_openssl', ['tests/test_sha1.c', 'src/sha1_openssl.c'],
+                    include_directories: inc,
+                    dependencies: [cunit_dep, openssl_dep],
+                    install: false,
+                    link_args: test_args),
+           suite: ['main'])
+  endif
 
 
   # Setup the autobahn tests
