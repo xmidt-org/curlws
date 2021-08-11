@@ -9,7 +9,8 @@
 
 #include <stddef.h>
 
-#include "curlws.h"
+#include <curlws/curlws.h>
+
 #include "internal.h"
 
 /**

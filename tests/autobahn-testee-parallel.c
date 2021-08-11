@@ -5,8 +5,6 @@
  * SPDX-License-Identifier: MIT
  */
 /* c-mode: linux-4 */
-#include "../src/curlws.h"
-
 #include <stdarg.h>
 #include <stdbool.h>
 #include <stdint.h>
@@ -14,6 +12,8 @@
 #include <stdlib.h>
 #include <string.h>
 #include <ctype.h>
+
+#include <curlws/curlws.h>
 
 struct ws_list {
     CWS *ws;

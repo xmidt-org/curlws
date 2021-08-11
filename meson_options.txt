@@ -1,0 +1,12 @@
+# SPDX-FileCopyrightText: 2021 Comcast Cable Communications Management, LLC
+# SPDX-License-Identifier: MIT
+
+option('sha1-provider', type: 'combo',
+       choices: ['internal', 'openssl'],
+       value: 'openssl',
+       description: 'determines which sha1 implementation to use')
+
+option('test-autobahn', type: 'combo',
+       choices: ['serial', 'parallel', 'skip'],
+       value: 'serial',
+       description: 'define how to run the autobahn tests (if at all)')

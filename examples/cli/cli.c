@@ -2,8 +2,6 @@
  * SPDX-FileCopyrightText: 2021 Comcast Cable Communications Management, LLC
  * SPDX-License-Identifier: MIT
  */
-#include "../../src/curlws.h"
-
 #include <signal.h>
 #include <stdbool.h>
 #include <stddef.h>
@@ -11,6 +9,8 @@
 #include <stdlib.h>
 #include <stdint.h>
 #include <string.h>
+
+#include <curlws/curlws.h>
 
 /*----------------------------------------------------------------------------*/
 /*                                   Macros                                   */

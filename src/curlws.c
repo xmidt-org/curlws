@@ -10,9 +10,9 @@
 #include <string.h>
 
 #include <curl/curl.h>
+#include <curlws/curlws.h>
 #include <trower-base64/base64.h>
 
-#include "curlws.h"
 #include "data_block_sender.h"
 #include "frame_senders.h"
 #include "handlers.h"

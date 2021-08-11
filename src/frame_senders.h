@@ -10,7 +10,7 @@
 #include <stddef.h>
 #include <stdint.h>
 
-#include "curlws.h"
+#include <curlws/curlws.h>
 
 #define CWS_CLOSE           0x00010000
 #define CWS_PING            0x00020000

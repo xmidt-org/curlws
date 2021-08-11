@@ -31,12 +31,19 @@ jobs:
         run: |
           docker run --rm -v "$GITHUB_WORKSPACE/tools:/config" -v "$GITHUB_WORKSPACE/reports:/reports" -p 9001:9001 --name fuzzingserver crossbario/autobahn-testsuite &
 
-      # Install the dependent packages
-      - name: Install packages
+      - name: Update packages
         run: |
           sudo apt update
-          sudo apt-get -y install valgrind libcunit1 libcunit1-doc libcunit1-dev libcurl4-openssl-dev jq gcovr
+
+      - name: Install packages
+        run: |
+          sudo apt-get -y install python3 python3-pip python3-setuptools python3-wheel ninja-build
+          sudo apt-get -y install valgrind libcunit1 libcunit1-doc libcunit1-dev gcovr
+          sudo apt-get -y install jq libcurl4-openssl-dev libmsgpack-dev
           pip install codecov
+
+      - name: Install Meson
+        run: pip3 install --user meson
 
       - name: Make Build Directory
         run: mkdir build
@@ -46,31 +53,35 @@ jobs:
         run: |
           ../.github/scripts/get_sonarcloud.sh
 
-      - name: CMake
-        working-directory: build
+      - name: Meson Build
         run: |
-          cmake .. -DDISABLE_VALGRIND:BOOL=false -DUSE_AUTOBAHN_SERIAL:BOOL=true
+          meson build
 
       - name: Build
         working-directory: build
         run: |
-          build-wrapper-linux-x86/build-wrapper-linux-x86-64 --out-dir bw-output make all
+          build-wrapper-linux-x86/build-wrapper-linux-x86-64 --out-dir bw-output ninja all
 
       - name: Test
         working-directory: build
         run: |
-          # ARGS=-VV make test       # use this version for debugging
-          make test
+          ninja test
 
       - name: Check Autobahn Tests
         working-directory: build
         run: |
-          make validate
+          ninja autobahn_collect autobahn_validate
 
-      - name: Merge GCOV Reports for Sonarcloud
+      - name: Coverage Report Generation
         working-directory: build
         run: |
-          gcovr --sonarqube coverage.xml -r ..
+          ninja coverage
+
+      - name: Sonarcloud Report Generation
+        working-directory: build
+        run: |
+          #ninja coverage-sonarqube ## for now this isn't supported
+          gcovr --sonarqube sonarqube.xml -r ..
 
       - name: Upload SonarCloud
         run: |
@@ -79,7 +90,8 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Upload Codecov.io
-        uses: codecov/codecov-action@v1
+        uses: codecov/codecov-action@v2
         with:
           directory: .
+          files: build/meson-logs/coverage.xml
           fail_ci_if_error: true

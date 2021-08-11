@@ -1,5 +1,9 @@
 # SPDX-FileCopyrightText: 2021 Comcast Cable Communications Management, LLC
 # SPDX-License-Identifier: MIT
+#
+# Subprojects
+subprojects/trower-base64-*
+subprojects/packagecache
 
 # Binaries for programs and plugins
 *.exe

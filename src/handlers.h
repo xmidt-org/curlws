@@ -7,7 +7,8 @@
 #ifndef __HANDLERS_H__
 #define __HANDLERS_H__
 
-#include "curlws.h"
+#include <curlws/curlws.h>
+
 #include "internal.h"
 
 /**

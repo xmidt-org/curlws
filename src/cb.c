@@ -6,8 +6,9 @@
  */
 #include <string.h>
 
+#include <curlws/curlws.h>
+
 #include "cb.h"
-#include "curlws.h"
 #include "verbose.h"
 
 /*----------------------------------------------------------------------------*/

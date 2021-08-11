@@ -8,7 +8,8 @@
 #include <stdint.h>
 #include <stddef.h>
 
-#include "curlws.h"
+#include <curlws/curlws.h>
+
 #include "data_block_sender.h"
 #include "frame_senders.h"
 #include "internal.h"
