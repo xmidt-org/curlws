@@ -29,7 +29,7 @@ The best place to start is the [cli](https://github.com/xmidt-org/curlws/tree/ma
 in the `examples/cli/` directory.  While a very simple application it shows the
 power of this little library.
 
-You can find the api here: https://github.com/xmidt-org/curlws/blob/main/src/curlws.h
+You can find the api here: https://github.com/xmidt-org/curlws/blob/main/include/curlws/curlws.h
 
 ## Design Patterns
 
@@ -71,39 +71,29 @@ This requires docker.
 ### Build the code
 
 ```
-mkdir build
+meson build
 cd build
-cmake ..
-make
+ninja
 ```
 
-#### CMake Configuration Options
+#### Meson Configuration Options
 
-  * `USE_OPENSSL_SHA` - Boolean (default:`false`) Set this if you want
-    to use the SHA1 implementation provided by OpenSsl instead of the built in
-    version.  The built in version came from Yubico and is of excellent quality
-    so the choice is simply a code configuration/space choice.
-
-  * `USE_AUTOBAHN_SERIAL` - Boolean (default:`false`) Set this if you
-    want to run the autobahn test suite sequencially vs. a large number in parallel.
-    This is useful for debugging a specific problem, and is more realiable since
-    some of the tests include relatively short timeout values.  But running the
-    tests sequencially takes a fair bit more time.
-
+See: https://github.com/xmidt-org/curlws/blob/main/meson_options.txt
+  
 ### Testing
 
-To `validate` you need `jq` installed.
+To `validate` you will need `jq` installed.
 To produce coverage results you need `lcov` installed.
 
 ```
-make test validate coverage
+ninja all test autobahn_collect autoban_validate coverage
 ```
 
 ### Look at the results
 
 The local autobahn server reports results here: http://localhost:8080
 
-The lcov local code/branch coverage results can be found at `build/index.html`
+The lcov local code/branch coverage results can be found at `build/meson-logs/coveragereport/index.html`
 
 ## Code of Conduct
 
