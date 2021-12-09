@@ -163,6 +163,7 @@ int main(int argc, char *argv[]) {
 /*----------------------------------------------------------------------------*/
 static void handle_sigint(int sig)
 {
+    (void) sig;
     shutdown_ws = 1;
 }
 
@@ -238,6 +239,8 @@ static CURLcode configure(void *user, CWS *ws, CURL *easy)
 {
     struct my_cfg *cfg = (struct my_cfg*) user;
     CURLcode rv;
+
+    (void) ws;
 
     rv  = curl_easy_setopt(easy, CURLOPT_IPRESOLVE, cfg->ip_resolve);
     rv |= curl_easy_setopt(easy, CURLOPT_SSLVERSION, cfg->tls_version);
