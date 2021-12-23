@@ -24,6 +24,6 @@ jobs:
     with:
       repo: $GITHUB_REPOSITORY
       sha: $GITHUB_SHA
-      packages: jq libcurl4-openssl-dev
+      packages: libcurl4-openssl-dev
     secrets:
       coverity_key: ${{ secrets.COVERITY_KEY }}
