@@ -46,6 +46,6 @@ jobs:
     with:
       packages: jq libcurl4-openssl-dev
       extra-checks: autobahn_collect autobahn_validate
-      extra-setup: docker run --rm -v "$GITHUB_WORKSPACE/tools:/config" -v "$GITHUB_WORKSPACE/reports:/reports" -p 9001:9001 --name fuzzingserver crossbario/autobahn-testsuite &
+      extra-setup: docker run --rm -v "${{ github.workspace }}/tools:/config" -v "${{ github.workspace }}/reports:/reports" -p 9001:9001 --name fuzzingserver crossbario/autobahn-testsuite &
     secrets:
       sonar_login: ${{ secrets.SONAR_TOKEN }}
