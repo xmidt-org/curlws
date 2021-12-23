@@ -3,6 +3,7 @@
 # SPDX-FileCopyrightText: 2021 Comcast Cable Communications Management, LLC
 # SPDX-License-Identifier: MIT
 
+
 project('curlws', 'c',
         version: '1.0.4',
         license: ['Apache-2.0', 'BSD-2-Clause', 'MIT'],
