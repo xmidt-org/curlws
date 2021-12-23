@@ -19,8 +19,8 @@ jobs:
           - 9001:9001
           - 8080:8080
         volumes:
-          - ${{ github.workspace }}/reports:/reports
-          - ${{ github.workspace }}/tools:/config
+          - /reports:${{ github.workspace }}/reports
+          - /config:${{ github.workspace }}/tools
 
     steps:
       - uses: actions/checkout@v2
