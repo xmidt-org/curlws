@@ -14,6 +14,7 @@ on:
       - '.gitignore'
     tags-ignore:
       - 'v[0-9]+.[0-9]+.[0-9]+'
+    branches:
   schedule:
     - cron: '12 9 * * 3'
 
