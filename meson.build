@@ -262,6 +262,16 @@ if reuse_bin.found()
                 output: ['license'])
 endif
 
+################################################################################
+# Add the coverity check target
+################################################################################
+
+alias_target('coverity', curlws )
+
+################################################################################
+# External/consumer definitions
+################################################################################
+#
 curlws_dep = declare_dependency(include_directories: ['include'],
                                 link_with: curlws)
 
