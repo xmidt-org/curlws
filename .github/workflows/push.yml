@@ -29,8 +29,8 @@ jobs:
           - 9001:9001
           - 8080:8080
         volumes:
-          - ${{ GITHUB_WORKSPACE }}/reports:/reports
-          - ${{ GITHUB_WORKSPACE }}/tools:/config
+          - ${{ github.workspace }}/reports:/reports
+          - ${{ github.workspace }}/tools:/config
         #options: -v "${GITHUB_WORKSPACE}/reports:/reports"
         #-v "${GITHUB_WORKSPACE}/tools:/config"
 
