@@ -33,7 +33,15 @@ jobs:
           - ${{ github.workspace }}/tools:/config
         #options: -v "${GITHUB_WORKSPACE}/reports:/reports"
         #-v "${GITHUB_WORKSPACE}/tools:/config"
+    steps:
+      - uses: actions/checkout@v2
+        with:
+          fetch-depth: 0
+      - name: Wait for coverage file to have anything it & exit.
+        run: |
+          tail -q -F -n 1 ../cjwt/build/meson-logs/coverage.xml | sed '/.*[a-z].*/ q'
 
+  test:
     uses: xmidt-org/.github/.github/workflows/meson-unit-test.yml@main
     with:
       packages: jq libcurl4-openssl-dev
