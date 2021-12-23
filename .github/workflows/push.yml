@@ -11,7 +11,13 @@ on:
 
 jobs:
   test:
-    runs-on: ubuntu-latest
+    uses: xmidt-org/.github/.github/workflows/meson-unit-test.yml@main
+    with:
+      packages: jq libcurl4-openssl-dev
+      extra-checks: autobahn_collect autobahn_validate
+    secrets:
+      sonar_login: ${{ secrets.SONAR_TOKEN }}
+
     container:
       image: crossbario/autobahn-testsuite
     services:
@@ -20,10 +26,3 @@ jobs:
         ports:
         - 9001:9001
         - 8080:8080
-    steps:
-      - uses: xmidt-org/.github/.github/workflows/meson-unit-test.yml@main
-        with:
-          packages: jq libcurl4-openssl-dev
-          extra-checks: autobahn_collect autobahn_validate
-        secrets:
-          sonar_login: ${{ secrets.SONAR_TOKEN }}
