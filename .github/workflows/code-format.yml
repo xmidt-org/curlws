@@ -1,0 +1,11 @@
+# SPDX-FileCopyrightText: 2021 Comcast Cable Communications Management, LLC
+# SPDX-License-Identifier: MIT
+
+name: Code Format Check
+
+on: [pull_request, push]
+
+jobs:
+  codeql:
+    uses: xmidt-org/.github/.github/workflows/c-code-format.yml@main
+    with:
