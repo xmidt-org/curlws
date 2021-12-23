@@ -21,15 +21,16 @@ on:
 
 jobs:
   test:
-  - uses: actions/checkout@v2
-    with:
-      fetch-depth: 0
-
-  - name: Start Autobahn Docker
-    run: |
-      docker run --rm -v "$GITHUB_WORKSPACE/tools:/config" -v "$GITHUB_WORKSPACE/reports:/reports" -p 9001:9001 --name fuzzingserver crossbario/autobahn-testsuite &
-
-  - uses: xmidt-org/.github/.github/workflows/meson-unit-test.yml@main
+    runs-on: ubuntu-latest
+    container:
+      image: crossbario/autobahn-testsuite
+    services:
+      fuzzingserver:
+        options: -v "${GITHUB_WORKSPACE}/reports:/reports" -v "${GITHUB_WORKSPACE}/tools:/config"
+        ports:
+        - 9001:9001
+        - 8080:8080
+    uses: xmidt-org/.github/.github/workflows/meson-unit-test.yml@main
     with:
       packages: jq libcurl4-openssl-dev
       extra-checks: autobahn_collect autobahn_validate
