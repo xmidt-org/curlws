@@ -1,7 +1,7 @@
 # SPDX-FileCopyrightText: 2021 Comcast Cable Communications Management, LLC
 # SPDX-License-Identifier: MIT
 
-name: CI
+name: Meson C Unit Test
 
 on:
   pull_request:
@@ -59,6 +59,34 @@ jobs:
         uses: xmidt-org/sonarcloud-installer-action@v1
         with:
           working-directory: build
+
+      - name: Update .sonar-project.properties
+        run: |
+          # Warn if we find something that shouldn't be in the sonar file.
+          if [[ -n `grep ".*sonar.cfamily.build-wrapper-output.*" .sonar-project.properties` ]]; then
+              echo -e "\e[0;31mWarning: remove this from the .sonar-project.properties file: sonar.cfamily.build-wrapper-output\e[m"
+          fi
+          if [[ -n `grep ".*sonar.cfamily.threads.*" .sonar-project.properties` ]]; then
+              echo -e "\e[0;31mWarning: remove this from the .sonar-project.properties file: sonar.cfamily.threads\e[m"
+          fi
+          if [[ -n `grep ".*sonar.cfamily.cache.enabled.*" .sonar-project.properties` ]]; then
+              echo -e "\e[0;31mWarning: remove this from the .sonar-project.properties file: sonar.cfamily.cache.enabled\e[m"
+          fi
+          if [[ -n `grep ".*sonar.coverageReportPaths.*" .sonar-project.properties` ]]; then
+              echo -e "\e[0;31mWarning: remove this from the .sonar-project.properties file: sonar.coverageReportPaths\e[m"
+          fi
+
+          # Remove the lines we want to replace
+          sed -i 's/.*sonar.cfamily.build-wrapper-output.*//g' .sonar-project.properties
+          sed -i 's/.*sonar.cfamily.threads.*//g'              .sonar-project.properties
+          sed -i 's/.*sonar.cfamily.cache.enabled.*//g'        .sonar-project.properties
+          sed -i 's/.*sonar.coverageReportPaths.*//g'          .sonar-project.properties
+
+          # Add the version we need.
+          echo "sonar.cfamily.build-wrapper-output=build/bw-output"       >> .sonar-project.properties
+          echo "sonar.cfamily.threads=2"                                  >> .sonar-project.properties
+          echo "sonar.cfamily.cache.enabled=false"                        >> .sonar-project.properties
+          echo "sonar.coverageReportPaths=build/meson-logs/sonarqube.xml" >> .sonar-project.properties
 
       - name: Build
         working-directory: build
