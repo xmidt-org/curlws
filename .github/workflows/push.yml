@@ -10,8 +10,8 @@ on:
     - cron: '12 9 * * 3'
 
 jobs:
-  ws-server:
-    runs-on: [ ubuntu-latest ]
+#  ws-server:
+#    runs-on: [ ubuntu-latest ]
 #    steps:
 #      - uses: actions/checkout@v2
 #        with:
@@ -21,30 +21,31 @@ jobs:
 #          docker run --rm -v "$GITHUB_WORKSPACE/tools:/config" -v "$GITHUB_WORKSPACE/reports:/reports" -p 9001:9001 --name fuzzingserver crossbario/autobahn-testsuite &
 
 
-    services:
-      fuzzingserver:
-        image: crossbario/autobahn-testsuite
-        #options: -v "${GITHUB_WORKSPACE}/reports:/reports" -v "${GITHUB_WORKSPACE}/tools:/config"
-        ports:
-          - 9001:9001
-          - 8080:8080
-        volumes:
-          - ${{ github.workspace }}/reports:/reports
-          - ${{ github.workspace }}/tools:/config
-        #options: -v "${GITHUB_WORKSPACE}/reports:/reports"
-        #-v "${GITHUB_WORKSPACE}/tools:/config"
-    steps:
-      - uses: actions/checkout@v2
-        with:
-          fetch-depth: 0
-      - name: Wait for coverage file to have anything it & exit.
-        run: |
-          tail -q -F -n 1 ../cjwt/build/meson-logs/coverage.xml | sed '/.*[a-z].*/ q'
+#    services:
+#      fuzzingserver:
+#        image: crossbario/autobahn-testsuite
+#        #options: -v "${GITHUB_WORKSPACE}/reports:/reports" -v "${GITHUB_WORKSPACE}/tools:/config"
+#        ports:
+#          - 9001:9001
+#          - 8080:8080
+#        volumes:
+#          - ${{ github.workspace }}/reports:/reports
+#          - ${{ github.workspace }}/tools:/config
+#        #options: -v "${GITHUB_WORKSPACE}/reports:/reports"
+#        #-v "${GITHUB_WORKSPACE}/tools:/config"
+#    steps:
+#      - uses: actions/checkout@v2
+#        with:
+#          fetch-depth: 0
+#      - name: Wait for coverage file to have anything it & exit.
+#        run: |
+#          tail -q -F -n 1 ../cjwt/build/meson-logs/coverage.xml | sed '/.*[a-z].*/ q'
 
   test:
     uses: xmidt-org/.github/.github/workflows/meson-unit-test.yml@main
     with:
       packages: jq libcurl4-openssl-dev
       extra-checks: autobahn_collect autobahn_validate
+      extra-setup: docker run --rm -v "$GITHUB_WORKSPACE/tools:/config" -v "$GITHUB_WORKSPACE/reports:/reports" -p 9001:9001 --name fuzzingserver crossbario/autobahn-testsuite &
     secrets:
       sonar_login: ${{ secrets.SONAR_TOKEN }}
