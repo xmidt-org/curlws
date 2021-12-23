@@ -6,6 +6,8 @@ name: CI
 on:
   pull_request:
   push:
+    branches:
+      - **
     tags-ignore:
       - 'v[0-9]**'
   schedule:
