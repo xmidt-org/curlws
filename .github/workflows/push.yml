@@ -92,6 +92,7 @@ jobs:
       - name: Collect/Validate Additional Results
         working-directory: build
         run: |
+          tree ..
           ninja autobahn_collect autobahn_validate
 
       - name: Generate Coverage Report
@@ -99,18 +100,18 @@ jobs:
         run: |
           ninja coverage
 
-      - name: Upload SonarCloud
-        run: |
-          build/sonar-scanner/bin/sonar-scanner -Dsonar.host.url=https://sonarcloud.io \
-                                                -Dproject.settings=.sonar-project.properties \
-                                                -Dsonar.login=${{ secrets.sonar_login }}
-        env:
-          # Required by the sonar-scanner program
-          GITHUB_TOKEN: ${{ github.token }}
-
-      - name: Upload Codecov.io
-        uses: codecov/codecov-action@v2
-        with:
-          directory: .
-          files: build/meson-logs/coverage.xml
-          fail_ci_if_error: true
+#      - name: Upload SonarCloud
+#        run: |
+#          build/sonar-scanner/bin/sonar-scanner -Dsonar.host.url=https://sonarcloud.io \
+#                                                -Dproject.settings=.sonar-project.properties \
+#                                                -Dsonar.login=${{ secrets.sonar_login }}
+#        env:
+#          # Required by the sonar-scanner program
+#          GITHUB_TOKEN: ${{ github.token }}
+#
+#      - name: Upload Codecov.io
+#        uses: codecov/codecov-action@v2
+#        with:
+#          directory: .
+#          files: build/meson-logs/coverage.xml
+#          fail_ci_if_error: true
