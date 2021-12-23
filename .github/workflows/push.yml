@@ -18,9 +18,7 @@ jobs:
         ports:
           - 9001:9001
           - 8080:8080
-        volumes:
-          - /reports:${{ github.workspace }}/reports
-          - /config:${{ github.workspace }}/tools
+        options: -v "${{ github.workspace }}/reports:/reports" -v "${{ github.workspace }}/tools:/config"
 
     steps:
       - uses: actions/checkout@v2
