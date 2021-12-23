@@ -12,10 +12,10 @@ on:
 jobs:
   ws-server:
     runs-on: [ ubuntu-latest ]
-    steps:
-      - uses: actions/checkout@v2
-        with:
-          fetch-depth: 0
+#    steps:
+#      - uses: actions/checkout@v2
+#        with:
+#          fetch-depth: 0
 #      - name: Start Autobahn Docker
 #        run: |
 #          docker run --rm -v "$GITHUB_WORKSPACE/tools:/config" -v "$GITHUB_WORKSPACE/reports:/reports" -p 9001:9001 --name fuzzingserver crossbario/autobahn-testsuite &
@@ -34,8 +34,6 @@ jobs:
         #options: -v "${GITHUB_WORKSPACE}/reports:/reports"
         #-v "${GITHUB_WORKSPACE}/tools:/config"
 
-  test:
-    needs: ws-server
     uses: xmidt-org/.github/.github/workflows/meson-unit-test.yml@main
     with:
       packages: jq libcurl4-openssl-dev
