@@ -5,33 +5,90 @@ name: CI
 
 on:
   pull_request:
+    branches:
+      - '**'
   push:
-    paths-ignore:
-      - 'AUTHORS'
-      - 'LICENSE'
-      - 'NOTICE'
-      - '**.md'
-      - '.gitignore'
-    tags-ignore:
-      - 'v[0-9]+.[0-9]+.[0-9]+'
     branches:
       - main
+    tags-ignore:
+      - 'v[0-9]**'
   schedule:
     - cron: '12 9 * * 3'
 
+
+# Keep this file as close as is reasonable to xmidt-org/.github/workflows/meson-unit-test.yml
+# as possible.  We can't re-use that workflow because we need the docker image to
+# be run in the same workflow to get the results.
 jobs:
   test:
-  - uses: actions/checkout@v2
-    with:
-      fetch-depth: 0
+    name: Unit Tests
+    runs-on: [ ubuntu-latest ]
+    steps:
+      - uses: actions/checkout@v2
+        with:
+          fetch-depth: 0
 
-  - name: Start Autobahn Docker
-    run: |
-      docker run --rm -v "$GITHUB_WORKSPACE/tools:/config" -v "$GITHUB_WORKSPACE/reports:/reports" -p 9001:9001 --name fuzzingserver crossbario/autobahn-testsuite &
+      - name: Start Autobahn Docker
+        run: |
+          docker run --rm -v "$GITHUB_WORKSPACE/tools:/config" -v "$GITHUB_WORKSPACE/reports:/reports" -p 9001:9001 --name fuzzingserver crossbario/autobahn-testsuite &
 
-  - uses: xmidt-org/.github/.github/workflows/meson-unit-test.yml@main
-    with:
-      packages: jq libcurl4-openssl-dev
-      extra-checks: autobahn_collect autobahn_validate
-    secrets:
-      sonar_login: ${{ secrets.SONAR_TOKEN }}
+      - name: Update packages
+        run: |
+          sudo apt update
+
+      - name: Install packages
+        run: |
+          sudo apt-get -y install python3 python3-pip python3-setuptools python3-wheel \
+                                  ninja-build valgrind gcovr \
+                                  libcunit1 libcunit1-doc libcunit1-dev \
+                                  jq libcurl4-openssl-dev
+
+      - name: Install Meson
+        run: |
+          pip3 install --user 'meson>=0.60.3'
+
+      - name: Meson Setup
+        run: |
+          meson setup --warnlevel 3 --werror build
+
+      - name: Update packages
+        run: |
+          sudo apt update
+
+      - name: Get Sonarcloud Binaries
+        uses: xmidt-org/sonarcloud-installer-action@v1
+        with:
+          working-directory: build
+
+      - name: Build
+        working-directory: build
+        run: |
+          build-wrapper-linux-x86/build-wrapper-linux-x86-64 --out-dir bw-output ninja all
+
+      - name: Test
+        working-directory: build
+        run: |
+          ninja test
+
+      - name: Check Autobahn Tests
+        working-directory: build
+        run: |
+          ninja autobahn_collect autobahn_validate
+
+      - name: Coverage Report Generation
+        working-directory: build
+        run: |
+          ninja coverage
+
+      - name: Upload SonarCloud
+        run: |
+          build/sonar-scanner/bin/sonar-scanner -Dsonar.host.url=https://sonarcloud.io -Dproject.settings=.sonar-project.properties -Dsonar.login=${{ secrets.SONAR_TOKEN }}
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Upload Codecov.io
+        uses: codecov/codecov-action@v2
+        with:
+          directory: .
+          files: build/meson-logs/coverage.xml
+          fail_ci_if_error: true
