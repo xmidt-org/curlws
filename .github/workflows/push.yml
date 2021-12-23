@@ -10,42 +10,107 @@ on:
     - cron: '12 9 * * 3'
 
 jobs:
-#  ws-server:
-#    runs-on: [ ubuntu-latest ]
-#    steps:
-#      - uses: actions/checkout@v2
-#        with:
-#          fetch-depth: 0
-#      - name: Start Autobahn Docker
-#        run: |
-#          docker run --rm -v "$GITHUB_WORKSPACE/tools:/config" -v "$GITHUB_WORKSPACE/reports:/reports" -p 9001:9001 --name fuzzingserver crossbario/autobahn-testsuite &
-
-
-#    services:
-#      fuzzingserver:
-#        image: crossbario/autobahn-testsuite
-#        #options: -v "${GITHUB_WORKSPACE}/reports:/reports" -v "${GITHUB_WORKSPACE}/tools:/config"
-#        ports:
-#          - 9001:9001
-#          - 8080:8080
-#        volumes:
-#          - ${{ github.workspace }}/reports:/reports
-#          - ${{ github.workspace }}/tools:/config
-#        #options: -v "${GITHUB_WORKSPACE}/reports:/reports"
-#        #-v "${GITHUB_WORKSPACE}/tools:/config"
-#    steps:
-#      - uses: actions/checkout@v2
-#        with:
-#          fetch-depth: 0
-#      - name: Wait for coverage file to have anything it & exit.
-#        run: |
-#          tail -q -F -n 1 ../cjwt/build/meson-logs/coverage.xml | sed '/.*[a-z].*/ q'
-
   test:
-    uses: xmidt-org/.github/.github/workflows/meson-unit-test.yml@main
-    with:
-      packages: jq libcurl4-openssl-dev
-      extra-checks: autobahn_collect autobahn_validate
-      extra-setup: docker run --rm -v "${{ github.workspace }}/tools:/config" -v "${{ github.workspace }}/reports:/reports" -p 9001:9001 --name fuzzingserver crossbario/autobahn-testsuite &
-    secrets:
-      sonar_login: ${{ secrets.SONAR_TOKEN }}
+    runs-on: [ ubuntu-latest ]
+    services:
+      fuzzingserver:
+        image: crossbario/autobahn-testsuite
+        ports:
+          - 9001:9001
+          - 8080:8080
+        volumes:
+          - ${{ github.workspace }}/reports:/reports
+          - ${{ github.workspace }}/tools:/config
+
+    steps:
+      - uses: actions/checkout@v2
+        with:
+          fetch-depth: 0
+
+      - name: Update packages
+        run: |
+          sudo apt update
+
+      - name: Install packages
+        run: |
+          sudo apt-get -y install python3 python3-pip python3-setuptools python3-wheel \
+                                  ninja-build valgrind gcovr \
+                                  libcunit1 libcunit1-doc libcunit1-dev \
+                                  jq libcurl4-openssl-dev
+
+      - name: Install Meson
+        run: |
+          pip3 install --user 'meson>=0.60.3'
+
+      - name: Meson Setup
+        run: |
+          meson setup --warnlevel 3 --werror build
+
+      - name: Get Sonarcloud Binaries
+        uses: xmidt-org/sonarcloud-installer-action@v1
+        with:
+          working-directory: build
+
+      - name: Update .sonar-project.properties
+        run: |
+          # Warn if we find something that shouldn't be in the sonar file.
+          if [[ -n `grep ".*sonar.cfamily.build-wrapper-output.*" .sonar-project.properties` ]]; then
+              echo -e "\e[0;31mWarning: remove this from the .sonar-project.properties file: sonar.cfamily.build-wrapper-output\e[m"
+          fi
+          if [[ -n `grep ".*sonar.cfamily.threads.*" .sonar-project.properties` ]]; then
+              echo -e "\e[0;31mWarning: remove this from the .sonar-project.properties file: sonar.cfamily.threads\e[m"
+          fi
+          if [[ -n `grep ".*sonar.cfamily.cache.enabled.*" .sonar-project.properties` ]]; then
+              echo -e "\e[0;31mWarning: remove this from the .sonar-project.properties file: sonar.cfamily.cache.enabled\e[m"
+          fi
+          if [[ -n `grep ".*sonar.coverageReportPaths.*" .sonar-project.properties` ]]; then
+              echo -e "\e[0;31mWarning: remove this from the .sonar-project.properties file: sonar.coverageReportPaths\e[m"
+          fi
+
+          # Remove the lines we want to replace
+          sed -i 's/.*sonar.cfamily.build-wrapper-output.*//g' .sonar-project.properties
+          sed -i 's/.*sonar.cfamily.threads.*//g'              .sonar-project.properties
+          sed -i 's/.*sonar.cfamily.cache.enabled.*//g'        .sonar-project.properties
+          sed -i 's/.*sonar.coverageReportPaths.*//g'          .sonar-project.properties
+
+          # Add the version we need.
+          echo "sonar.cfamily.build-wrapper-output=build/bw-output"       >> .sonar-project.properties
+          echo "sonar.cfamily.threads=2"                                  >> .sonar-project.properties
+          echo "sonar.cfamily.cache.enabled=false"                        >> .sonar-project.properties
+          echo "sonar.coverageReportPaths=build/meson-logs/sonarqube.xml" >> .sonar-project.properties
+
+      - name: Build
+        working-directory: build
+        run: |
+          build-wrapper-linux-x86/build-wrapper-linux-x86-64 --out-dir bw-output ninja all
+
+      - name: Run Tests
+        working-directory: build
+        run: |
+          ninja test
+
+      - name: Collect/Validate Additional Results
+        working-directory: build
+        run: |
+          ninja autobahn_collect autobahn_validate
+
+      - name: Generate Coverage Report
+        working-directory: build
+        run: |
+          ninja coverage
+
+      - name: Upload SonarCloud
+        run: |
+          build/sonar-scanner/bin/sonar-scanner -Dsonar.host.url=https://sonarcloud.io \
+                                                -Dproject.settings=.sonar-project.properties \
+                                                -Dsonar.login=${{ secrets.sonar_login }}
+        env:
+          # Required by the sonar-scanner program
+          GITHUB_TOKEN: ${{ github.token }}
+
+      - name: Upload Codecov.io
+        uses: codecov/codecov-action@v2
+        with:
+          directory: .
+          files: build/meson-logs/coverage.xml
+          fail_ci_if_error: true
