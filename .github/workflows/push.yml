@@ -32,6 +32,7 @@ jobs:
 
       - name: Wait for coverage to be complete
         run: |
+          pwd
           tail -q -F -n 1 ../cjwt/build/meson-logs/coverage.xml | sed '/.*[a-z].*/ q'
 
   test:
@@ -39,5 +40,6 @@ jobs:
     with:
       packages: jq libcurl4-openssl-dev
       extra-checks: autobahn_collect autobahn_validate
+      extra-setup: pwd
     secrets:
       sonar_login: ${{ secrets.SONAR_TOKEN }}
