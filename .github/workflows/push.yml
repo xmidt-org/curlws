@@ -16,19 +16,23 @@ jobs:
       - uses: actions/checkout@v2
         with:
           fetch-depth: 0
-      - name: Start Autobahn Docker
-        run: |
-          docker run --rm -v "$GITHUB_WORKSPACE/tools:/config" -v "$GITHUB_WORKSPACE/reports:/reports" -p 9001:9001 --name fuzzingserver crossbario/autobahn-testsuite &
+#      - name: Start Autobahn Docker
+#        run: |
+#          docker run --rm -v "$GITHUB_WORKSPACE/tools:/config" -v "$GITHUB_WORKSPACE/reports:/reports" -p 9001:9001 --name fuzzingserver crossbario/autobahn-testsuite &
 
 
-#    container:
-#      image: crossbario/autobahn-testsuite
-#    services:
-#      fuzzingserver:
-#        options: -v "${GITHUB_WORKSPACE}/reports:/reports" -v "${GITHUB_WORKSPACE}/tools:/config"
-#        ports:
-#        - 9001:9001
-#        - 8080:8080
+    services:
+      fuzzingserver:
+        image: crossbario/autobahn-testsuite
+        #options: -v "${GITHUB_WORKSPACE}/reports:/reports" -v "${GITHUB_WORKSPACE}/tools:/config"
+        ports:
+          - 9001:9001
+          - 8080:8080
+        volumes:
+          - /reports:${GITHUB_WORKSPACE}/reports
+          - /config:${GITHUB_WORKSPACE}/tools
+        #options: -v "${GITHUB_WORKSPACE}/reports:/reports"
+        #-v "${GITHUB_WORKSPACE}/tools:/config"
 
   test:
     needs: ws-server
