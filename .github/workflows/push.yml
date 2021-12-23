@@ -39,7 +39,7 @@ jobs:
     uses: xmidt-org/.github/.github/workflows/meson-unit-test.yml@main
     with:
       packages: jq libcurl4-openssl-dev
-      extra-checks: autobahn_collect autobahn_validate
+      extra-checks: autobahn_collect autobahn_validate ; pwd ; ls ..
       extra-setup: pwd
     secrets:
       sonar_login: ${{ secrets.SONAR_TOKEN }}
