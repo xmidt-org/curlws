@@ -7,6 +7,7 @@
 #ifndef __DATA_BLOCK_SENDER_H__
 #define __DATA_BLOCK_SENDER_H__
 
+#include <curlws/curlws.h>
 #include <stddef.h>
 
 /**
