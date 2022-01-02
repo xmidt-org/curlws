@@ -1,18 +1,19 @@
 /*
- * SPDX-FileCopyrightText: 2021 Comcast Cable Communications Management, LLC
+ * SPDX-FileCopyrightText: 2021-2022 Comcast Cable Communications Management, LLC
  *
  * SPDX-License-Identifier: MIT
  */
-#include <stdlib.h>
-#include <stdio.h>
-#include <string.h>
 #include <CUnit/Basic.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
 
 #include "../src/frame.h"
 
 
 void test_validate()
 {
+    // clang-format off
     struct {
         const char *desc;
         struct cws_frame f;
@@ -163,6 +164,7 @@ void test_validate()
 
         { .rv = -99 }
     };
+    // clang-format on
     int i;
 
     for (i = 0; tests[i].rv != -99; i++) {
@@ -179,6 +181,7 @@ void test_validate()
 
 void test_decode()
 {
+    // clang-format off
     struct {
         struct cws_frame f;
         size_t len;
@@ -286,6 +289,7 @@ void test_decode()
           .f.payload     = NULL },
         { .len = 0 }
     };
+    // clang-format on
 
     size_t i, j;
 
@@ -306,18 +310,18 @@ void test_decode()
             if (tests[j].delta[i] != delta) {
                 printf("%zd.%zd %zd =?= %zd\n", j, i, tests[j].delta[i], delta);
             }
-            CU_ASSERT (tests[j].delta[i] == delta);
+            CU_ASSERT(tests[j].delta[i] == delta);
         }
 
-        CU_ASSERT(tests[j].f.fin         == f.fin);
-        CU_ASSERT(tests[j].f.opcode      == f.opcode);
-        CU_ASSERT(tests[j].f.mask        == f.mask);
+        CU_ASSERT(tests[j].f.fin == f.fin);
+        CU_ASSERT(tests[j].f.opcode == f.opcode);
+        CU_ASSERT(tests[j].f.mask == f.mask);
         CU_ASSERT(tests[j].f.masking_key[0] == f.masking_key[0]);
         CU_ASSERT(tests[j].f.masking_key[1] == f.masking_key[1]);
         CU_ASSERT(tests[j].f.masking_key[2] == f.masking_key[2]);
         CU_ASSERT(tests[j].f.masking_key[3] == f.masking_key[3]);
         CU_ASSERT(tests[j].f.payload_len == f.payload_len);
-        CU_ASSERT(tests[j].f.payload     == f.payload);
+        CU_ASSERT(tests[j].f.payload == f.payload);
     }
 }
 
@@ -327,13 +331,13 @@ void test_encode()
     const uint8_t expect[] = { 0x89, 0x84, 0x01, 0x02, 0x03, 0x04, 0x51, 0x4b, 0x4d, 0x43 };
 
     struct cws_frame f = {
-        .fin = 1,
-        .mask = 1,
-        .is_control = 1,
-        .opcode = WS_OPCODE_PING,
+        .fin         = 1,
+        .mask        = 1,
+        .is_control  = 1,
+        .opcode      = WS_OPCODE_PING,
         .masking_key = {1, 2, 3, 4},
         .payload_len = 4,
-        .payload = "PING"
+        .payload     = "PING"
     };
     size_t rv;
 
@@ -342,7 +346,7 @@ void test_encode()
 
     for (size_t i = 0; i < sizeof(expect); i++) {
         if (expect[i] != buffer[i]) {
-            printf("%zd 0x%02x =?= 0x%02x\n", i, expect[i], buffer[i] );
+            printf("%zd 0x%02x =?= 0x%02x\n", i, expect[i], buffer[i]);
         }
         CU_ASSERT(expect[i] == buffer[i]);
     }
@@ -354,13 +358,13 @@ void test_encode_too_short()
     uint8_t buffer[256];
 
     struct cws_frame f = {
-        .fin = 1,
-        .mask = 1,
-        .is_control = 1,
-        .opcode = WS_OPCODE_BINARY,
+        .fin         = 1,
+        .mask        = 1,
+        .is_control  = 1,
+        .opcode      = WS_OPCODE_BINARY,
         .masking_key = {0, 0, 0, 0},
         .payload_len = 0x10000,
-        .payload = "PING"
+        .payload     = "PING"
     };
     size_t rv;
 
@@ -376,12 +380,14 @@ void test_encode_too_short()
 
 void test_encode_long()
 {
+    // clang-format off
     const uint8_t header1[] = { 0x82, 0xff,                 /* Base header */
                                 0x00, 0x00, 0x00, 0x00, 0x00, 0x01, 0x00, 0x00, /* payload len */
                                 0x00, 0x00, 0x00, 0x00 };   /* mask */
     const uint8_t header2[] = { 0x82, 0xfe,                 /* base header */
                                 0x10, 0x00,                 /* payload len */
                                 0x00, 0x00, 0x00, 0x00 };   /* mask */
+    // clang-format off
 
     uint8_t *payload;
     uint8_t *buffer1;

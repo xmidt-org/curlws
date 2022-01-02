@@ -1,6 +1,6 @@
 /*
  * SPDX-FileCopyrightText: 2016 Gustavo Sverzut Barbieri
- * SPDX-FileCopyrightText: 2021 Comcast Cable Communications Management, LLC
+ * SPDX-FileCopyrightText: 2021-2022 Comcast Cable Communications Management, LLC
  *
  * SPDX-License-Identifier: MIT
  */
@@ -39,7 +39,7 @@ int cws_sha1(const void *in, size_t len, void *out)
     uint8_t md[SHA1HashSize];
 
     if ((shaSuccess == SHA1Reset(&ctx))
-        && (shaSuccess == SHA1Input(&ctx, (const uint8_t*) in, (unsigned int) len))
+        && (shaSuccess == SHA1Input(&ctx, (const uint8_t *) in, (unsigned int) len))
         && (shaSuccess == SHA1Result(&ctx, md)))
     {
         memcpy(out, md, SHA1HashSize);

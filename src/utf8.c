@@ -1,6 +1,6 @@
 /*
  * SPDX-FileCopyrightText: 2016 Gustavo Sverzut Barbieri
- * SPDX-FileCopyrightText: 2021 Comcast Cable Communications Management, LLC
+ * SPDX-FileCopyrightText: 2021-2022 Comcast Cable Communications Management, LLC
  *
  * SPDX-License-Identifier: MIT
  */
@@ -47,29 +47,31 @@
  * many bytes are needed to represent the character.  Any lenght that is
  * invalid is 0 so it's easy to process.
  */
+// clang-format off
 static const uint8_t utf8_len[256] = {
-     /* 0  1  2  3  4  5  6  7  8  9  a  b  c  d  e  f
-      *---------------------------------------------------------------*/
-        1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,  /* 0x00-0x0f */
-        1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,  /* 0x10-0x1f */
-        1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,  /* 0x20-0x2f */
-        1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,  /* 0x30-0x3f */
-        1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,  /* 0x40-0x4f */
-        1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,  /* 0x50-0x5f */
-        1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,  /* 0x60-0x6f */
-        1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,  /* 0x70-0x7f */
+    /* 0  1  2  3  4  5  6  7  8  9  a  b  c  d  e  f
+     *---------------------------------------------------------------*/
+       1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, /* 0x00-0x0f */
+       1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, /* 0x10-0x1f */
+       1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, /* 0x20-0x2f */
+       1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, /* 0x30-0x3f */
+       1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, /* 0x40-0x4f */
+       1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, /* 0x50-0x5f */
+       1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, /* 0x60-0x6f */
+       1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, /* 0x70-0x7f */
 
-     /* 0  1  2  3  4  5  6  7  8  9  a  b  c  d  e  f                */
+    /* 0  1  2  3  4  5  6  7  8  9  a  b  c  d  e  f                */
 
-        0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,  /* 0x80-0x8f */
-        0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,  /* 0x90-0x9f */
-        0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,  /* 0xa0-0xaf */
-        0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,  /* 0xb0-0xbf */
-        0, 0, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2,  /* 0xc0-0xcf */
-        2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2,  /* 0xd0-0xdf */
-        3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3,  /* 0xe0-0xef */
-        4, 4, 4, 4, 4, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0   /* 0xf0-0xff */
-    };
+       0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, /* 0x80-0x8f */
+       0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, /* 0x90-0x9f */
+       0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, /* 0xa0-0xaf */
+       0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, /* 0xb0-0xbf */
+       0, 0, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, /* 0xc0-0xcf */
+       2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, /* 0xd0-0xdf */
+       3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, /* 0xe0-0xef */
+       4, 4, 4, 4, 4, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0  /* 0xf0-0xff */
+};
+// clang-format on
 
 /*----------------------------------------------------------------------------*/
 /*                             Function Prototypes                            */
@@ -81,7 +83,7 @@ static const uint8_t utf8_len[256] = {
 /*----------------------------------------------------------------------------*/
 size_t utf8_get_size(char c)
 {
-    return (size_t) utf8_len[(uint8_t)c];
+    return (size_t) utf8_len[(uint8_t) c];
 }
 
 
@@ -98,7 +100,7 @@ bool utf8_maybe_valid(const char *text, size_t len)
     }
 
 
-    if (0 == utf8_validate((char*)buf, &c_len)) {
+    if (0 == utf8_validate((char *) buf, &c_len)) {
         return true;
     }
 
@@ -108,8 +110,8 @@ bool utf8_maybe_valid(const char *text, size_t len)
 
 int utf8_validate(const char *text, size_t *len)
 {
-    const uint8_t *bytes = (const uint8_t*) text;
-    size_t left = *len;
+    const uint8_t *bytes = (const uint8_t *) text;
+    size_t left          = *len;
 
     while (left) {
         size_t c_len = utf8_len[*bytes];
@@ -128,27 +130,28 @@ int utf8_validate(const char *text, size_t *len)
                 return -1;
             }
         } else if (3 == c_len) {
-            int c = (0x0f & bytes[0]) << 12 |
-                    (0x3f & bytes[1]) << 6 |
-                    (0x3f & bytes[2]);
+            int c = (0x0f & bytes[0]) << 12
+                | (0x3f & bytes[1]) << 6
+                | (0x3f & bytes[2]);
 
-            if ((c < 0x800) ||
-                ((0xd800 <= c) && (c <= 0xdfff)) ||
-                (0x80 != (0xc0 & bytes[1])) ||
-                (0x80 != (0xc0 & bytes[2])))
+            if ((c < 0x800)
+                || ((0xd800 <= c) && (c <= 0xdfff))
+                || (0x80 != (0xc0 & bytes[1]))
+                || (0x80 != (0xc0 & bytes[2])))
             {
                 return -1;
             }
         } else {
-            int c = (0x07 & bytes[0]) << 18 |
-                    (0x3f & bytes[1]) << 12 |
-                    (0x3f & bytes[2]) << 6  |
-                    (0x3f & bytes[3]);
+            int c = (0x07 & bytes[0]) << 18
+                | (0x3f & bytes[1]) << 12
+                | (0x3f & bytes[2]) << 6
+                | (0x3f & bytes[3]);
 
-            if ((c < 0x10000) || (0x10ffff < c) ||
-                (0x80 != (0xc0 & bytes[1])) ||
-                (0x80 != (0xc0 & bytes[2])) ||
-                (0x80 != (0xc0 & bytes[3])))
+            if ((c < 0x10000)
+                || (0x10ffff < c)
+                || (0x80 != (0xc0 & bytes[1]))
+                || (0x80 != (0xc0 & bytes[2]))
+                || (0x80 != (0xc0 & bytes[3])))
             {
                 return -1;
             }
@@ -167,4 +170,3 @@ int utf8_validate(const char *text, size_t *len)
 /*                             Internal functions                             */
 /*----------------------------------------------------------------------------*/
 /* none */
-

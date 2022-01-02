@@ -1,15 +1,14 @@
 /*
- * SPDX-FileCopyrightText: 2021 Comcast Cable Communications Management, LLC
+ * SPDX-FileCopyrightText: 2021-2022 Comcast Cable Communications Management, LLC
  *
  * SPDX-License-Identifier: MIT
  */
-#include <stdarg.h>
-#include <stdlib.h>
-#include <stdio.h>
-#include <string.h>
-
 #include <CUnit/Basic.h>
 #include <curl/curl.h>
+#include <stdarg.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
 
 #include "../src/internal.h"
 #include "../src/ws.h"
@@ -19,7 +18,7 @@
 #undef curl_easy_setopt
 #undef curl_easy_getinfo
 
-CURLcode curl_easy_setopt(CURL *easy, CURLoption option, ... )
+CURLcode curl_easy_setopt(CURL *easy, CURLoption option, ...)
 {
     (void) easy;
     (void) option;
@@ -27,8 +26,8 @@ CURLcode curl_easy_setopt(CURL *easy, CURLoption option, ... )
 }
 
 static long __http_version = 0;
-static long __http_code = 0;
-CURLcode curl_easy_getinfo(CURL *easy, CURLINFO info, ... )
+static long __http_code    = 0;
+CURLcode curl_easy_getinfo(CURL *easy, CURLINFO info, ...)
 {
     va_list ap;
     long *arg;
@@ -37,7 +36,7 @@ CURLcode curl_easy_getinfo(CURL *easy, CURLINFO info, ... )
     (void) info;
 
     va_start(ap, info);
-    arg = va_arg(ap, long*);
+    arg = va_arg(ap, long *);
     switch (info) {
         case CURLINFO_RESPONSE_CODE:
             *arg = __http_code;
@@ -94,7 +93,7 @@ void setup_test(CWS *priv)
     memset(priv, 0, sizeof(CWS));
 
     priv->cb.on_connect_fn = on_connect;
-    priv->cb.on_close_fn = on_close;
+    priv->cb.on_close_fn   = on_close;
 
     header_init(priv);
     srand(0);
@@ -108,8 +107,8 @@ void test_redirection()
     setup_test(&priv);
 
     /* Start with a redirection */
-    __http_code = 307;
-    __http_version = CURL_HTTP_VERSION_1_1;
+    __http_code               = 307;
+    __http_version            = CURL_HTTP_VERSION_1_1;
     priv.cfg.follow_redirects = true;
     CU_ASSERT(30 == _header_cb("HTTP/1.1 307 Temporary Redirect", 30, 1, &priv));
     CU_ASSERT(true == priv.header_state.redirection);
@@ -119,11 +118,11 @@ void test_redirection()
     CU_ASSERT(2 == _header_cb("\r\n", 2, 1, &priv));
 
     /* Now go onto a successful call */
-    __http_code = 101;
-    __http_version = CURL_HTTP_VERSION_1_1;
-    priv.header_state.accepted = true;
-    priv.header_state.upgraded = true;
-    priv.header_state.connection_websocket = true;
+    __http_code                             = 101;
+    __http_version                          = CURL_HTTP_VERSION_1_1;
+    priv.header_state.accepted              = true;
+    priv.header_state.upgraded              = true;
+    priv.header_state.connection_websocket  = true;
     priv.header_state.ws_protocols_received = cws_strndup("chat", 4);
     CU_ASSERT(32 == _header_cb("HTTP/1.1 101  Switching Protocols", 32, 1, &priv));
     CU_ASSERT(false == priv.header_state.accepted);
@@ -132,8 +131,8 @@ void test_redirection()
     CU_ASSERT(NULL == priv.header_state.ws_protocols_received);
 
     /* Now try a redirect when we didn't want to be redirected. */
-    __http_code = 307;
-    __http_version = CURL_HTTP_VERSION_1_1;
+    __http_code               = 307;
+    __http_version            = CURL_HTTP_VERSION_1_1;
     priv.cfg.follow_redirects = false;
     CU_ASSERT(0 == _header_cb("HTTP/1.1 307 Temporary Redirect", 30, 1, &priv));
 }
@@ -146,17 +145,17 @@ void test_simple()
     setup_test(&priv);
 
     /* A simple, successful call. */
-    __http_code = 101;
-    __http_version = CURL_HTTP_VERSION_1_1;
-    priv.header_state.accepted = true;
-    priv.header_state.upgraded = true;
+    __http_code                            = 101;
+    __http_version                         = CURL_HTTP_VERSION_1_1;
+    priv.header_state.accepted             = true;
+    priv.header_state.upgraded             = true;
     priv.header_state.connection_websocket = true;
     CU_ASSERT(32 == _header_cb("HTTP/1.1 101  Switching Protocols", 32, 1, &priv));
     CU_ASSERT(false == priv.header_state.accepted);
     CU_ASSERT(false == priv.header_state.upgraded);
     CU_ASSERT(false == priv.header_state.connection_websocket);
 
-    priv.expected_key_header = "foobar";
+    priv.expected_key_header     = "foobar";
     priv.expected_key_header_len = 6;
     CU_ASSERT(false == priv.header_state.accepted);
     CU_ASSERT(30 == _header_cb("Sec-WebSocket-Accept:  foobar ", 30, 1, &priv));
@@ -179,11 +178,11 @@ void test_simple_with_protocols()
     setup_test(&priv);
 
     /* A simple, successful call. */
-    __http_code = 101;
-    __http_version = CURL_HTTP_VERSION_1_1;
-    priv.header_state.accepted = true;
-    priv.header_state.upgraded = true;
-    priv.header_state.connection_websocket = true;
+    __http_code                             = 101;
+    __http_version                          = CURL_HTTP_VERSION_1_1;
+    priv.header_state.accepted              = true;
+    priv.header_state.upgraded              = true;
+    priv.header_state.connection_websocket  = true;
     priv.header_state.ws_protocols_received = cws_strndup("chat", 4);
     CU_ASSERT(32 == _header_cb("HTTP/1.1 101  Switching Protocols", 32, 1, &priv));
     CU_ASSERT(false == priv.header_state.accepted);
@@ -191,7 +190,7 @@ void test_simple_with_protocols()
     CU_ASSERT(false == priv.header_state.connection_websocket);
     CU_ASSERT(NULL == priv.header_state.ws_protocols_received);
 
-    priv.expected_key_header = "foobar";
+    priv.expected_key_header     = "foobar";
     priv.expected_key_header_len = 6;
     CU_ASSERT(false == priv.header_state.accepted);
     CU_ASSERT(30 == _header_cb("Sec-WebSocket-Accept:  foobar ", 30, 1, &priv));
@@ -261,16 +260,16 @@ void test_failures()
     f_tmp = tmpfile();
     CU_ASSERT_FATAL(NULL != f_tmp);
 
-    __http_code = 404;
+    __http_code    = 404;
     __http_version = CURL_HTTP_VERSION_1_1;
     CU_ASSERT(0 == _header_cb("HTTP/1.1 404                  ", 30, 1, &priv));
 
-    __http_code = 101;
+    __http_code    = 101;
     __http_version = CURL_HTTP_VERSION_1_0;
     CU_ASSERT(0 == _header_cb("HTTP/1.0 101                  ", 30, 1, &priv));
 
     /* Back to normal. */
-    __http_code = 101;
+    __http_code    = 101;
     __http_version = CURL_HTTP_VERSION_1_1;
 
     /* Fake header :) */
@@ -282,39 +281,39 @@ void test_failures()
 
     /* This test must be first! */
     /* Less out of bounds, no output. */
-    priv.expected_key_header = "foobar";
+    priv.expected_key_header     = "foobar";
     priv.expected_key_header_len = 6;
-    priv.header_state.accepted = true;
+    priv.header_state.accepted   = true;
     CU_ASSERT(1000 == _header_cb("Sec-WebSocket-Accept:  nobarke123123123...totally_invalid", 1000, 1, &priv));
     CU_ASSERT_FATAL(NULL == fgets(got, sizeof(got), f_tmp));
     CU_ASSERT(false == priv.header_state.accepted);
 
     /* Wrong accept string. */
-    priv.cfg.verbose = 1;
+    priv.cfg.verbose        = 1;
     priv.cfg.verbose_stream = f_tmp;
 
     /* different lengths */
-    priv.expected_key_header = "foobar";
+    priv.expected_key_header     = "foobar";
     priv.expected_key_header_len = 6;
-    priv.header_state.accepted = true;
+    priv.header_state.accepted   = true;
     CU_ASSERT(30 == _header_cb("Sec-WebSocket-Accept:  nobar  ", 30, 1, &priv));
     CU_ASSERT(false == priv.header_state.accepted);
     check_output(f_tmp, "< websocket header received: 30\n",
                  "! websocket header expected (value len=6): 'Sec-WebSocket-Accept: foobar', got (len=5): 'nobar'\n");
 
     /* Way out of bounds. */
-    priv.expected_key_header = "foobar";
+    priv.expected_key_header     = "foobar";
     priv.expected_key_header_len = 6;
-    priv.header_state.accepted = true;
+    priv.header_state.accepted   = true;
     CU_ASSERT(SIZE_MAX == _header_cb("Sec-WebSocket-Accept:  nobarke123123123...totally_invalid", SIZE_MAX, 1, &priv));
     CU_ASSERT(false == priv.header_state.accepted);
     check_output(f_tmp, "< websocket header received: 18446744073709551615\n",
                  "! websocket header expected (value len=6): 'Sec-WebSocket-Accept: foobar', got (len=18446744073709551592): 'nobark...'\n");
 
     /* Less out of bounds. */
-    priv.expected_key_header = "foobar";
+    priv.expected_key_header     = "foobar";
     priv.expected_key_header_len = 6;
-    priv.header_state.accepted = true;
+    priv.header_state.accepted   = true;
     CU_ASSERT(1000 == _header_cb("Sec-WebSocket-Accept:  nobarke123123123...totally_invalid", 1000, 1, &priv));
     CU_ASSERT(false == priv.header_state.accepted);
     check_output(f_tmp, "< websocket header received: 1000\n",
@@ -344,52 +343,51 @@ void test_failures()
 }
 
 
-
-void add_suites( CU_pSuite *suite )
+void add_suites(CU_pSuite *suite)
 {
     struct {
         const char *label;
         void (*fn)(void);
     } tests[] = {
-        { .label = "simple cb Tests               ", .fn = test_simple                },
-        { .label = "simple cb with protocols Tests", .fn = test_simple_with_protocols },
-        { .label = "redirection Tests             ", .fn = test_redirection           },
-        { .label = "failure Tests                 ", .fn = test_failures              },
-        { .label = NULL, .fn = NULL }
+        {.label = "simple cb Tests               ",                .fn = test_simple},
+        {.label = "simple cb with protocols Tests", .fn = test_simple_with_protocols},
+        {.label = "redirection Tests             ",           .fn = test_redirection},
+        {.label = "failure Tests                 ",              .fn = test_failures},
+        {                            .label = NULL,                       .fn = NULL}
     };
     int i;
 
-    *suite = CU_add_suite( "curlws.c tests", NULL, NULL );
+    *suite = CU_add_suite("curlws.c tests", NULL, NULL);
 
     for (i = 0; NULL != tests[i].fn; i++) {
-        CU_add_test( *suite, tests[i].label, tests[i].fn );
+        CU_add_test(*suite, tests[i].label, tests[i].fn);
     }
 }
 
 /*----------------------------------------------------------------------------*/
 /*                             External Functions                             */
 /*----------------------------------------------------------------------------*/
-int main( void )
+int main(void)
 {
-    unsigned rv = 1;
+    unsigned rv     = 1;
     CU_pSuite suite = NULL;
 
-    if( CUE_SUCCESS == CU_initialize_registry() ) {
-        add_suites( &suite );
+    if (CUE_SUCCESS == CU_initialize_registry()) {
+        add_suites(&suite);
 
-        if( NULL != suite ) {
-            CU_basic_set_mode( CU_BRM_VERBOSE );
+        if (NULL != suite) {
+            CU_basic_set_mode(CU_BRM_VERBOSE);
             CU_basic_run_tests();
-            printf( "\n" );
-            CU_basic_show_failures( CU_get_failure_list() );
-            printf( "\n\n" );
+            printf("\n");
+            CU_basic_show_failures(CU_get_failure_list());
+            printf("\n\n");
             rv = CU_get_number_of_tests_failed();
         }
 
         CU_cleanup_registry();
     }
 
-    if( 0 != rv ) {
+    if (0 != rv) {
         return 1;
     }
     return 0;

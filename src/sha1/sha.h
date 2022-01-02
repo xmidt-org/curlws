@@ -1,3 +1,4 @@
+// clang-format off
 /*
  * This code was acquired from:
  * https://github.com/Yubico/yubico-c-client/
@@ -278,3 +279,4 @@ extern int hmacFinalBits (HMACContext * ctx, const uint8_t bits,
 extern int hmacResult (HMACContext * ctx, uint8_t digest[USHAMaxHashSize]);
 
 #endif /* _SHA_H_ */
+// clang-format on

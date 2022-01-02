@@ -1,14 +1,13 @@
 /*
  * SPDX-FileCopyrightText: 2016 Gustavo Sverzut Barbieri
- * SPDX-FileCopyrightText: 2021 Comcast Cable Communications Management, LLC
+ * SPDX-FileCopyrightText: 2021-2022 Comcast Cable Communications Management, LLC
  *
  * SPDX-License-Identifier: MIT
  */
-#include <stdbool.h>
-#include <stdint.h>
-#include <stddef.h>
-
 #include <curlws/curlws.h>
+#include <stdbool.h>
+#include <stddef.h>
+#include <stdint.h>
 
 #include "data_block_sender.h"
 #include "frame_senders.h"
@@ -63,7 +62,7 @@ CWScode data_block_sender(CWS *priv, int options, const void *data, size_t len)
         CWScode rv;
 
         rv = frame_sender_data(priv, options, buffer, priv->cfg.max_payload_size);
-        if (CWSE_OK != rv) {    /* Should only fail if we ran out of memory */
+        if (CWSE_OK != rv) { /* Should only fail if we ran out of memory */
             return rv;
         }
 
@@ -80,4 +79,3 @@ CWScode data_block_sender(CWS *priv, int options, const void *data, size_t len)
 /*                             Internal functions                             */
 /*----------------------------------------------------------------------------*/
 /* none */
-

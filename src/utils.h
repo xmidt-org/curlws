@@ -1,6 +1,6 @@
 /*
  * SPDX-FileCopyrightText: 2016 Gustavo Sverzut Barbieri
- * SPDX-FileCopyrightText: 2021 Comcast Cable Communications Management, LLC
+ * SPDX-FileCopyrightText: 2021-2022 Comcast Cable Communications Management, LLC
  *
  * SPDX-License-Identifier: MIT
  */
@@ -24,7 +24,7 @@
  *
  * @return the pointer to the start of the non-whitespace (or NULL)
  */
-const char* cws_trim(const char *s, size_t *len);
+const char *cws_trim(const char *s, size_t *len);
 
 
 /**
@@ -53,7 +53,7 @@ bool cws_has_prefix(const char *s, const size_t len, const char *prefix);
  *
  * @return the rewritten string.
  */
-char* cws_rewrite_url(const char *url);
+char *cws_rewrite_url(const char *url);
 
 
 /**
@@ -67,14 +67,14 @@ size_t cws_strnlen(const char *s, size_t maxlen);
  * strdup() is a non-standard libc function.  To be most portable, this library
  * provides it's own implementation for this simple function.
  */
-char* cws_strdup(const char *s);
+char *cws_strdup(const char *s);
 
 
 /**
  * strndup() is a non-standard libc function.  To be most portable, this library
  * provides it's own implementation for this simple function.
  */
-char* cws_strndup(const char *s, size_t maxlen);
+char *cws_strndup(const char *s, size_t maxlen);
 
 
 /**
@@ -92,7 +92,7 @@ int cws_strncasecmp(const char *s1, const char *s2, size_t maxlen);
  *
  * @return string = s1 + s2
  */
-char* cws_strmerge(const char *s1, const char *s2);
+char *cws_strmerge(const char *s1, const char *s2);
 
 
 #endif

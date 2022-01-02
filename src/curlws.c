@@ -1,6 +1,6 @@
 /*
  * SPDX-FileCopyrightText: 2016 Gustavo Sverzut Barbieri
- * SPDX-FileCopyrightText: 2021 Comcast Cable Communications Management, LLC
+ * SPDX-FileCopyrightText: 2021-2022 Comcast Cable Communications Management, LLC
  *
  * SPDX-License-Identifier: MIT
  */
@@ -23,16 +23,16 @@
 #include "receive.h"
 #include "send.h"
 #include "sha1.h"
-#include "utils.h"
 #include "utf8.h"
+#include "utils.h"
 #include "verbose.h"
 #include "ws.h"
 
 /*----------------------------------------------------------------------------*/
 /*                                   Macros                                   */
 /*----------------------------------------------------------------------------*/
-#define CURLWS_MIN_VERSION          0x073202
-#define CURLWS_MIN_VERSION_STRING   "7.50.2"
+#define CURLWS_MIN_VERSION        0x073202
+#define CURLWS_MIN_VERSION_STRING "7.50.2"
 
 #if !CURL_AT_LEAST_VERSION(0x07, 0x32, 0x02)
 #error "curl minimum version not met 7.50.2"
@@ -61,18 +61,18 @@
 /*----------------------------------------------------------------------------*/
 /*                             Function Prototypes                            */
 /*----------------------------------------------------------------------------*/
-static CWScode _normalize_close_inputs(int*, int*, const char**, size_t*);
-static int _check_curl_version(const struct cws_config*);
-CWScode _send_stream(CWS*, int, int, const void*, size_t);
-static CURLcode _config_url(CWS*, const struct cws_config*);
-static CURLcode _config_redirects(CWS*, const struct cws_config*);
-static CURLcode _config_security(CWS*, const struct cws_config*);
-static CURLcode _config_verbosity(CWS*, const struct cws_config*);
-static CURLcode _config_ws_workarounds(CWS*, const struct cws_config*);
-static CURLcode _config_memorypool(CWS*, const struct cws_config*);
-static CURLcode _config_ws_key(CWS*);
-static CURLcode _config_ws_protocols(CWS*, const struct cws_config*);
-static CURLcode _config_http_headers(CWS*, const struct cws_config*);
+static CWScode _normalize_close_inputs(int *, int *, const char **, size_t *);
+static int _check_curl_version(const struct cws_config *);
+CWScode _send_stream(CWS *, int, int, const void *, size_t);
+static CURLcode _config_url(CWS *, const struct cws_config *);
+static CURLcode _config_redirects(CWS *, const struct cws_config *);
+static CURLcode _config_security(CWS *, const struct cws_config *);
+static CURLcode _config_verbosity(CWS *, const struct cws_config *);
+static CURLcode _config_ws_workarounds(CWS *, const struct cws_config *);
+static CURLcode _config_memorypool(CWS *, const struct cws_config *);
+static CURLcode _config_ws_key(CWS *);
+static CURLcode _config_ws_protocols(CWS *, const struct cws_config *);
+static CURLcode _config_http_headers(CWS *, const struct cws_config *);
 
 
 /*----------------------------------------------------------------------------*/
@@ -82,7 +82,7 @@ static CURLcode _config_http_headers(CWS*, const struct cws_config*);
 CWS *cws_create(const struct cws_config *config)
 {
     CURLcode status = CURLE_OK;
-    CWS *priv = NULL;
+    CWS *priv       = NULL;
 
     if (!config) {
         return NULL;
@@ -92,7 +92,7 @@ CWS *cws_create(const struct cws_config *config)
         return NULL;
     }
 
-    priv = (CWS*) calloc(1, sizeof(struct cws_object));
+    priv = (CWS *) calloc(1, sizeof(struct cws_object));
     if (!priv) {
         return NULL;
     }
@@ -220,7 +220,7 @@ CWScode cws_close(CWS *priv, int code, const char *reason, size_t len)
 {
     int options;
     CWScode rv;
-    uint8_t buf[WS_CTL_PAYLOAD_MAX];    /* Limited by RFC6455 Section 5.5 */
+    uint8_t buf[WS_CTL_PAYLOAD_MAX]; /* Limited by RFC6455 Section 5.5 */
     uint8_t *p = NULL;
 
     if (!priv || (!reason && (0 < len))) {
@@ -233,10 +233,10 @@ CWScode cws_close(CWS *priv, int code, const char *reason, size_t len)
     }
 
     if (code) {
-        p = buf;
+        p    = buf;
         *p++ = (uint8_t) (0x00ff & (code >> 8));
         *p++ = (uint8_t) (0x00ff & code);
-        
+
         if (len) {
             memcpy(p, reason, len);
         }
@@ -315,9 +315,9 @@ CWScode cws_send_strm_text(CWS *priv, int info, const char *s, size_t len)
 static CWScode _normalize_close_inputs(int *_code, int *_opts,
                                        const char **_reason, size_t *_len)
 {
-    int opts = CWS_CLOSE;
-    int code = *_code;
-    size_t len = *_len;
+    int opts           = CWS_CLOSE;
+    int code           = *_code;
+    size_t len         = *_len;
     const char *reason = *_reason;
 
     /* Handle the urgent version */
@@ -327,7 +327,7 @@ static CWScode _normalize_close_inputs(int *_code, int *_opts,
         if (-1 == code) {
             code = 0;
         } else {
-            code = 0 - code;    /* Convert to positive */
+            code = 0 - code; /* Convert to positive */
         }
     }
 
@@ -363,9 +363,9 @@ static CWScode _normalize_close_inputs(int *_code, int *_opts,
     }
 
     /* Transfer the results back only if successful */
-    *_code = code;
-    *_len = len;
-    *_opts = opts;
+    *_code   = code;
+    *_len    = len;
+    *_opts   = opts;
     *_reason = reason;
 
     return CWSE_OK;
@@ -375,7 +375,7 @@ static CWScode _normalize_close_inputs(int *_code, int *_opts,
 static int _check_curl_version(const struct cws_config *config)
 {
     const curl_version_info_data *curl_ver = NULL;
-    curl_ver = curl_version_info(CURLVERSION_NOW);
+    curl_ver                               = curl_version_info(CURLVERSION_NOW);
 
     if (curl_ver->version_num < CURLWS_MIN_VERSION) {
         if (config->verbose) {
@@ -385,9 +385,11 @@ static int _check_curl_version(const struct cws_config *config)
                 err = config->verbose_stream;
             }
 
-            fprintf(err, "ERROR: CURL version '%s'. At least '%s' is required "
-                         "for curlws to work reliably\n", curl_ver->version,
-                         CURLWS_MIN_VERSION_STRING);
+            fprintf(err,
+                    "ERROR: CURL version '%s'. At least '%s' is required "
+                    "for curlws to work reliably\n",
+                    curl_ver->version,
+                    CURLWS_MIN_VERSION_STRING);
         }
         return -1;
     }
@@ -465,7 +467,6 @@ static CURLcode _config_security(CWS *priv, const struct cws_config *config)
     /* Force a reasonably modern version of TLS */
     return curl_easy_setopt(priv->easy, CURLOPT_SSLVERSION, CURL_SSLVERSION_MAX_DEFAULT);
 }
-
 
 
 static CURLcode _config_verbosity(CWS *priv, const struct cws_config *config)
@@ -572,7 +573,7 @@ static CURLcode _config_memorypool(CWS *priv, const struct cws_config *config)
     /* The largest frame size, so allocate this amount. */
     max_payload_size = priv->cfg.max_payload_size + WS_FRAME_HEADER_MAX;
 
-    priv->mem_cfg.data_block_size = send_get_memory_needed(max_payload_size);
+    priv->mem_cfg.data_block_size    = send_get_memory_needed(max_payload_size);
     priv->mem_cfg.control_block_size = send_get_memory_needed(WS_CTL_FRAME_MAX);
 
     priv->mem = mem_init_pool(&priv->mem_cfg);
@@ -583,16 +584,16 @@ static CURLcode _config_memorypool(CWS *priv, const struct cws_config *config)
 
 static CURLcode _config_ws_key(CWS *priv)
 {
-    CURLcode rv = ~CURLE_OK;
-    const char guid[] = "258EAFA5-E914-47DA-95CA-C5AB0DC85B11";
+    CURLcode rv         = ~CURLE_OK;
+    const char guid[]   = "258EAFA5-E914-47DA-95CA-C5AB0DC85B11";
     const char header[] = "Sec-WebSocket-Key: ";
 
     uint8_t sha1_md[20];
     uint8_t random_value[16];
     struct curl_slist *tmp = NULL;
-    char *b64_key = NULL;
-    char *combined = NULL;
-    char *send = NULL;
+    char *b64_key          = NULL;
+    char *combined         = NULL;
+    char *send             = NULL;
 
     cws_random(priv, random_value, sizeof(random_value));
 
@@ -601,7 +602,7 @@ static CURLcode _config_ws_key(CWS *priv)
         return rv;
     }
 
-    send = cws_strmerge(header, b64_key);
+    send     = cws_strmerge(header, b64_key);
     combined = cws_strmerge(b64_key, guid);
     if (!send || !combined) {
         goto err;
@@ -624,13 +625,13 @@ static CURLcode _config_ws_key(CWS *priv)
 
 err:
     if (b64_key) {
-        free( b64_key );
+        free(b64_key);
     }
     if (combined) {
-        free( combined );
+        free(combined);
     }
     if (send) {
-        free( send );
+        free(send);
     }
 
     return rv;
@@ -683,12 +684,12 @@ static CURLcode _config_http_headers(CWS *priv, const struct cws_config *config)
         "Upgrade:"
     };
     const char *ws_headers[] = {
-         "Connection: Upgrade",
-         "Upgrade: websocket",
-         "Sec-WebSocket-Version: 13",
+        "Connection: Upgrade",
+        "Upgrade: websocket",
+        "Sec-WebSocket-Version: 13",
     };
-    CURLcode rv = CURLE_OK;
-    struct curl_slist *p = NULL;
+    CURLcode rv              = CURLE_OK;
+    struct curl_slist *p     = NULL;
     struct curl_slist *extra = NULL;
 
     /* Add the required headers */
@@ -716,7 +717,7 @@ static CURLcode _config_http_headers(CWS *priv, const struct cws_config *config)
             return ~CURLE_OK;
         }
         priv->headers = p;
-        extra = extra->next;
+        extra         = extra->next;
     }
 
     rv |= curl_easy_setopt(priv->easy, CURLOPT_HTTPHEADER, priv->headers);

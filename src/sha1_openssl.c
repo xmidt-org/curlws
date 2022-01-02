@@ -1,12 +1,11 @@
 /*
  * SPDX-FileCopyrightText: 2016 Gustavo Sverzut Barbieri
- * SPDX-FileCopyrightText: 2021 Comcast Cable Communications Management, LLC
+ * SPDX-FileCopyrightText: 2021-2022 Comcast Cable Communications Management, LLC
  *
  * SPDX-License-Identifier: MIT
  */
-#include <stddef.h>
-
 #include <openssl/evp.h>
+#include <stddef.h>
 
 /*----------------------------------------------------------------------------*/
 /*                                   Macros                                   */
@@ -33,7 +32,7 @@
 /*----------------------------------------------------------------------------*/
 int cws_sha1(const void *in, size_t len, void *out)
 {
-    int rv = -1;
+    int rv          = -1;
     EVP_MD_CTX *ctx = EVP_MD_CTX_create();
 
     if (ctx
@@ -56,4 +55,3 @@ int cws_sha1(const void *in, size_t len, void *out)
 /*                             Internal functions                             */
 /*----------------------------------------------------------------------------*/
 /* none */
-

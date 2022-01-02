@@ -1,6 +1,6 @@
 /*
  * SPDX-FileCopyrightText: 2016 Gustavo Sverzut Barbieri
- * SPDX-FileCopyrightText: 2021 Comcast Cable Communications Management, LLC
+ * SPDX-FileCopyrightText: 2021-2022 Comcast Cable Communications Management, LLC
  *
  * SPDX-License-Identifier: MIT
  */
@@ -22,12 +22,12 @@
 /*----------------------------------------------------------------------------*/
 #define IGNORE_UNUSED(x) (void) x
 
-#define CLOSE_RECEIVED      0x0010
-#define CLOSE_QUEUED        0x0020
-#define CLOSE_SENT          0x0040
-#define CLOSED              0x0080
-#define READY_TO_CLOSE(x)   \
-    ((CLOSE_SENT|CLOSE_RECEIVED) == ((CLOSED|CLOSE_SENT|CLOSE_RECEIVED) & x))
+#define CLOSE_RECEIVED 0x0010
+#define CLOSE_QUEUED   0x0020
+#define CLOSE_SENT     0x0040
+#define CLOSED         0x0080
+#define READY_TO_CLOSE(x) \
+    ((CLOSE_SENT | CLOSE_RECEIVED) == ((CLOSED | CLOSE_SENT | CLOSE_RECEIVED) & x))
 
 /*----------------------------------------------------------------------------*/
 /*                               Data Structures                              */
@@ -58,13 +58,13 @@ struct cfg_set {
 /* The callback functions used.  These will be called without NULL
  * checking as the library expects to use default values. */
 struct callbacks {
-    int (*on_connect_fn)(void*, CWS*, const char*);
-    int (*on_text_fn)(void*, CWS*, const char*, size_t);
-    int (*on_binary_fn)(void*, CWS*, const void*, size_t);
-    int (*on_fragment_fn)(void*, CWS*, int, const void*, size_t);
-    int (*on_ping_fn)(void*, CWS*, const void*, size_t);
-    int (*on_pong_fn)(void*, CWS*, const void*, size_t);
-    int (*on_close_fn)(void*, CWS*, int, const char*, size_t);
+    int (*on_connect_fn)(void *, CWS *, const char *);
+    int (*on_text_fn)(void *, CWS *, const char *, size_t);
+    int (*on_binary_fn)(void *, CWS *, const void *, size_t);
+    int (*on_fragment_fn)(void *, CWS *, int, const void *, size_t);
+    int (*on_ping_fn)(void *, CWS *, const void *, size_t);
+    int (*on_pong_fn)(void *, CWS *, const void *, size_t);
+    int (*on_close_fn)(void *, CWS *, int, const char *, size_t);
 };
 
 struct recv {
@@ -72,7 +72,7 @@ struct recv {
     int stream_type;
     int fragment_info;
 
-    struct utf8_buffer {    
+    struct utf8_buffer {
         char buf[MAX_UTF_BYTES];
         size_t used;
         size_t needed;
@@ -162,4 +162,3 @@ struct cws_object {
 /* none */
 
 #endif
-

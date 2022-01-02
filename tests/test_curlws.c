@@ -1,54 +1,53 @@
 /*
- * SPDX-FileCopyrightText: 2021 Comcast Cable Communications Management, LLC
+ * SPDX-FileCopyrightText: 2021-2022 Comcast Cable Communications Management, LLC
  *
  * SPDX-License-Identifier: MIT
  */
+#include <CUnit/Basic.h>
+#include <curl/curl.h>
+#include <curlws/curlws.h>
 #include <stdbool.h>
 #include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 
-#include <CUnit/Basic.h>
-#include <curl/curl.h>
-#include <curlws/curlws.h>
 
-
-#include "../src/internal.h"
 #include "../src/frame_senders.h"
+#include "../src/internal.h"
 
 #include "curlws_mocks.c"
 
-#define validate_and_reset(...)                     \
-do {                                                \
-    const char *test[] = {__VA_ARGS__};             \
-    curl_slist_compare(__curl_easy_setopt, test);   \
-    curl_slist_free_all(__curl_easy_setopt);        \
-    __curl_easy_setopt = NULL;                      \
-} while(0)
+#define validate_and_reset(...)                       \
+    do {                                              \
+        const char *test[] = { __VA_ARGS__ };         \
+        curl_slist_compare(__curl_easy_setopt, test); \
+        curl_slist_free_all(__curl_easy_setopt);      \
+        __curl_easy_setopt = NULL;                    \
+    } while (0)
 
-#define reset_setopt()                          \
-do {                                            \
-    curl_slist_free_all(__curl_easy_setopt);    \
-    __curl_easy_setopt = NULL;                  \
-} while(0)
+#define reset_setopt()                           \
+    do {                                         \
+        curl_slist_free_all(__curl_easy_setopt); \
+        __curl_easy_setopt = NULL;               \
+    } while (0)
 
-#define str(s) #s
+#define str(s)  #s
 #define xstr(s) str(s)
 
 /* See curlws.c for details, but this is the same logic. */
 #if !CURL_AT_LEAST_VERSION(0x07, 0x36, 0x00)
 /* If before curl 7.54.0 then the best TLS available is 1.3 */
-#define MY_CURL_SSLVERSION_TLS  7
+#define MY_CURL_SSLVERSION_TLS 7
 #elif !CURL_AT_LEAST_VERSION(0x07, 0x34, 0x00)
 /* If before curl 7.52.0 then the best TLS available is 1.2 */
-#define MY_CURL_SSLVERSION_TLS  6
+#define MY_CURL_SSLVERSION_TLS 6
 #else
 /* The latest version */
-#define MY_CURL_SSLVERSION_TLS  65536
+#define MY_CURL_SSLVERSION_TLS 65536
 #endif
 
-#define MY_HTTP_VERSION         2
+#define MY_HTTP_VERSION 2
 
 int __my_cfg_fn_seen = 0;
 CURLcode my_cfg_fn(void *user, CWS *handle, CURL *easy)
@@ -76,16 +75,16 @@ void test_create_curl_version()
     f_tmp = tmpfile();
     CU_ASSERT_FATAL(NULL != f_tmp);
 
-    __curl_info_test_value = true;
+    __curl_info_test_value  = true;
     __curl_info.version_num = 0x060000;
-    __curl_info.version = "6.0.0";
+    __curl_info.version     = "6.0.0";
 
     ws = cws_create(&cfg);
     CU_ASSERT(NULL == ws);
     reset_setopt();
 
     cfg.verbose_stream = f_tmp;
-    cfg.verbose = 1;
+    cfg.verbose        = 1;
 
     ws = cws_create(&cfg);
     CU_ASSERT(NULL == ws);
@@ -97,8 +96,9 @@ void test_create_curl_version()
     fclose(f_tmp);
     f_tmp = NULL;
 
-    CU_ASSERT_STRING_EQUAL(got, "ERROR: CURL version '6.0.0'. At least '7.50.2' "
-                                "is required for curlws to work reliably\n");
+    CU_ASSERT_STRING_EQUAL(got,
+                           "ERROR: CURL version '6.0.0'. At least '7.50.2' "
+                           "is required for curlws to work reliably\n");
 
     __curl_info_test_value = false;
 }
@@ -123,13 +123,13 @@ void test_create_verbose()
 
     /* Invalid verbose options */
     cfg.verbose = -1;
-    ws = cws_create(&cfg);
+    ws          = cws_create(&cfg);
     CU_ASSERT(NULL == ws);
     reset_setopt();
 
     /* Valid options */
     cfg.verbose = 1;
-    ws = cws_create(&cfg);
+    ws          = cws_create(&cfg);
     CU_ASSERT_FATAL(NULL != ws);
     cws_destroy(ws);
     validate_and_reset(
@@ -146,11 +146,11 @@ void test_create_verbose()
         "Upgrade: websocket",
         "Sec-WebSocket-Version: 13");
 
-    cfg.verbose = 1;
-    cfg.verbose_stream = (FILE*) 0x1234;
-    ws = cws_create(&cfg);
+    cfg.verbose        = 1;
+    cfg.verbose_stream = (FILE *) 0x1234;
+    ws                 = cws_create(&cfg);
     CU_ASSERT_FATAL(NULL != ws);
-    CU_ASSERT((FILE*) 0x1234 == ws->cfg.verbose_stream);
+    CU_ASSERT((FILE *) 0x1234 == ws->cfg.verbose_stream);
     cws_destroy(ws);
     validate_and_reset(
         "CURLOPT_URL            : https://example.com",
@@ -167,11 +167,11 @@ void test_create_verbose()
         "Sec-WebSocket-Version: 13");
 
 
-    cfg.verbose = 2;
-    cfg.verbose_stream = (FILE*) 0x1234;
-    ws = cws_create(&cfg);
+    cfg.verbose        = 2;
+    cfg.verbose_stream = (FILE *) 0x1234;
+    ws                 = cws_create(&cfg);
     CU_ASSERT_FATAL(NULL != ws);
-    CU_ASSERT((FILE*) 0x1234 == ws->cfg.verbose_stream);
+    CU_ASSERT((FILE *) 0x1234 == ws->cfg.verbose_stream);
     cws_destroy(ws);
     validate_and_reset(
         "CURLOPT_URL            : https://example.com",
@@ -189,9 +189,9 @@ void test_create_verbose()
         "Upgrade: websocket",
         "Sec-WebSocket-Version: 13");
 
-    cfg.verbose = 3;
+    cfg.verbose        = 3;
     cfg.verbose_stream = NULL;
-    ws = cws_create(&cfg);
+    ws                 = cws_create(&cfg);
     CU_ASSERT_FATAL(NULL != ws);
     cws_destroy(ws);
     validate_and_reset(
@@ -209,9 +209,9 @@ void test_create_verbose()
         "Upgrade: websocket",
         "Sec-WebSocket-Version: 13");
 
-    cfg.verbose = 11;
+    cfg.verbose        = 11;
     cfg.verbose_stream = NULL;
-    ws = cws_create(&cfg);
+    ws                 = cws_create(&cfg);
     CU_ASSERT_FATAL(NULL != ws);
     CU_ASSERT(3 == ws->cfg.verbose);
     cws_destroy(ws);
@@ -232,7 +232,7 @@ void test_create_verbose()
 
 
     cfg.verbose = 0;
-    ws = cws_create(&cfg);
+    ws          = cws_create(&cfg);
     CU_ASSERT_FATAL(NULL != ws);
     cws_destroy(ws);
     validate_and_reset(
@@ -248,8 +248,6 @@ void test_create_verbose()
         "Connection: Upgrade",
         "Upgrade: websocket",
         "Sec-WebSocket-Version: 13");
-
-
 }
 
 void test_create_easy_init_fail()
@@ -257,7 +255,7 @@ void test_create_easy_init_fail()
     CWS *ws;
     struct cws_config cfg;
     struct mock_curl_easy_init test = {
-        .rv = NULL,
+        .rv   = NULL,
         .seen = 0,
         .more = 0,
     };
@@ -267,7 +265,7 @@ void test_create_easy_init_fail()
     reset_setopt();
 
     __curl_easy_init = &test;
-    ws = cws_create(&cfg);
+    ws               = cws_create(&cfg);
     CU_ASSERT(NULL == ws);
     reset_setopt();
 }
@@ -291,7 +289,7 @@ void test_create_basic()
 
     /* A minimal, but reasonable case. */
     cfg.url = "wss://example.com";
-    ws = cws_create(&cfg);
+    ws      = cws_create(&cfg);
     CU_ASSERT_FATAL(NULL != ws);
 
     /* Validate the expected header based on a fixed random number */
@@ -326,8 +324,8 @@ void test_create_config_cb()
 
     /* Checking the config callback works */
     __my_cfg_fn_seen = 0;
-    cfg.configure = my_cfg_fn;
-    ws = cws_create(&cfg);
+    cfg.configure    = my_cfg_fn;
+    ws               = cws_create(&cfg);
     CU_ASSERT_FATAL(NULL != ws);
     cws_destroy(ws);
     validate_and_reset(
@@ -359,13 +357,13 @@ void test_create_redirect()
 
     /* Invalid redirect count */
     cfg.max_redirects = -2;
-    ws = cws_create(&cfg);
+    ws                = cws_create(&cfg);
     CU_ASSERT(NULL == ws);
     reset_setopt();
 
     /* Valid redirect count (unlimited) */
     cfg.max_redirects = -1;
-    ws = cws_create(&cfg);
+    ws                = cws_create(&cfg);
     CU_ASSERT_FATAL(NULL != ws);
     cws_destroy(ws);
     validate_and_reset(
@@ -386,7 +384,7 @@ void test_create_redirect()
 
     /* Valid redirect count (fixed) */
     cfg.max_redirects = 10;
-    ws = cws_create(&cfg);
+    ws                = cws_create(&cfg);
     CU_ASSERT_FATAL(NULL != ws);
     cws_destroy(ws);
     validate_and_reset(
@@ -418,7 +416,7 @@ void test_create_ws_protos()
 
     /* Websocket_protocols are not NULL */
     cfg.websocket_protocols = "chat";
-    ws = cws_create(&cfg);
+    ws                      = cws_create(&cfg);
     CU_ASSERT_FATAL(NULL != ws);
     CU_ASSERT_STRING_EQUAL(ws->cfg.ws_protocols_requested, "chat");
     cws_destroy(ws);
@@ -451,13 +449,13 @@ void test_create_expect()
 
     /* expect invalid */
     cfg.expect = -1;
-    ws = cws_create(&cfg);
+    ws         = cws_create(&cfg);
     CU_ASSERT_FATAL(NULL == ws);
     reset_setopt();
 
     /* Valid expect */
     cfg.expect = 1;
-    ws = cws_create(&cfg);
+    ws         = cws_create(&cfg);
     CU_ASSERT_FATAL(NULL != ws);
     cws_destroy(ws);
     validate_and_reset(
@@ -488,7 +486,7 @@ void test_create_payload_size()
 
     /* Valid max payload size */
     cfg.max_payload_size = 10;
-    ws = cws_create(&cfg);
+    ws                   = cws_create(&cfg);
     CU_ASSERT_FATAL(NULL != ws);
     cws_destroy(ws);
     cfg.max_payload_size = 0;
@@ -532,7 +530,7 @@ void test_create_extra_headers()
 
     /* Valid headers */
     cfg.extra_headers = curl_slist_append(cfg.extra_headers, "Safe: header");
-    ws = cws_create(&cfg);
+    ws                = cws_create(&cfg);
     CU_ASSERT_FATAL(NULL != ws);
     cws_destroy(ws);
     validate_and_reset(
@@ -551,7 +549,7 @@ void test_create_extra_headers()
         "Safe: header");
 
     cfg.extra_headers = curl_slist_append(cfg.extra_headers, "Extra-Safe: header");
-    ws = cws_create(&cfg);
+    ws                = cws_create(&cfg);
     CU_ASSERT_FATAL(NULL != ws);
     cws_destroy(ws);
     validate_and_reset(
@@ -570,13 +568,13 @@ void test_create_extra_headers()
         "Safe: header",
         "Extra-Safe: header");
 
-    for (size_t i = 0; i < sizeof(invalid)/sizeof(char*); i++) {
+    for (size_t i = 0; i < sizeof(invalid) / sizeof(char *); i++) {
         /* Invalid headers */
         curl_slist_free_all(cfg.extra_headers);
         cfg.extra_headers = NULL;
 
         cfg.extra_headers = curl_slist_append(cfg.extra_headers, invalid[i]);
-        ws = cws_create(&cfg);
+        ws                = cws_create(&cfg);
         if (NULL != ws) {
             printf("Expected failure, but it passed: '%s'\n", invalid[i]);
         }
@@ -599,7 +597,7 @@ void test_destroy_failures()
 
 
     /* Simulate a failure during creation. */
-    ws = (CWS*) calloc(1, sizeof(CWS));
+    ws = (CWS *) calloc(1, sizeof(CWS));
     CU_ASSERT_FATAL(NULL != ws);
     cws_destroy(ws);
 
@@ -607,9 +605,9 @@ void test_destroy_failures()
     cws_destroy(NULL);
 
     /* Make sure we bail without cleaning up when dispatching. */
-    ws = (CWS*) calloc(1, sizeof(CWS));
+    ws = (CWS *) calloc(1, sizeof(CWS));
     CU_ASSERT_FATAL(NULL != ws);
-    ws->dispatching = 1;
+    ws->dispatching                        = 1;
     ws->header_state.ws_protocols_received = cws_strdup("data");
     cws_destroy(ws);
     CU_ASSERT(NULL != ws->header_state.ws_protocols_received);
@@ -626,6 +624,7 @@ void test_close()
         "--------------------------------------------------"
         "--------------------------------------------------";
     CWS ws;
+    // clang-format off
     struct mock_sender test[] = {
         { .options = CWS_CLOSE,              .data = "\x03\xe9goodbye", .len = 9, .rv = CWSE_OK, .seen = 0, .more = 1 },
         { .options = CWS_CLOSE,              .data = NULL,              .len = 0, .rv = CWSE_OK, .seen = 0, .more = 1 },
@@ -634,6 +633,7 @@ void test_close()
         { .options = CWS_CLOSE | CWS_URGENT, .data = NULL,              .len = 0, .rv = CWSE_OK, .seen = 0, .more = 1 },
         { .options = CWS_CLOSE | CWS_URGENT, .data = NULL,              .len = 0, .rv = CWSE_OK, .seen = 0, .more = 0 },
     };
+    // clang-format on
 
     memset(&ws, 0, sizeof(CWS));
     __frame_sender_control = &test[0];
@@ -663,12 +663,14 @@ void test_ping_pong()
     CWS ws;
     memset(&ws, 0, sizeof(CWS));
 
+    // clang-format off
     struct mock_sender test[] = {
         { .options = CWS_PING, .data = NULL,    .len = 0, .rv = CWSE_OK, .seen = 0, .more = 1 },
         { .options = CWS_PONG, .data = NULL,    .len = 0, .rv = CWSE_OK, .seen = 0, .more = 1 },
         { .options = CWS_PING, .data = "bingo", .len = 5, .rv = CWSE_OK, .seen = 0, .more = 1 },
         { .options = CWS_PONG, .data = "bongo", .len = 5, .rv = CWSE_OK, .seen = 0, .more = 0 },
     };
+    // clang-format on
     __frame_sender_control = &test[0];
 
     CU_ASSERT(CWSE_BAD_FUNCTION_ARGUMENT == cws_ping(NULL, NULL, 0));
@@ -685,6 +687,7 @@ void test_send_blk()
     CWS ws;
     memset(&ws, 0, sizeof(CWS));
 
+    // clang-format off
     struct mock_sender test[] = {
         { .options = CWS_BINARY, .data = "random data", .len = 11, .rv = CWSE_OK, .seen = 0, .more = 1 },
         { .options = CWS_BINARY, .data = NULL,          .len =  0, .rv = CWSE_OK, .seen = 0, .more = 2 },
@@ -694,6 +697,7 @@ void test_send_blk()
         { .options = CWS_TEXT,   .data = NULL,          .len =  0, .rv = CWSE_OK, .seen = 0, .more = 6 },
         { .options = CWS_TEXT,   .data = NULL,          .len =  0, .rv = CWSE_OK, .seen = 0, .more = 0 },
     };
+    // clang-format on
     __data_block_sender = &test[0];
 
     CU_ASSERT(CWSE_BAD_FUNCTION_ARGUMENT == cws_send_blk_binary(NULL, NULL, 0));
@@ -719,6 +723,7 @@ void test_bin_stream()
     CWS ws;
     memset(&ws, 0, sizeof(CWS));
 
+    // clang-format off
     struct mock_sender test[] = {
         { .options = CWS_BINARY | CWS_FIRST | CWS_LAST, .data = "hi",  .len = 2, .rv = CWSE_OK, .seen = 0, .more = 1 },
         { .options = CWS_BINARY | CWS_FIRST | CWS_LAST, .data = NULL,  .len = 0, .rv = CWSE_OK, .seen = 0, .more = 2 },
@@ -727,14 +732,15 @@ void test_bin_stream()
         { .options = CWS_CONT,                          .data = "mid", .len = 3, .rv = CWSE_OK, .seen = 0, .more = 5 },
         { .options = CWS_CONT               | CWS_LAST, .data = "bye", .len = 3, .rv = CWSE_OK, .seen = 0, .more = 0 },
     };
+    // clang-format on
     __frame_sender_data = &test[0];
 
     CU_ASSERT(CWSE_BAD_FUNCTION_ARGUMENT == cws_send_strm_binary(NULL, 0, NULL, 0));
-    CU_ASSERT(CWSE_BAD_FUNCTION_ARGUMENT == cws_send_strm_binary(&ws, CWS_FIRST|CWS_LAST, NULL, 2));
+    CU_ASSERT(CWSE_BAD_FUNCTION_ARGUMENT == cws_send_strm_binary(&ws, CWS_FIRST | CWS_LAST, NULL, 2));
     CU_ASSERT(CWSE_STREAM_CONTINUITY_ISSUE == cws_send_strm_binary(&ws, 0, NULL, 0));
-    CU_ASSERT(CWSE_OK == cws_send_strm_binary(&ws, CWS_FIRST|CWS_LAST, "hi", 2));
-    CU_ASSERT(CWSE_OK == cws_send_strm_binary(&ws, CWS_FIRST|CWS_LAST, "hi", 0));
-    CU_ASSERT(CWSE_OK == cws_send_strm_binary(&ws, CWS_FIRST|CWS_LAST, NULL, 0));
+    CU_ASSERT(CWSE_OK == cws_send_strm_binary(&ws, CWS_FIRST | CWS_LAST, "hi", 2));
+    CU_ASSERT(CWSE_OK == cws_send_strm_binary(&ws, CWS_FIRST | CWS_LAST, "hi", 0));
+    CU_ASSERT(CWSE_OK == cws_send_strm_binary(&ws, CWS_FIRST | CWS_LAST, NULL, 0));
 
     /* A bit of a workaround since we mocked out the code that handles this */
     ws.last_sent_data_frame_info = CWS_BINARY;
@@ -751,6 +757,7 @@ void test_txt_stream()
     CWS ws;
     memset(&ws, 0, sizeof(CWS));
 
+    // clang-format off
     struct mock_sender test[] = {
         { .options = CWS_TEXT   | CWS_FIRST | CWS_LAST, .data = "hi",  .len = 2, .rv = CWSE_OK, .seen = 0, .more = 1 },
         { .options = CWS_TEXT   | CWS_FIRST | CWS_LAST, .data = "hi",  .len = 2, .rv = CWSE_OK, .seen = 0, .more = 2 },
@@ -760,16 +767,17 @@ void test_txt_stream()
         { .options = CWS_CONT,                          .data = "mid", .len = 3, .rv = CWSE_OK, .seen = 0, .more = 6 },
         { .options = CWS_CONT               | CWS_LAST, .data = "bye", .len = 3, .rv = CWSE_OK, .seen = 0, .more = 0 },
     };
+    // clang-format on
     __frame_sender_data = &test[0];
 
     CU_ASSERT(CWSE_BAD_FUNCTION_ARGUMENT == cws_send_strm_text(NULL, 0, NULL, 0));
-    CU_ASSERT(CWSE_BAD_FUNCTION_ARGUMENT == cws_send_strm_text(&ws, CWS_FIRST|CWS_LAST, NULL, 2));
-    CU_ASSERT(CWSE_INVALID_UTF8 == cws_send_strm_text(&ws, CWS_FIRST|CWS_LAST, "\xc2w", 2));
+    CU_ASSERT(CWSE_BAD_FUNCTION_ARGUMENT == cws_send_strm_text(&ws, CWS_FIRST | CWS_LAST, NULL, 2));
+    CU_ASSERT(CWSE_INVALID_UTF8 == cws_send_strm_text(&ws, CWS_FIRST | CWS_LAST, "\xc2w", 2));
     CU_ASSERT(CWSE_STREAM_CONTINUITY_ISSUE == cws_send_strm_text(&ws, 0, NULL, 0));
-    CU_ASSERT(CWSE_OK == cws_send_strm_text(&ws, CWS_FIRST|CWS_LAST, "hi", SIZE_MAX));
-    CU_ASSERT(CWSE_OK == cws_send_strm_text(&ws, CWS_FIRST|CWS_LAST, "hi", 2));
-    CU_ASSERT(CWSE_OK == cws_send_strm_text(&ws, CWS_FIRST|CWS_LAST, "hi", 0));
-    CU_ASSERT(CWSE_OK == cws_send_strm_text(&ws, CWS_FIRST|CWS_LAST, NULL, 0));
+    CU_ASSERT(CWSE_OK == cws_send_strm_text(&ws, CWS_FIRST | CWS_LAST, "hi", SIZE_MAX));
+    CU_ASSERT(CWSE_OK == cws_send_strm_text(&ws, CWS_FIRST | CWS_LAST, "hi", 2));
+    CU_ASSERT(CWSE_OK == cws_send_strm_text(&ws, CWS_FIRST | CWS_LAST, "hi", 0));
+    CU_ASSERT(CWSE_OK == cws_send_strm_text(&ws, CWS_FIRST | CWS_LAST, NULL, 0));
 
     /* A bit of a workaround since we mocked out the code that handles this */
     ws.last_sent_data_frame_info = CWS_BINARY;
@@ -796,13 +804,13 @@ void test_multi_handles()
 }
 
 
-
-void add_suites( CU_pSuite *suite )
+void add_suites(CU_pSuite *suite)
 {
     struct {
         const char *label;
         void (*fn)(void);
     } tests[] = {
+        // clang-format off
         { .label = "create: basic Tests",         .fn = test_create_basic          },
         { .label = "create: config cb Tests",     .fn = test_create_config_cb      },
         { .label = "create: redirect Tests",      .fn = test_create_redirect       },
@@ -821,6 +829,7 @@ void add_suites( CU_pSuite *suite )
         { .label = "txt stream Tests",      .fn = test_txt_stream     },
         { .label = "multi handles Tests",   .fn = test_multi_handles  },
         { .label = NULL, .fn = NULL }
+    // clang-format off
     };
     int i;
 

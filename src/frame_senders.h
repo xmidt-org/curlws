@@ -1,6 +1,6 @@
 /*
  * SPDX-FileCopyrightText: 2016 Gustavo Sverzut Barbieri
- * SPDX-FileCopyrightText: 2021 Comcast Cable Communications Management, LLC
+ * SPDX-FileCopyrightText: 2021-2022 Comcast Cable Communications Management, LLC
  *
  * SPDX-License-Identifier: MIT
  */
@@ -12,12 +12,12 @@
 
 #include <curlws/curlws.h>
 
-#define CWS_CLOSE           0x00010000
-#define CWS_PING            0x00020000
-#define CWS_PONG            0x00040000
-#define CWS_CTRL_MASK       (CWS_CLOSE|CWS_PING|CWS_PONG)
-#define CWS_NONCTRL_MASK    (CWS_CONT|CWS_BINARY|CWS_TEXT)
-#define CWS_URGENT          0x04000000
+#define CWS_CLOSE        0x00010000
+#define CWS_PING         0x00020000
+#define CWS_PONG         0x00040000
+#define CWS_CTRL_MASK    (CWS_CLOSE | CWS_PING | CWS_PONG)
+#define CWS_NONCTRL_MASK (CWS_CONT | CWS_BINARY | CWS_TEXT)
+#define CWS_URGENT       0x04000000
 
 /**
  * Used to send a control frame.
@@ -63,4 +63,3 @@ CWScode frame_sender_control(CWS *priv, int options, const void *data, size_t le
 CWScode frame_sender_data(CWS *priv, int options, const void *data, size_t len);
 
 #endif
-

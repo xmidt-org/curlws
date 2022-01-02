@@ -25,4 +25,3 @@ void cb_on_pong(CWS *priv, const void *buf, size_t len);
 void cb_on_close(CWS *priv, int code, const char *text, size_t len);
 
 #endif
-

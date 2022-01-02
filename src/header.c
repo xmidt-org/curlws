@@ -1,13 +1,13 @@
 /*
  * SPDX-FileCopyrightText: 2016 Gustavo Sverzut Barbieri
- * SPDX-FileCopyrightText: 2021 Comcast Cable Communications Management, LLC
+ * SPDX-FileCopyrightText: 2021-2022 Comcast Cable Communications Management, LLC
  *
  * SPDX-License-Identifier: MIT
  */
 #include <stdbool.h>
 #include <stddef.h>
-#include <stdlib.h>
 #include <stdio.h>
+#include <stdlib.h>
 #include <string.h>
 
 #include <curl/curl.h>
@@ -38,12 +38,12 @@ typedef struct header_checker {
 /*----------------------------------------------------------------------------*/
 /*                             Function Prototypes                            */
 /*----------------------------------------------------------------------------*/
-static size_t _header_cb(const char*, size_t, size_t, void*);
-static void _check_accept(CWS*, const char*, size_t);
-static void _check_protocol(CWS*, const char*, size_t);
-static void _check_upgrade(CWS*, const char*, size_t);
-static void _check_connection(CWS*, const char*, size_t);
-static void _output_header_error(CWS*, const char*, const char*, size_t, const char*, size_t);
+static size_t _header_cb(const char *, size_t, size_t, void *);
+static void _check_accept(CWS *, const char *, size_t);
+static void _check_protocol(CWS *, const char *, size_t);
+static void _check_upgrade(CWS *, const char *, size_t);
+static void _check_connection(CWS *, const char *, size_t);
+static void _output_header_error(CWS *, const char *, const char *, size_t, const char *, size_t);
 
 /*----------------------------------------------------------------------------*/
 /*                             External Functions                             */
@@ -52,8 +52,8 @@ static void _output_header_error(CWS*, const char*, const char*, size_t, const c
 CURLcode header_init(CWS *priv)
 {
     CURLcode rv;
-    
-    rv  = curl_easy_setopt(priv->easy, CURLOPT_HEADERFUNCTION, _header_cb);
+
+    rv = curl_easy_setopt(priv->easy, CURLOPT_HEADERFUNCTION, _header_cb);
     rv |= curl_easy_setopt(priv->easy, CURLOPT_HEADERDATA, priv);
 
     return rv;
@@ -66,20 +66,20 @@ CURLcode header_init(CWS *priv)
 
 static size_t _header_cb(const char *buffer, size_t count, size_t nitems, void *data)
 {
-    CWS *priv = data;
-    long http_status = -1;
-    long http_version = -1;
-    const size_t len = count * nitems;
+    CWS *priv                    = data;
+    long http_status             = -1;
+    long http_version            = -1;
+    const size_t len             = count * nitems;
     const hc_t header_checkers[] = {
-        { .prefix = "Sec-WebSocket-Accept:",   .check = _check_accept     },
-        { .prefix = "Sec-WebSocket-Protocol:", .check = _check_protocol   },
-        { .prefix = "Connection:",             .check = _check_connection },
-        { .prefix = "Upgrade:",                .check = _check_upgrade    },
-        { NULL, NULL }
+        {  .prefix = "Sec-WebSocket-Accept:",     .check = _check_accept},
+        {.prefix = "Sec-WebSocket-Protocol:",   .check = _check_protocol},
+        {            .prefix = "Connection:", .check = _check_connection},
+        {               .prefix = "Upgrade:",    .check = _check_upgrade},
+        {                               NULL,                       NULL}
     };
 
     curl_easy_getinfo(priv->easy, CURLINFO_RESPONSE_CODE, &http_status);
-    curl_easy_getinfo(priv->easy, CURLINFO_HTTP_VERSION,  &http_version);
+    curl_easy_getinfo(priv->easy, CURLINFO_HTTP_VERSION, &http_version);
 
     verbose(priv, "< websocket header received: %zu\n", len);
 
@@ -119,8 +119,8 @@ static size_t _header_cb(const char *buffer, size_t count, size_t nitems, void *
     }
 
     if (cws_has_prefix(buffer, len, "HTTP/")) {
-        priv->header_state.accepted = false;
-        priv->header_state.upgraded = false;
+        priv->header_state.accepted             = false;
+        priv->header_state.upgraded             = false;
         priv->header_state.connection_websocket = false;
         if (priv->header_state.ws_protocols_received) {
             free(priv->header_state.ws_protocols_received);
@@ -132,10 +132,10 @@ static size_t _header_cb(const char *buffer, size_t count, size_t nitems, void *
 
     for (const hc_t *itr = header_checkers; itr->prefix != NULL; itr++) {
         if (cws_has_prefix(buffer, len, itr->prefix)) {
-            size_t prefixlen = strlen(itr->prefix);
-            size_t valuelen = len - prefixlen;
+            size_t prefixlen  = strlen(itr->prefix);
+            size_t valuelen   = len - prefixlen;
             const char *value = buffer + prefixlen;
-            value = cws_trim(value, &valuelen);
+            value             = cws_trim(value, &valuelen);
             itr->check(priv, value, valuelen);
         }
     }
@@ -148,8 +148,7 @@ static void _check_accept(CWS *priv, const char *buffer, size_t len)
 {
     priv->header_state.accepted = false;
 
-    if ((len != priv->expected_key_header_len) ||
-        (0 != memcmp(priv->expected_key_header, buffer, len)))
+    if ((len != priv->expected_key_header_len) || (0 != memcmp(priv->expected_key_header, buffer, len)))
     {
         _output_header_error(priv, "Sec-WebSocket-Accept",
                              priv->expected_key_header,
@@ -177,7 +176,7 @@ static void _check_upgrade(CWS *priv, const char *buffer, size_t len)
     priv->header_state.connection_websocket = false;
 
     if (cws_strncasecmp(buffer, "websocket", len)) {
-        _output_header_error(priv, "Upgrade", "websocket", sizeof("websocket")-1, buffer, len);
+        _output_header_error(priv, "Upgrade", "websocket", sizeof("websocket") - 1, buffer, len);
         return;
     }
 
@@ -190,7 +189,7 @@ static void _check_connection(CWS *priv, const char *buffer, size_t len)
     priv->header_state.upgraded = false;
 
     if (cws_strncasecmp(buffer, "upgrade", len)) {
-        _output_header_error(priv, "Connection", "upgrade", sizeof("upgrade")-1, buffer, len);
+        _output_header_error(priv, "Connection", "upgrade", sizeof("upgrade") - 1, buffer, len);
         return;
     }
 
@@ -203,11 +202,11 @@ static void _output_header_error(CWS *priv, const char *header, const char *expe
 {
     if (priv->cfg.verbose) {
         const char *dots = "...";
-        int truncated = (int) expected_len;
+        int truncated    = (int) expected_len;
 
         if (got_len <= expected_len) {
             truncated = (int) got_len;
-            dots = "";
+            dots      = "";
         }
         verbose(priv,
                 "! websocket header "

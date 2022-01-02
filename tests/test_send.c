@@ -1,14 +1,13 @@
 /*
- * SPDX-FileCopyrightText: 2021 Comcast Cable Communications Management, LLC
+ * SPDX-FileCopyrightText: 2021-2022 Comcast Cable Communications Management, LLC
  *
  * SPDX-License-Identifier: MIT
  */
-#include <stdlib.h>
-#include <stdio.h>
-#include <string.h>
-
 #include <CUnit/Basic.h>
 #include <curl/curl.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
 
 #include "../src/internal.h"
 #include "../src/ws.h"
@@ -17,7 +16,7 @@
 
 #undef curl_easy_setopt
 
-CURLcode curl_easy_setopt(CURL *easy, CURLoption option, ... )
+CURLcode curl_easy_setopt(CURL *easy, CURLoption option, ...)
 {
     (void) easy;
     (void) option;
@@ -31,13 +30,13 @@ CURLcode curl_easy_pause(CURL *easy, int bitmask)
     return CURLE_OK;
 }
 
-void* mem_alloc_ctrl(pool_t *pool)
+void *mem_alloc_ctrl(pool_t *pool)
 {
     (void) pool;
     return malloc(WS_CTL_PAYLOAD_MAX);
 }
 
-void* mem_alloc_data(pool_t *pool)
+void *mem_alloc_data(pool_t *pool)
 {
     (void) pool;
     return malloc(1024);
@@ -52,7 +51,7 @@ void mem_free(void *ptr)
 void setup_test(CWS *priv)
 {
     memset(priv, 0, sizeof(CWS));
-    priv->cfg.max_payload_size = 1024;
+    priv->cfg.max_payload_size    = 1024;
     priv->mem_cfg.data_block_size = 1024 + WS_FRAME_HEADER_MAX;
     send_init(priv);
     srand(0);
@@ -62,11 +61,12 @@ void setup_test(CWS *priv)
 void test_simple()
 {
     CWS priv;
-    //size_t rv;
+    // size_t rv;
     uint8_t buffer[40];
     char *payload = "hello";
-    char *ping = "ping";
+    char *ping    = "ping";
 
+    // clang-format off
     uint8_t expect[] = {   0x81, 0x85,                   /* header */
                            0x01, 0x02, 0x03, 0x04,       /* mask */
                            0x69, 0x67, 0x6f, 0x68, 0x6e, /* 'hello' encoded */
@@ -105,18 +105,19 @@ void test_simple()
             .payload = ping,
         },
     };
+    // clang-format on
 
     setup_test(&priv);
 
     /* Ignore redirection */
     priv.header_state.redirection = true;
-    CU_ASSERT(40 == _send_cb((char*) buffer, 40, 1, &priv));
+    CU_ASSERT(40 == _send_cb((char *) buffer, 40, 1, &priv));
     priv.header_state.redirection = false;
 
     /* Test the empty send queue --> pause things behavior */
     CU_ASSERT(NULL == priv.send);
     CU_ASSERT(0 == priv.pause_flags);
-    CU_ASSERT(CURL_READFUNC_PAUSE == _send_cb((char*) buffer, 40, 1, &priv));
+    CU_ASSERT(CURL_READFUNC_PAUSE == _send_cb((char *) buffer, 40, 1, &priv));
     CU_ASSERT(CURLPAUSE_SEND == priv.pause_flags);
 
     /* Send 2 frames in a large enough buffer - starting from paused state */
@@ -124,7 +125,7 @@ void test_simple()
     CU_ASSERT(CWSE_OK == send_frame(&priv, &f[0]));
     CU_ASSERT(CWSE_OK == send_frame(&priv, &f[1]));
     CU_ASSERT(CWSE_OK == send_frame(&priv, &f[2]));
-    CU_ASSERT(31 == _send_cb((char*) buffer, 40, 1, &priv));
+    CU_ASSERT(31 == _send_cb((char *) buffer, 40, 1, &priv));
 
     for (size_t i = 0; i < sizeof(expect); i++) {
         CU_ASSERT(expect[i] == buffer[i]);
@@ -135,11 +136,12 @@ void test_simple()
 void test_small_buffer()
 {
     CWS priv;
-    //size_t rv;
+    // size_t rv;
     uint8_t buffer[10];
     char *payload = "hello";
-    char *ping = "ping";
+    char *ping    = "ping";
 
+    // clang-format off
     uint8_t expect[] = {   0x81, 0x85,                   /* header */
                            0x01, 0x02, 0x03, 0x04,       /* mask */
                            0x69, 0x67, 0x6f };           /* 'hel' encoded */
@@ -163,11 +165,12 @@ void test_small_buffer()
             .payload = ping,
         },
     };
+    // clang-format on
 
     setup_test(&priv);
 
     CU_ASSERT(CWSE_OK == send_frame(&priv, &f[0]));
-    CU_ASSERT(10 == _send_cb((char*) buffer, 10, 1, &priv));
+    CU_ASSERT(10 == _send_cb((char *) buffer, 10, 1, &priv));
 
     for (size_t i = 0; i < sizeof(expect); i++) {
         CU_ASSERT(expect[i] == buffer[i]);
@@ -178,49 +181,49 @@ void test_small_buffer()
 }
 
 
-void add_suites( CU_pSuite *suite )
+void add_suites(CU_pSuite *suite)
 {
     struct {
         const char *label;
         void (*fn)(void);
     } tests[] = {
-        { .label = "simple cb Tests", .fn = test_simple        },
-        { .label = "simple small buffer", .fn = test_small_buffer        },
-        { .label = NULL, .fn = NULL }
+        {    .label = "simple cb Tests",       .fn = test_simple},
+        {.label = "simple small buffer", .fn = test_small_buffer},
+        {                 .label = NULL,              .fn = NULL}
     };
     int i;
 
-    *suite = CU_add_suite( "curlws.c tests", NULL, NULL );
+    *suite = CU_add_suite("curlws.c tests", NULL, NULL);
 
     for (i = 0; NULL != tests[i].fn; i++) {
-        CU_add_test( *suite, tests[i].label, tests[i].fn );
+        CU_add_test(*suite, tests[i].label, tests[i].fn);
     }
 }
 
 /*----------------------------------------------------------------------------*/
 /*                             External Functions                             */
 /*----------------------------------------------------------------------------*/
-int main( void )
+int main(void)
 {
-    unsigned rv = 1;
+    unsigned rv     = 1;
     CU_pSuite suite = NULL;
 
-    if( CUE_SUCCESS == CU_initialize_registry() ) {
-        add_suites( &suite );
+    if (CUE_SUCCESS == CU_initialize_registry()) {
+        add_suites(&suite);
 
-        if( NULL != suite ) {
-            CU_basic_set_mode( CU_BRM_VERBOSE );
+        if (NULL != suite) {
+            CU_basic_set_mode(CU_BRM_VERBOSE);
             CU_basic_run_tests();
-            printf( "\n" );
-            CU_basic_show_failures( CU_get_failure_list() );
-            printf( "\n\n" );
+            printf("\n");
+            CU_basic_show_failures(CU_get_failure_list());
+            printf("\n\n");
             rv = CU_get_number_of_tests_failed();
         }
 
         CU_cleanup_registry();
     }
 
-    if( 0 != rv ) {
+    if (0 != rv) {
         return 1;
     }
     return 0;

@@ -1,6 +1,6 @@
 /*
  * SPDX-FileCopyrightText: 2016 Gustavo Sverzut Barbieri
- * SPDX-FileCopyrightText: 2021 Comcast Cable Communications Management, LLC
+ * SPDX-FileCopyrightText: 2021-2022 Comcast Cable Communications Management, LLC
  *
  * SPDX-License-Identifier: MIT
  */
@@ -15,7 +15,7 @@
 
 /* The key header that the websocket expects to get back.  The size is based on:
  * b64(20 bytes) = 28 bytes + 1 for '\0' */
-#define WS_HTTP_EXPECTED_KEY_SIZE   29
+#define WS_HTTP_EXPECTED_KEY_SIZE 29
 /*
  *
  * WebSocket is a framed protocol in the format:
@@ -48,35 +48,31 @@
 
 /* This covers the "base" frame size including the small 7 bit length and
  * no mask. */
-#define WS_FRAME_HEADER_MIN                 2
+#define WS_FRAME_HEADER_MIN 2
 
 /* The mask is defined as 4 bytes (after the payload length) */
-#define WS_FRAME_HEADER_MASK                4
+#define WS_FRAME_HEADER_MASK 4
 
 /* The largest length is a uin64_t (8 bytes) */
-#define WS_FRAME_HEADER_MAX_PAYLOAD_SIZE    8
+#define WS_FRAME_HEADER_MAX_PAYLOAD_SIZE 8
 
 /* The largest possible frame header */
-#define WS_FRAME_HEADER_MAX                 (WS_FRAME_HEADER_MIN + \
-                                             WS_FRAME_HEADER_MASK + \
-                                             WS_FRAME_HEADER_MAX_PAYLOAD_SIZE)
+#define WS_FRAME_HEADER_MAX (WS_FRAME_HEADER_MIN + WS_FRAME_HEADER_MASK + WS_FRAME_HEADER_MAX_PAYLOAD_SIZE)
 
 /* The control frames have a limited payload length define here:
  * See https://tools.ietf.org/html/rfc6455#section-5.5  */
 #define WS_CTL_PAYLOAD_MAX 125
 
 /* The largest control frame and payload in bytes */
-#define WS_CTL_FRAME_MAX   (WS_FRAME_HEADER_MIN + \
-                            WS_FRAME_HEADER_MASK + \
-                            WS_CTL_PAYLOAD_MAX)
+#define WS_CTL_FRAME_MAX (WS_FRAME_HEADER_MIN + WS_FRAME_HEADER_MASK + WS_CTL_PAYLOAD_MAX)
 
 /* The Websocket Opcodes */
-#define WS_OPCODE_CONTINUATION  0x0
-#define WS_OPCODE_TEXT          0x1
-#define WS_OPCODE_BINARY        0x2
-#define WS_OPCODE_CLOSE         0x8
-#define WS_OPCODE_PING          0x9
-#define WS_OPCODE_PONG          0xa
+#define WS_OPCODE_CONTINUATION 0x0
+#define WS_OPCODE_TEXT         0x1
+#define WS_OPCODE_BINARY       0x2
+#define WS_OPCODE_CLOSE        0x8
+#define WS_OPCODE_PING         0x9
+#define WS_OPCODE_PONG         0xa
 
 /**
  * Returns if the close code is valid.

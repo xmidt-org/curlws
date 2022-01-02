@@ -1,14 +1,14 @@
 /*
- * SPDX-FileCopyrightText: 2021 Comcast Cable Communications Management, LLC
+ * SPDX-FileCopyrightText: 2021-2022 Comcast Cable Communications Management, LLC
  *
  * SPDX-License-Identifier: MIT
  */
-#include <stdarg.h>
-#include <stdlib.h>
-#include <stdio.h>
-#include <string.h>
 #include <CUnit/Basic.h>
+#include <stdarg.h>
 #include <stdbool.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
 
 #include "../src/memory.h"
 
@@ -28,7 +28,7 @@ void test_basic()
     pool_t *pool;
     struct mem_pool_config cfg = {
         .control_block_size = 128,
-        .data_block_size = 4096
+        .data_block_size    = 4096
     };
 
     pool = mem_init_pool(&cfg);
@@ -65,7 +65,7 @@ void test_lots()
     pool_t *pool;
     struct mem_pool_config cfg = {
         .control_block_size = 128,
-        .data_block_size = 4096
+        .data_block_size    = 4096
     };
 
     pool = mem_init_pool(&cfg);
@@ -103,50 +103,50 @@ void test_lots()
 }
 
 
-void add_suites( CU_pSuite *suite )
+void add_suites(CU_pSuite *suite)
 {
     struct {
         const char *label;
         void (*fn)(void);
     } tests[] = {
-        { .label = "Basic Tests", .fn = test_basic },
-        { .label = "Silly Tests", .fn = test_silly },
-        { .label = "Lots Tests", .fn = test_lots },
-        { .label = NULL, .fn = NULL }
+        {.label = "Basic Tests", .fn = test_basic},
+        {.label = "Silly Tests", .fn = test_silly},
+        { .label = "Lots Tests",  .fn = test_lots},
+        {         .label = NULL,       .fn = NULL}
     };
     int i;
 
-    *suite = CU_add_suite( "curlws.c tests", NULL, NULL );
+    *suite = CU_add_suite("curlws.c tests", NULL, NULL);
 
     for (i = 0; NULL != tests[i].fn; i++) {
-        CU_add_test( *suite, tests[i].label, tests[i].fn );
+        CU_add_test(*suite, tests[i].label, tests[i].fn);
     }
 }
 
 /*----------------------------------------------------------------------------*/
 /*                             External Functions                             */
 /*----------------------------------------------------------------------------*/
-int main( void )
+int main(void)
 {
-    unsigned rv = 1;
+    unsigned rv     = 1;
     CU_pSuite suite = NULL;
 
-    if( CUE_SUCCESS == CU_initialize_registry() ) {
-        add_suites( &suite );
+    if (CUE_SUCCESS == CU_initialize_registry()) {
+        add_suites(&suite);
 
-        if( NULL != suite ) {
-            CU_basic_set_mode( CU_BRM_VERBOSE );
+        if (NULL != suite) {
+            CU_basic_set_mode(CU_BRM_VERBOSE);
             CU_basic_run_tests();
-            printf( "\n" );
-            CU_basic_show_failures( CU_get_failure_list() );
-            printf( "\n\n" );
+            printf("\n");
+            CU_basic_show_failures(CU_get_failure_list());
+            printf("\n\n");
             rv = CU_get_number_of_tests_failed();
         }
 
         CU_cleanup_registry();
     }
 
-    if( 0 != rv ) {
+    if (0 != rv) {
         return 1;
     }
     return 0;

@@ -1,19 +1,18 @@
 /*
  * SPDX-FileCopyrightText: 2016 Gustavo Sverzut Barbieri
- * SPDX-FileCopyrightText: 2021 Comcast Cable Communications Management, LLC
+ * SPDX-FileCopyrightText: 2021-2022 Comcast Cable Communications Management, LLC
  *
  * SPDX-License-Identifier: MIT
  */
 /* c-mode: linux-4 */
+#include <ctype.h>
+#include <curlws/curlws.h>
 #include <stdarg.h>
 #include <stdbool.h>
 #include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <ctype.h>
-
-#include <curlws/curlws.h>
 
 struct myapp_ctx {
     CWS *ws;
@@ -56,8 +55,9 @@ static void ERR(const char *fmt, ...)
  *
  * replace this with your own main loop integration
  */
-static void a_main_loop(struct myapp_ctx *ctx) {
-    CURLM *multi = ctx->multi;
+static void a_main_loop(struct myapp_ctx *ctx)
+{
+    CURLM *multi      = ctx->multi;
     int still_running = 0;
 
     curl_multi_perform(multi, &still_running);
@@ -68,20 +68,20 @@ static void a_main_loop(struct myapp_ctx *ctx) {
         fd_set fdread, fdwrite, fdexcep;
         CURLMcode mc;
         int msgs_left, rc;
-        int maxfd = -1;
+        int maxfd       = -1;
         long curl_timeo = -1;
 
         FD_ZERO(&fdread);
         FD_ZERO(&fdwrite);
         FD_ZERO(&fdexcep);
 
-        timeout.tv_sec = 0;
+        timeout.tv_sec  = 0;
         timeout.tv_usec = 200000;
 
         curl_multi_timeout(multi, &curl_timeo);
 
         if (curl_timeo >= 0) {
-            timeout.tv_sec = curl_timeo / 1000;
+            timeout.tv_sec  = curl_timeo / 1000;
             timeout.tv_usec = (curl_timeo % 1000) * 1000;
         }
 
@@ -97,14 +97,14 @@ static void a_main_loop(struct myapp_ctx *ctx) {
 
         rc = select(maxfd + 1, &fdread, &fdwrite, &fdexcep, &timeout);
 
-        switch(rc) {
-        case -1:
-            /* select error */
-            break;
-        case 0: /* timeout */
-        default: /* action */
-            curl_multi_perform(multi, &still_running);
-            break;
+        switch (rc) {
+            case -1:
+                /* select error */
+                break;
+            case 0:  /* timeout */
+            default: /* action */
+                curl_multi_perform(multi, &still_running);
+                break;
         }
 
         /* See how the transfers went */
@@ -120,8 +120,8 @@ static void a_main_loop(struct myapp_ctx *ctx) {
             if (now - ctx->exit_started > 2) {
                 INF("timed out %lu seconds waiting for server to close socket.",
                     now - ctx->exit_started);
-            break;
-        }
+                break;
+            }
         }
     } while (still_running);
     INF("quit main loop still_running=%d, ctx->exit_started=%ld (%ld seconds)",
@@ -131,14 +131,14 @@ static void a_main_loop(struct myapp_ctx *ctx) {
 }
 
 /* https://www.w3.org/International/questions/qa-forms-utf-8 */
-static bool check_utf8(const char *text) {
-    const uint8_t * bytes = (const uint8_t *)text;
+static bool check_utf8(const char *text)
+{
+    const uint8_t *bytes = (const uint8_t *) text;
     while (*bytes) {
         const uint8_t c = bytes[0];
 
         /* ascii: [\x09\x0A\x0D\x20-\x7E] */
-        if ((c >= 0x20 && c <= 0x7e) ||
-            c == 0x09 || c == 0x0a || c == 0x0d) {
+        if ((c >= 0x20 && c <= 0x7e) || c == 0x09 || c == 0x0a || c == 0x0d) {
             bytes += 1;
             continue;
         }
@@ -171,10 +171,8 @@ static bool check_utf8(const char *text) {
         }
 
         /* straight 3-byte: [\xE1-\xEC\xEE\xEF][\x80-\xBF]{2} */
-        if ((c >= 0xe1 && c <= 0xec) ||
-            c == 0xee || c == 0xef) {
-            if (VALUE_BYTE_CHECK(bytes[1]) &&
-                VALUE_BYTE_CHECK(bytes[2])) {
+        if ((c >= 0xe1 && c <= 0xec) || c == 0xee || c == 0xef) {
+            if (VALUE_BYTE_CHECK(bytes[1]) && VALUE_BYTE_CHECK(bytes[2])) {
                 bytes += 3;
                 continue;
             }
@@ -195,8 +193,7 @@ static bool check_utf8(const char *text) {
         if (c == 0xf0) {
             const uint8_t d = bytes[1];
             if (d >= 0x90 && d <= 0xbf) {
-                if (VALUE_BYTE_CHECK(bytes[2]) &&
-                    VALUE_BYTE_CHECK(bytes[3])) {
+                if (VALUE_BYTE_CHECK(bytes[2]) && VALUE_BYTE_CHECK(bytes[3])) {
                     bytes += 4;
                     continue;
                 }
@@ -204,9 +201,7 @@ static bool check_utf8(const char *text) {
         }
         /* planes 4-15: [\xF1-\xF3][\x80-\xBF]{3} */
         if (c >= 0xf1 && c <= 0xf3) {
-            if (VALUE_BYTE_CHECK(bytes[1]) &&
-                VALUE_BYTE_CHECK(bytes[2]) &&
-                VALUE_BYTE_CHECK(bytes[3])) {
+            if (VALUE_BYTE_CHECK(bytes[1]) && VALUE_BYTE_CHECK(bytes[2]) && VALUE_BYTE_CHECK(bytes[3])) {
                 bytes += 4;
                 continue;
             }
@@ -216,32 +211,33 @@ static bool check_utf8(const char *text) {
         if (c == 0xf4) {
             const uint8_t d = bytes[1];
             if (d >= 0x80 && d <= 0x8f) {
-                if (VALUE_BYTE_CHECK(bytes[2]) &&
-                    VALUE_BYTE_CHECK(bytes[3])) {
+                if (VALUE_BYTE_CHECK(bytes[2]) && VALUE_BYTE_CHECK(bytes[3])) {
                     bytes += 4;
                     continue;
                 }
             }
         }
 
-        INF("failed unicode byte #%zd '%s'", (const char*)bytes - text, text);
+        INF("failed unicode byte #%zd '%s'", (const char *) bytes - text, text);
         return false;
     }
 
     return true;
 }
 
-static int on_connect(void *data, CWS *ws, const char *websocket_protocols) {
+static int on_connect(void *data, CWS *ws, const char *websocket_protocols)
+{
     INF("connected, websocket_protocols='%s'", websocket_protocols);
-    (void)data;
-    (void)ws;
+    (void) data;
+    (void) ws;
 
     return 0;
 }
 
-static int on_text(void *data, CWS *ws, const char *text, size_t len) {
+static int on_text(void *data, CWS *ws, const char *text, size_t len)
+{
     if (0 < len) {
-        char *tmp = (char*) malloc(len+1);
+        char *tmp = (char *) malloc(len + 1);
         memcpy(tmp, text, len);
         tmp[len] = '\0';
         if (!check_utf8(tmp)) {
@@ -252,11 +248,12 @@ static int on_text(void *data, CWS *ws, const char *text, size_t len) {
 
     INF("TEXT %zd bytes={ '%s' }", len, text);
     cws_send_blk_text(ws, text, len);
-    (void)data;
+    (void) data;
     return 0;
 }
 
-static int on_binary(void *data, CWS *ws, const void *mem, size_t len) {
+static int on_binary(void *data, CWS *ws, const void *mem, size_t len)
+{
     const uint8_t *bytes = mem;
     size_t i;
 
@@ -273,35 +270,38 @@ static int on_binary(void *data, CWS *ws, const void *mem, size_t len) {
     }
 
     cws_send_blk_binary(ws, mem, len);
-    (void)data;
+    (void) data;
 
     return 0;
 }
 
-static int on_ping(void *data, CWS *ws, const void *reason, size_t len) {
-    INF("PING %zd bytes='%.*s'", len, (int) len, (const char*) reason);
+static int on_ping(void *data, CWS *ws, const void *reason, size_t len)
+{
+    INF("PING %zd bytes='%.*s'", len, (int) len, (const char *) reason);
     cws_pong(ws, reason, len);
-    (void)data;
+    (void) data;
 
     return 0;
 }
 
-static int on_pong(void *data, CWS *ws, const void *reason, size_t len) {
-    INF("PONG %zd bytes='%.*s'", len, (int) len, (const char*) reason);
-    (void)data;
-    (void)ws;
+static int on_pong(void *data, CWS *ws, const void *reason, size_t len)
+{
+    INF("PONG %zd bytes='%.*s'", len, (int) len, (const char *) reason);
+    (void) data;
+    (void) ws;
 
     return 0;
 }
 
-static int on_close(void *data, CWS *ws, int reason, const char *reason_text, size_t len) {
+static int on_close(void *data, CWS *ws, int reason, const char *reason_text, size_t len)
+{
     struct myapp_ctx *ctx = data;
 
     INF("CLOSE=%4d %zd bytes '%s'", reason, len, reason_text);
     ctx->exit_started = time(NULL);
 
     if (0 < len) {
-        char *tmp = (char*) malloc(len+1);
+        char *tmp = (char *) malloc(len + 1);
         memcpy(tmp, reason_text, len);
         tmp[len] = '\0';
         if (!check_utf8(reason_text)) {
@@ -313,7 +313,8 @@ static int on_close(void *data, CWS *ws, int reason, const char *reason_text, si
     return 0;
 }
 
-int main(int argc, char *argv[]) {
+int main(int argc, char *argv[])
+{
     const char *base_url;
     unsigned start_test, end_test, current_test;
     int i, opt = 1;
@@ -321,8 +322,7 @@ int main(int argc, char *argv[]) {
     for (i = 1; i < argc; i++) {
         if (argv[i][0] != '-')
             break;
-        else if (strcmp(argv[i], "-h") == 0 ||
-                 strcmp(argv[i], "--help") == 0) {
+        else if (strcmp(argv[i], "-h") == 0 || strcmp(argv[i], "--help") == 0) {
             fprintf(stderr,
                     "Usage:\n"
                     "\t%s <base_url> <start_test> <end_test>\n"
@@ -338,10 +338,9 @@ int main(int argc, char *argv[]) {
                     "\n",
                     argv[0], argv[0], argv[0]);
             return EXIT_SUCCESS;
-        } else if (strcmp(argv[i], "-v") == 0 ||
-                   strcmp(argv[i], "--verbose") == 0) {
+        } else if (strcmp(argv[i], "-v") == 0 || strcmp(argv[i], "--verbose") == 0) {
             verbose = true;
-            opt = i + 1;
+            opt     = i + 1;
         }
     }
 
@@ -350,9 +349,9 @@ int main(int argc, char *argv[]) {
         return EXIT_FAILURE;
     }
 
-    base_url = argv[opt];
+    base_url   = argv[opt];
     start_test = atoi(argv[opt + 1]);
-    end_test = start_test;
+    end_test   = start_test;
     if (opt + 3 <= argc) {
         end_test = atoi(argv[opt + 2]);
     }
@@ -368,16 +367,16 @@ int main(int argc, char *argv[]) {
         CURLMcode rv;
 
         memset(&cfg, 0, sizeof(cfg));
-        cfg.url = test_url;
-        cfg.verbose = (true == verbose) ? 3 : 0;
-        cfg.on_connect = on_connect;
-        cfg.on_text = on_text;
-        cfg.on_binary = on_binary;
-        cfg.on_ping = on_ping;
-        cfg.on_pong = on_pong;
-        cfg.on_close = on_close;
-        cfg.user = &myapp_ctx;
-        cfg.expect = 1;
+        cfg.url              = test_url;
+        cfg.verbose          = (true == verbose) ? 3 : 0;
+        cfg.on_connect       = on_connect;
+        cfg.on_text          = on_text;
+        cfg.on_binary        = on_binary;
+        cfg.on_ping          = on_ping;
+        cfg.on_pong          = on_pong;
+        cfg.on_close         = on_close;
+        cfg.user             = &myapp_ctx;
+        cfg.expect           = 1;
         cfg.max_payload_size = 131070;
 
         fprintf(stderr, "TEST: %u\n", current_test);

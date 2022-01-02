@@ -1,12 +1,12 @@
 /*
  * SPDX-FileCopyrightText: 2016 Gustavo Sverzut Barbieri
- * SPDX-FileCopyrightText: 2021 Comcast Cable Communications Management, LLC
+ * SPDX-FileCopyrightText: 2021-2022 Comcast Cable Communications Management, LLC
  *
  * SPDX-License-Identifier: MIT
  */
 #include <stdbool.h>
-#include <stdint.h>
 #include <stddef.h>
+#include <stdint.h>
 #include <string.h>
 
 #include <curl/curl.h>
@@ -20,7 +20,7 @@
 /*----------------------------------------------------------------------------*/
 /*                                   Macros                                   */
 /*----------------------------------------------------------------------------*/
-#define CWS_NONCTRL_MASK    (CWS_CONT|CWS_BINARY|CWS_TEXT)
+#define CWS_NONCTRL_MASK (CWS_CONT | CWS_BINARY | CWS_TEXT)
 
 /*----------------------------------------------------------------------------*/
 /*                               Data Structures                              */
@@ -35,9 +35,9 @@
 /*----------------------------------------------------------------------------*/
 /*                             Function Prototypes                            */
 /*----------------------------------------------------------------------------*/
-static size_t _receive_cb(const char*, size_t, size_t, void*);
-static void _cws_process_frame(CWS*, const char**, size_t*);
-static void _error_close(CWS *priv, int, const char*, size_t);
+static size_t _receive_cb(const char *, size_t, size_t, void *);
+static void _cws_process_frame(CWS *, const char **, size_t *);
+static void _error_close(CWS *priv, int, const char *, size_t);
 static inline size_t _min_size_t(size_t, size_t);
 
 /*----------------------------------------------------------------------------*/
@@ -47,7 +47,7 @@ CURLcode receive_init(CWS *priv)
 {
     CURLcode rv;
 
-    rv  = curl_easy_setopt(priv->easy, CURLOPT_WRITEFUNCTION, _receive_cb);
+    rv = curl_easy_setopt(priv->easy, CURLOPT_WRITEFUNCTION, _receive_cb);
     rv |= curl_easy_setopt(priv->easy, CURLOPT_WRITEDATA, priv);
 
     return rv;
@@ -62,7 +62,7 @@ CURLcode receive_init(CWS *priv)
  */
 static size_t _receive_cb(const char *buffer, size_t count, size_t nitems, void *data)
 {
-    CWS *priv = data;
+    CWS *priv  = data;
     size_t len = count * nitems;
 
     verbose(priv, "< websocket bytes received: %zu\n", len);
@@ -101,9 +101,9 @@ static size_t _receive_cb(const char *buffer, size_t count, size_t nitems, void 
 
 static void _handle_close(CWS *priv, struct recv *r)
 {
-    int status = 1005;
+    int status    = 1005;
     const char *s = NULL;
-    size_t len = r->frame->payload_len;
+    size_t len    = r->frame->payload_len;
 
     if (1 == len) {
         /* Invalid as 0 or 2+ bytes are needed */
@@ -122,7 +122,7 @@ static void _handle_close(CWS *priv, struct recv *r)
 
         /* Ensure there is a trailing '\0' to prevent buffer overruns */
         r->control.buf[r->frame->payload_len] = '\0';
-        s = (const char*) &r->control.buf[2];
+        s                                     = (const char *) &r->control.buf[2];
         len -= 2;
 
         prev_len = len;
@@ -157,12 +157,12 @@ static void _handle_close(CWS *priv, struct recv *r)
  * @retval -1 if there was an error, the buf & length are not changed & the
  *         socket has been closed automatically.
  */
-static struct cws_frame* _process_frame_header(CWS *priv, const char **buf, size_t *len)
+static struct cws_frame *_process_frame_header(CWS *priv, const char **buf, size_t *len)
 {
-    struct recv *r = &priv->recv;
-    struct header *h = &priv->recv.header;
+    struct recv *r     = &priv->recv;
+    struct header *h   = &priv->recv.header;
     const char *buffer = *buf;
-    size_t _len = *len;
+    size_t _len        = *len;
     size_t min;
     long delta;
     struct cws_frame *frame;
@@ -191,8 +191,8 @@ static struct cws_frame* _process_frame_header(CWS *priv, const char **buf, size
     if (delta < 0) {
         /* Delta is the number of bytes need * -1 */
         h->needed = 0 - delta;
-        *buf = buffer;
-        *len = _len;
+        *buf      = buffer;
+        *len      = _len;
         return NULL;
     }
 
@@ -203,8 +203,8 @@ static struct cws_frame* _process_frame_header(CWS *priv, const char **buf, size
 
     /* Done processing the buffer because we have all the data we need. */
     h->used = 0;
-    *buf = buffer;
-    *len = _len;
+    *buf    = buffer;
+    *len    = _len;
 
     return frame;
 }
@@ -217,9 +217,9 @@ static struct cws_frame* _process_frame_header(CWS *priv, const char **buf, size
  */
 static void _process_control_frame(CWS *priv, const char **buf, size_t *len)
 {
-    struct recv *r = &priv->recv;
+    struct recv *r     = &priv->recv;
     const char *buffer = *buf;
-    size_t _len = *len;
+    size_t _len        = *len;
 
     if ((r->control.used < r->frame->payload_len) && (0 < _len)) {
         size_t min = _min_size_t(r->frame->payload_len - r->control.used, _len);
@@ -241,17 +241,17 @@ static void _process_control_frame(CWS *priv, const char **buf, size_t *len)
             cb_on_pong(priv, r->control.buf, r->control.used);
             priv->dispatching--;
             r->frame = NULL;
-        } else {    /* We know the frame only has these 3 */
+        } else { /* We know the frame only has these 3 */
             _handle_close(priv, r);
             r->frame = NULL;
-            *len = _len;
-            *buf = buffer;
+            *len     = _len;
+            *buf     = buffer;
             return;
         }
 
         r->header.needed = WS_FRAME_HEADER_MIN;
-        r->header.used = 0;
-        r->control.used = 0;
+        r->header.used   = 0;
+        r->control.used  = 0;
     }
 
     *len = _len;
@@ -285,8 +285,7 @@ static int _process_text_stream(CWS *priv, const char *buf, size_t len,
             size_t valid;
 
             valid = r->utf8.used;
-            if ((0 != utf8_validate(r->utf8.buf, &valid)) ||
-                (r->utf8.used != valid))
+            if ((0 != utf8_validate(r->utf8.buf, &valid)) || (r->utf8.used != valid))
             {
                 _error_close(priv, 1007, NULL, 0);
                 return -1;
@@ -380,7 +379,7 @@ static void _send_data_frame(CWS *priv, const char *buffer, size_t len)
      * BINARY frame to lead off a new stream. */
     if (CWS_LAST & r->fragment_info) {
         r->fragment_info = 0;
-        r->stream_type = 0;
+        r->stream_type   = 0;
     }
 }
 
@@ -392,10 +391,10 @@ static void _send_data_frame(CWS *priv, const char *buffer, size_t len)
  */
 static void _process_data_frame(CWS *priv, const char **buf, size_t *len)
 {
-    struct recv *r = &priv->recv;
+    struct recv *r          = &priv->recv;
     const char *buf_to_send = *buf;
-    size_t min = _min_size_t(r->frame->payload_len, *len);
-    size_t len_to_send = min;
+    size_t min              = _min_size_t(r->frame->payload_len, *len);
+    size_t len_to_send      = min;
 
     if (CWS_TEXT == r->stream_type) {
         int rv;
@@ -426,10 +425,10 @@ static void _cws_process_frame(CWS *priv, const char **buffer, size_t *len)
 
         if (frame && (0 == frame->is_control)) {
             if ((0 == r->fragment_info) && (WS_OPCODE_BINARY == frame->opcode)) {
-                r->stream_type = CWS_BINARY;
+                r->stream_type   = CWS_BINARY;
                 r->fragment_info = CWS_FIRST | CWS_BINARY;
             } else if ((0 == r->fragment_info) && (WS_OPCODE_TEXT == frame->opcode)) {
-                r->stream_type = CWS_TEXT;
+                r->stream_type   = CWS_TEXT;
                 r->fragment_info = CWS_FIRST | CWS_TEXT;
             } else if ((0 != r->stream_type) && (WS_OPCODE_CONTINUATION == frame->opcode)) {
                 r->fragment_info &= ~CWS_NONCTRL_MASK;

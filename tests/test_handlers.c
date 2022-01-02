@@ -1,12 +1,12 @@
 /*
- * SPDX-FileCopyrightText: 2021 Comcast Cable Communications Management, LLC
+ * SPDX-FileCopyrightText: 2021-2022 Comcast Cable Communications Management, LLC
  *
  * SPDX-License-Identifier: MIT
  */
-#include <stdlib.h>
-#include <stdio.h>
-#include <string.h>
 #include <CUnit/Basic.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
 
 #include "../src/handlers.h"
 #include "../src/internal.h"
@@ -27,7 +27,7 @@ CWScode cws_pong(CWS *handle, const void *data, size_t len)
 
 
 static int __close_called = 0;
-static int __close_code = 0;
+static int __close_code   = 0;
 CWScode cws_close(CWS *handle, int code, const char *reason, size_t len)
 {
     IGNORE_UNUSED(handle);
@@ -63,34 +63,33 @@ void test_populate_callbacks()
     memset(&src, 0, sizeof(src));
 
     populate_callbacks(&priv.cb, &src);
-    CU_ASSERT(priv.cb.on_connect_fn  == NULL);
-    CU_ASSERT(priv.cb.on_text_fn     == NULL);
-    CU_ASSERT(priv.cb.on_binary_fn   == NULL);
+    CU_ASSERT(priv.cb.on_connect_fn == NULL);
+    CU_ASSERT(priv.cb.on_text_fn == NULL);
+    CU_ASSERT(priv.cb.on_binary_fn == NULL);
     CU_ASSERT(priv.cb.on_fragment_fn == _default_on_fragment);
-    CU_ASSERT(priv.cb.on_ping_fn     == _default_on_ping);
-    CU_ASSERT(priv.cb.on_pong_fn     == NULL);
-    CU_ASSERT(priv.cb.on_close_fn    == NULL);
+    CU_ASSERT(priv.cb.on_ping_fn == _default_on_ping);
+    CU_ASSERT(priv.cb.on_pong_fn == NULL);
+    CU_ASSERT(priv.cb.on_close_fn == NULL);
 
     populate_callbacks(&priv.cb, &src);
 
-    src.on_connect  = (int (*)(void*, CWS*, const char*)) 1;
-    src.on_text     = (int (*)(void*, CWS*, const char*, size_t)) 2;
-    src.on_binary   = (int (*)(void*, CWS*, const void*, size_t)) 3;
-    src.on_fragment = (int (*)(void*, CWS*, int, const void*, size_t)) 4;
-    src.on_ping     = (int (*)(void*, CWS*, const void*, size_t)) 5;
-    src.on_pong     = (int (*)(void*, CWS*, const void*, size_t)) 6;
-    src.on_close    = (int (*)(void*, CWS*, int, const char*, size_t)) 7;
-    src.configure   = (CURLcode (*)(void*, CWS*, CURL*)) 8;
+    src.on_connect  = (int (*)(void *, CWS *, const char *)) 1;
+    src.on_text     = (int (*)(void *, CWS *, const char *, size_t)) 2;
+    src.on_binary   = (int (*)(void *, CWS *, const void *, size_t)) 3;
+    src.on_fragment = (int (*)(void *, CWS *, int, const void *, size_t)) 4;
+    src.on_ping     = (int (*)(void *, CWS *, const void *, size_t)) 5;
+    src.on_pong     = (int (*)(void *, CWS *, const void *, size_t)) 6;
+    src.on_close    = (int (*)(void *, CWS *, int, const char *, size_t)) 7;
+    src.configure   = (CURLcode(*)(void *, CWS *, CURL *)) 8;
 
     populate_callbacks(&priv.cb, &src);
-    CU_ASSERT(priv.cb.on_connect_fn  == (int (*)(void*, CWS*, const char*)) 1);
-    CU_ASSERT(priv.cb.on_text_fn     == (int (*)(void*, CWS*, const char*, size_t)) 2);
-    CU_ASSERT(priv.cb.on_binary_fn   == (int (*)(void*, CWS*, const void*, size_t)) 3);
-    CU_ASSERT(priv.cb.on_fragment_fn == (int (*)(void*, CWS*, int, const void*, size_t)) 4);
-    CU_ASSERT(priv.cb.on_ping_fn     == (int (*)(void*, CWS*, const void*, size_t)) 5);
-    CU_ASSERT(priv.cb.on_pong_fn     == (int (*)(void*, CWS*, const void*, size_t)) 6);
-    CU_ASSERT(priv.cb.on_close_fn    == (int (*)(void*, CWS*, int, const char*, size_t)) 7);
-
+    CU_ASSERT(priv.cb.on_connect_fn == (int (*)(void *, CWS *, const char *)) 1);
+    CU_ASSERT(priv.cb.on_text_fn == (int (*)(void *, CWS *, const char *, size_t)) 2);
+    CU_ASSERT(priv.cb.on_binary_fn == (int (*)(void *, CWS *, const void *, size_t)) 3);
+    CU_ASSERT(priv.cb.on_fragment_fn == (int (*)(void *, CWS *, int, const void *, size_t)) 4);
+    CU_ASSERT(priv.cb.on_ping_fn == (int (*)(void *, CWS *, const void *, size_t)) 5);
+    CU_ASSERT(priv.cb.on_pong_fn == (int (*)(void *, CWS *, const void *, size_t)) 6);
+    CU_ASSERT(priv.cb.on_close_fn == (int (*)(void *, CWS *, int, const char *, size_t)) 7);
 }
 
 
@@ -140,13 +139,13 @@ void test_close_on_rv()
 
     priv.cb.on_pong_fn = on_pong;
 
-    __on_pong_rv = -1;
+    __on_pong_rv   = -1;
     __close_called = 0;
     cb_on_pong(&priv, NULL, 0);
     CU_ASSERT(1 == __close_called);
     CU_ASSERT(1011 == __close_code);
 
-    __on_pong_rv = 1000;
+    __on_pong_rv   = 1000;
     __close_called = 0;
     cb_on_pong(&priv, NULL, 0);
     CU_ASSERT(1 == __close_called);
@@ -252,50 +251,50 @@ void test_defaults_dont_crash()
 }
 
 
-void add_suites( CU_pSuite *suite )
+void add_suites(CU_pSuite *suite)
 {
     struct {
         const char *label;
         void (*fn)(void);
     } tests[] = {
-        { .label = "Test populate_callbacks()",  .fn = test_populate_callbacks  },
-        { .label = "Test close on non-zero rv",  .fn = test_close_on_rv         },
-        { .label = "Test defaults don't crash",  .fn = test_defaults_dont_crash },
-        { .label = NULL, .fn = NULL }
+        {.label = "Test populate_callbacks()",  .fn = test_populate_callbacks},
+        {.label = "Test close on non-zero rv",         .fn = test_close_on_rv},
+        {.label = "Test defaults don't crash", .fn = test_defaults_dont_crash},
+        {                       .label = NULL,                     .fn = NULL}
     };
     int i;
 
-    *suite = CU_add_suite( "curlws.c tests", NULL, NULL );
+    *suite = CU_add_suite("curlws.c tests", NULL, NULL);
 
     for (i = 0; NULL != tests[i].fn; i++) {
-        CU_add_test( *suite, tests[i].label, tests[i].fn );
+        CU_add_test(*suite, tests[i].label, tests[i].fn);
     }
 }
 
 /*----------------------------------------------------------------------------*/
 /*                             External Functions                             */
 /*----------------------------------------------------------------------------*/
-int main( void )
+int main(void)
 {
-    unsigned rv = 1;
+    unsigned rv     = 1;
     CU_pSuite suite = NULL;
 
-    if( CUE_SUCCESS == CU_initialize_registry() ) {
-        add_suites( &suite );
+    if (CUE_SUCCESS == CU_initialize_registry()) {
+        add_suites(&suite);
 
-        if( NULL != suite ) {
-            CU_basic_set_mode( CU_BRM_VERBOSE );
+        if (NULL != suite) {
+            CU_basic_set_mode(CU_BRM_VERBOSE);
             CU_basic_run_tests();
-            printf( "\n" );
-            CU_basic_show_failures( CU_get_failure_list() );
-            printf( "\n\n" );
+            printf("\n");
+            CU_basic_show_failures(CU_get_failure_list());
+            printf("\n\n");
             rv = CU_get_number_of_tests_failed();
         }
 
         CU_cleanup_registry();
     }
 
-    if( 0 != rv ) {
+    if (0 != rv) {
         return 1;
     }
     return 0;

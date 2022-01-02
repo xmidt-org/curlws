@@ -1,3 +1,4 @@
+// clang-format off
 /*
  * This code was acquired from:
  * https://github.com/Yubico/yubico-c-client/
@@ -450,3 +451,4 @@ SHA1ProcessMessageBlock (SHA1Context * context)
 
   context->Message_Block_Index = 0;
 }
+// clang-format on
