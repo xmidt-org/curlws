@@ -1,6 +1,6 @@
 /*
  * SPDX-FileCopyrightText: 2016 Gustavo Sverzut Barbieri
- * SPDX-FileCopyrightText: 2021 Comcast Cable Communications Management, LLC
+ * SPDX-FileCopyrightText: 2021-2022 Comcast Cable Communications Management, LLC
  *
  * SPDX-License-Identifier: MIT
  */
@@ -13,8 +13,8 @@
 
 #include <curl/curl.h>
 
-#include "internal.h"
 #include "frame.h"
+#include "internal.h"
 #include "send.h"
 #include "verbose.h"
 
@@ -44,7 +44,7 @@ struct cws_buf_queue {
 /*----------------------------------------------------------------------------*/
 /*                             Function Prototypes                            */
 /*----------------------------------------------------------------------------*/
-static size_t _send_cb(char*, size_t, size_t, void*);
+static size_t _send_cb(char *, size_t, size_t, void *);
 
 /*----------------------------------------------------------------------------*/
 /*                             External Functions                             */
@@ -54,7 +54,7 @@ CURLcode send_init(CWS *priv)
 {
     CURLcode rv;
 
-    rv  = curl_easy_setopt(priv->easy, CURLOPT_READFUNCTION, _send_cb);
+    rv = curl_easy_setopt(priv->easy, CURLOPT_READFUNCTION, _send_cb);
     rv |= curl_easy_setopt(priv->easy, CURLOPT_READDATA, priv);
 
     return rv;
@@ -85,10 +85,10 @@ CWScode send_frame(CWS *priv, const struct cws_frame *f)
     size_t buffer_size;
 
     if (f->is_control) {
-        buf = (struct cws_buf_queue*) mem_alloc_ctrl(priv->mem);
+        buf         = (struct cws_buf_queue *) mem_alloc_ctrl(priv->mem);
         buffer_size = WS_CTL_FRAME_MAX;
     } else {
-        buf = (struct cws_buf_queue*) mem_alloc_data(priv->mem);
+        buf         = (struct cws_buf_queue *) mem_alloc_data(priv->mem);
         buffer_size = priv->cfg.max_payload_size + WS_FRAME_HEADER_MAX;
     }
 
@@ -117,19 +117,19 @@ CWScode send_frame(CWS *priv, const struct cws_frame *f)
                 /* This frame is partially sent.  Add the urgent frame next. */
                 buf->next = qP->next;
                 buf->prev = qP;
-                qP->next = buf;
+                qP->next  = buf;
             } else {
                 /* Nothing sent.  Insert the urgent frame before the next frame. */
                 priv->send = buf;
-                buf->next = qP;
-                qP->prev = buf;
+                buf->next  = qP;
+                qP->prev   = buf;
             }
         } else {
             while (qP->next) {
                 qP = qP->next;
             }
             buf->prev = qP;
-            qP->next = buf;
+            qP->next  = buf;
         }
     }
 
@@ -172,7 +172,7 @@ static size_t _fill_outgoing_buffer(CWS *priv, char *buffer, size_t len)
     while ((0 < len) && (0 < data_to_send)) {
         const uint8_t *p;
         size_t lesser = len;
-        p = &priv->send->buffer[priv->send->sent];
+        p             = &priv->send->buffer[priv->send->sent];
 
         if (data_to_send < lesser) {
             lesser = data_to_send;
@@ -188,7 +188,7 @@ static size_t _fill_outgoing_buffer(CWS *priv, char *buffer, size_t len)
         /* If we've sent a buffer, recycle it. */
         if (priv->send->sent == priv->send->written) {
             struct cws_buf_queue *tmp = priv->send;
-            bool is_close = tmp->is_close_frame;
+            bool is_close             = tmp->is_close_frame;
 
             priv->send = priv->send->next;
             if (priv->send) {
@@ -223,8 +223,8 @@ static size_t _fill_outgoing_buffer(CWS *priv, char *buffer, size_t len)
  */
 static size_t _send_cb(char *buffer, size_t count, size_t n, void *data)
 {
-    CWS *priv = data;
-    size_t len = count * n;
+    CWS *priv   = data;
+    size_t len  = count * n;
     size_t sent = 0;
 
     if (priv->header_state.redirection) {

@@ -1,19 +1,20 @@
 /*
- * SPDX-FileCopyrightText: 2021 Comcast Cable Communications Management, LLC
+ * SPDX-FileCopyrightText: 2021-2022 Comcast Cable Communications Management, LLC
  *
  * SPDX-License-Identifier: MIT
  */
+#include <CUnit/Basic.h>
 #include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <CUnit/Basic.h>
 
 #include "../src/utf8.h"
 
 
 void test_utf8()
 {
+    // clang-format off
     struct t {
         int rv;
         size_t expect;
@@ -67,8 +68,9 @@ void test_utf8()
 
         { .rv =  0, .expect = 14, .len = 14, .data = "a\xc2\x80\xe8\x80\x80\xf1\x80\x80\x80\xf1\xbf\xbf\xbf" },
     };
+    // clang-format on
 
-    for (size_t i = 0; i < sizeof(tests)/sizeof(struct t); i++) {
+    for (size_t i = 0; i < sizeof(tests) / sizeof(struct t); i++) {
         struct t *test = &tests[i];
         int got;
 
@@ -105,46 +107,46 @@ void test_maybe_valid()
 void test_get_size()
 {
     CU_ASSERT(1 == utf8_get_size('a'));
-    CU_ASSERT(2 == utf8_get_size((char)0xc4));
-    CU_ASSERT(3 == utf8_get_size((char)0xe1));
-    CU_ASSERT(4 == utf8_get_size((char)0xf4));
-    CU_ASSERT(0 == utf8_get_size((char)0xf5));
+    CU_ASSERT(2 == utf8_get_size((char) 0xc4));
+    CU_ASSERT(3 == utf8_get_size((char) 0xe1));
+    CU_ASSERT(4 == utf8_get_size((char) 0xf4));
+    CU_ASSERT(0 == utf8_get_size((char) 0xf5));
 }
 
 
-void add_suites( CU_pSuite *suite )
+void add_suites(CU_pSuite *suite)
 {
-    *suite = CU_add_suite( "utf8 tests", NULL, NULL );
-    CU_add_test( *suite, "general utf8() Tests", test_utf8 );
-    CU_add_test( *suite, "utf8_maybe_valid() Tests", test_maybe_valid );
-    CU_add_test( *suite, "utf8_get_size() Tests", test_get_size );
+    *suite = CU_add_suite("utf8 tests", NULL, NULL);
+    CU_add_test(*suite, "general utf8() Tests", test_utf8);
+    CU_add_test(*suite, "utf8_maybe_valid() Tests", test_maybe_valid);
+    CU_add_test(*suite, "utf8_get_size() Tests", test_get_size);
 }
 
 
 /*----------------------------------------------------------------------------*/
 /*                             External Functions                             */
 /*----------------------------------------------------------------------------*/
-int main( void )
+int main(void)
 {
-    unsigned rv = 1;
+    unsigned rv     = 1;
     CU_pSuite suite = NULL;
 
-    if( CUE_SUCCESS == CU_initialize_registry() ) {
-        add_suites( &suite );
+    if (CUE_SUCCESS == CU_initialize_registry()) {
+        add_suites(&suite);
 
-        if( NULL != suite ) {
-            CU_basic_set_mode( CU_BRM_VERBOSE );
+        if (NULL != suite) {
+            CU_basic_set_mode(CU_BRM_VERBOSE);
             CU_basic_run_tests();
-            printf( "\n" );
-            CU_basic_show_failures( CU_get_failure_list() );
-            printf( "\n\n" );
+            printf("\n");
+            CU_basic_show_failures(CU_get_failure_list());
+            printf("\n\n");
             rv = CU_get_number_of_tests_failed();
         }
 
         CU_cleanup_registry();
     }
 
-    if( 0 != rv ) {
+    if (0 != rv) {
         return 1;
     }
     return 0;

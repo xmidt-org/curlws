@@ -1,6 +1,6 @@
 /*
  * SPDX-FileCopyrightText: 2016 Gustavo Sverzut Barbieri
- * SPDX-FileCopyrightText: 2021 Comcast Cable Communications Management, LLC
+ * SPDX-FileCopyrightText: 2021-2022 Comcast Cable Communications Management, LLC
  *
  * SPDX-License-Identifier: MIT
  */
@@ -30,7 +30,7 @@ struct mem_pool_config {
  *
  * @return the pointer to the pool or NULL on error.
  */
-pool_t* mem_init_pool(const struct mem_pool_config *cfg);
+pool_t *mem_init_pool(const struct mem_pool_config *cfg);
 
 
 /**
@@ -54,7 +54,7 @@ void mem_cleanup_pool(pool_t *pool);
  *
  * @return the memory block, or NULL on error.
  */
-void* mem_alloc_ctrl(pool_t *pool);
+void *mem_alloc_ctrl(pool_t *pool);
 
 
 /**
@@ -65,7 +65,7 @@ void* mem_alloc_ctrl(pool_t *pool);
  *
  * @return the memory block, or NULL on error.
  */
-void* mem_alloc_data(pool_t *pool);
+void *mem_alloc_data(pool_t *pool);
 
 
 /**

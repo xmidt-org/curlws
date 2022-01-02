@@ -1,3 +1,4 @@
+// clang-format off
 /*
  * This code was acquired from:
  * https://github.com/Yubico/yubico-c-client/
@@ -36,3 +37,4 @@
 #define SHA_Parity(x, y, z)  ((x) ^ (y) ^ (z))
 
 #endif /* _SHA_PRIVATE__H */
+// clang-format on

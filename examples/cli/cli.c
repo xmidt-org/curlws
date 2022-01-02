@@ -1,13 +1,13 @@
 /*
- * SPDX-FileCopyrightText: 2021 Comcast Cable Communications Management, LLC
+ * SPDX-FileCopyrightText: 2021-2022 Comcast Cable Communications Management, LLC
  * SPDX-License-Identifier: MIT
  */
 #include <signal.h>
 #include <stdbool.h>
 #include <stddef.h>
+#include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
-#include <stdint.h>
 #include <string.h>
 
 #include <curlws/curlws.h>
@@ -37,19 +37,20 @@ static int shutdown_ws = 0;
 /*                             Function Prototypes                            */
 /*----------------------------------------------------------------------------*/
 static void handle_sigint(int);
-static void main_loop(CWS*, CURLM*);
-static bool is_opt(const char*, const char*, const char*);
+static void main_loop(CWS *, CURLM *);
+static bool is_opt(const char *, const char *, const char *);
 
-static CURLcode configure(void*, CWS*, CURL*);
-static int on_connect(void*, CWS*, const char*);
-static int on_text(void*, CWS*, const char*, size_t);
-static int on_binary(void*, CWS*, const void*, size_t);
-static int on_close(void*, CWS*, int, const char*, size_t);
+static CURLcode configure(void *, CWS *, CURL *);
+static int on_connect(void *, CWS *, const char *);
+static int on_text(void *, CWS *, const char *, size_t);
+static int on_binary(void *, CWS *, const void *, size_t);
+static int on_close(void *, CWS *, int, const char *, size_t);
 
 /*----------------------------------------------------------------------------*/
 /*                             External Functions                             */
 /*----------------------------------------------------------------------------*/
-int main(int argc, char *argv[]) {
+int main(int argc, char *argv[])
+{
     struct cws_config cfg;
     CWS *ws;
     CURLM *multi;
@@ -57,12 +58,12 @@ int main(int argc, char *argv[]) {
     struct my_cfg custom;
 
     memset(&custom, 0, sizeof(custom));
-    custom.ip_resolve = CURL_IPRESOLVE_WHATEVER;
+    custom.ip_resolve  = CURL_IPRESOLVE_WHATEVER;
     custom.tls_version = CURL_SSLVERSION_MAX_DEFAULT;
 
     /* Select the defaults for curlws & overwrite them as needed. */
     memset(&cfg, 0, sizeof(cfg));
-    cfg.user = &custom;
+    cfg.user      = &custom;
     cfg.configure = configure;
 
     /* Provide the four most useful callbacks for reference. */
@@ -80,21 +81,22 @@ int main(int argc, char *argv[]) {
         } else if (is_opt(argv[i], NULL, "--expect-101")) {
             cfg.expect = 1;
         } else if (is_opt(argv[i], "-h", "--help")) {
-            printf("Usage: %s [options...] <url>\n"
-                   " -4                       Resolve names to IPv4 addresses\n"
-                   " -6                       Resolve names to IPv6 addresses\n"
-                   "     --expect-101         Set the Expect: 101 (some servers need this, others do not)\n"
-                   " -h, --help               This help text\n"
-                   " -H, --header    <header> Pass custom header to server\n"
-                   "     --interface <name>   Use network INTERFACE (or address)\n"
-                   " -k, --insecure           Allow insecure server connections when using SSL\n"
-                   " -L, --location           Follow redirects\n"
-                   "     --max-payload <num>  Maximum payload size to send\n"
-                   "     --max-redirs <num>   Maximum number of redirects allowed\n"
-                   "     --tlsv1.2            Set the maximum TLS version (useful since Wireshare can only decode tls1.2\n"
-                   " -v  --verbose            Verbose debugging in curlws is enabled, repeat for more\n"
-                   "     --ws-protos <name>   List of websocket protocols to negotiate\n",
-                   argv[0]);
+            printf(
+                "Usage: %s [options...] <url>\n"
+                " -4                       Resolve names to IPv4 addresses\n"
+                " -6                       Resolve names to IPv6 addresses\n"
+                "     --expect-101         Set the Expect: 101 (some servers need this, others do not)\n"
+                " -h, --help               This help text\n"
+                " -H, --header    <header> Pass custom header to server\n"
+                "     --interface <name>   Use network INTERFACE (or address)\n"
+                " -k, --insecure           Allow insecure server connections when using SSL\n"
+                " -L, --location           Follow redirects\n"
+                "     --max-payload <num>  Maximum payload size to send\n"
+                "     --max-redirs <num>   Maximum number of redirects allowed\n"
+                "     --tlsv1.2            Set the maximum TLS version (useful since Wireshare can only decode tls1.2\n"
+                " -v  --verbose            Verbose debugging in curlws is enabled, repeat for more\n"
+                "     --ws-protos <name>   List of websocket protocols to negotiate\n",
+                argv[0]);
             return 0;
         } else if (is_opt(argv[i], "-H", "--header")) {
             i++;
@@ -180,20 +182,20 @@ static void main_loop(CWS *ws, CURLM *multi)
         fd_set fdread, fdwrite, fdexcep;
         CURLMcode mc;
         int msgs_left, rc;
-        int maxfd = -1;
+        int maxfd       = -1;
         long curl_timeo = -1;
 
         FD_ZERO(&fdread);
         FD_ZERO(&fdwrite);
         FD_ZERO(&fdexcep);
 
-        timeout.tv_sec = 0;
+        timeout.tv_sec  = 0;
         timeout.tv_usec = 200000;
 
         curl_multi_timeout(multi, &curl_timeo);
 
         if (curl_timeo >= 0) {
-            timeout.tv_sec = curl_timeo / 1000;
+            timeout.tv_sec  = curl_timeo / 1000;
             timeout.tv_usec = (curl_timeo % 1000) * 1000;
         }
 
@@ -203,20 +205,20 @@ static void main_loop(CWS *ws, CURLM *multi)
         mc = curl_multi_fdset(multi, &fdread, &fdwrite, &fdexcep, &maxfd);
         if (mc != CURLM_OK) {
             fprintf(stderr, "curl_multi_fdset() failed, code %d '%s'.",
-                mc, curl_multi_strerror(mc));
+                    mc, curl_multi_strerror(mc));
             break;
         }
 
         rc = select(maxfd + 1, &fdread, &fdwrite, &fdexcep, &timeout);
 
-        switch(rc) {
-        case -1:
-            /* select error */
-            break;
-        case 0: /* timeout */
-        default: /* action */
-            curl_multi_perform(multi, &still_running);
-            break;
+        switch (rc) {
+            case -1:
+                /* select error */
+                break;
+            case 0:  /* timeout */
+            default: /* action */
+                curl_multi_perform(multi, &still_running);
+                break;
         }
 
         if (1 == shutdown_ws) {
@@ -228,7 +230,7 @@ static void main_loop(CWS *ws, CURLM *multi)
         while ((msg = curl_multi_info_read(multi, &msgs_left))) {
             if (msg->msg == CURLMSG_DONE) {
                 fprintf(stderr, "HTTP completed with status %d '%s'",
-                    msg->data.result, curl_easy_strerror(msg->data.result));
+                        msg->data.result, curl_easy_strerror(msg->data.result));
             }
         }
     } while (still_running);
@@ -237,12 +239,12 @@ static void main_loop(CWS *ws, CURLM *multi)
 
 static CURLcode configure(void *user, CWS *ws, CURL *easy)
 {
-    struct my_cfg *cfg = (struct my_cfg*) user;
+    struct my_cfg *cfg = (struct my_cfg *) user;
     CURLcode rv;
 
     (void) ws;
 
-    rv  = curl_easy_setopt(easy, CURLOPT_IPRESOLVE, cfg->ip_resolve);
+    rv = curl_easy_setopt(easy, CURLOPT_IPRESOLVE, cfg->ip_resolve);
     rv |= curl_easy_setopt(easy, CURLOPT_SSLVERSION, cfg->tls_version);
 
     if (cfg->insecure) {
@@ -275,7 +277,7 @@ static bool is_opt(const char *in, const char *s1, const char *s2)
 /* The custom on_connect handler for this instance of the websocket code. */
 static int on_connect(void *user, CWS *ws, const char *protos)
 {
-    printf("on_connect(user, ws, '%s')\n", (NULL == protos) ? "" : protos );
+    printf("on_connect(user, ws, '%s')\n", (NULL == protos) ? "" : protos);
     (void) user;
     (void) ws;
 
@@ -322,5 +324,3 @@ static int on_close(void *user, CWS *ws, int code, const char *reason, size_t le
 
     return 0;
 }
-
-

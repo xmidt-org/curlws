@@ -1,14 +1,13 @@
 /*
- * SPDX-FileCopyrightText: 2021 Comcast Cable Communications Management, LLC
+ * SPDX-FileCopyrightText: 2021-2022 Comcast Cable Communications Management, LLC
  *
  * SPDX-License-Identifier: MIT
  */
-#include <stdlib.h>
-#include <stdio.h>
-#include <string.h>
-
 #include <CUnit/Basic.h>
 #include <curl/curl.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
 
 #include "../src/internal.h"
 #include "../src/ws.h"
@@ -18,7 +17,7 @@
 #undef curl_easy_setopt
 
 
-CURLcode curl_easy_setopt(CURL *easy, CURLoption option, ... )
+CURLcode curl_easy_setopt(CURL *easy, CURLoption option, ...)
 {
     (void) easy;
     (void) option;
@@ -48,7 +47,7 @@ CWScode cws_close(CWS *priv, int code, const char *reason, size_t len)
 {
     CWScode rv = CWSE_OK;
 
-    //printf( "cws_close( ... code: %d, reason: '%.*s', len: %ld )\n", code, (int) len, reason, len );
+    // printf( "cws_close( ... code: %d, reason: '%.*s', len: %ld )\n", code, (int) len, reason, len );
 
     if (__cws_close_goal) {
         CU_ASSERT(NULL != priv);
@@ -67,7 +66,7 @@ CWScode cws_close(CWS *priv, int code, const char *reason, size_t len)
         if ((NULL != __cws_close_goal->reason) && (__cws_close_goal->len == len)) {
             for (size_t i = 0; i < len; i++) {
                 if (__cws_close_goal->reason[i] != reason[i]) {
-                    printf( "%ld: want: '%c', got: '%c'\n", i, __cws_close_goal->reason[i], reason[i]);
+                    printf("%ld: want: '%c', got: '%c'\n", i, __cws_close_goal->reason[i], reason[i]);
                 }
                 CU_ASSERT(__cws_close_goal->reason[i] == reason[i]);
             }
@@ -100,7 +99,7 @@ static int on_fragment(void *data, CWS *handle, int info, const void *buffer, si
 {
     (void) data;
 
-    //printf("on_fragment( ... info: %08x, buffer: 0x%p, len: %ld )\n", info, buffer, len);
+    // printf("on_fragment( ... info: %08x, buffer: 0x%p, len: %ld )\n", info, buffer, len);
 
     if (__on_fragment_goal) {
         CU_ASSERT(NULL != handle);
@@ -117,12 +116,12 @@ static int on_fragment(void *data, CWS *handle, int info, const void *buffer, si
 
         if (NULL != __on_fragment_goal->data) {
             for (size_t i = 0; i < len; i++) {
-                const char *c = (const char*) buffer;
+                const char *c = (const char *) buffer;
 
                 if (__on_fragment_goal->data[i] != c[i]) {
                     printf("data[%zd]: want: '%c' (0x%02x), got: '%c' (0x%02x)\n",
-                            i, __on_fragment_goal->data[i], __on_fragment_goal->data[i],
-                            c[i], c[i]);
+                           i, __on_fragment_goal->data[i], __on_fragment_goal->data[i],
+                           c[i], c[i]);
                 }
                 CU_ASSERT(__on_fragment_goal->data[i] == c[i]);
             }
@@ -152,7 +151,7 @@ static int on_close(void *data, CWS *handle, int code, const char *reason, size_
 {
     (void) data;
 
-    //printf( "on_close( ... code: %d, reason: '%.*s', len: %lu )\n", code, (int) len, reason, len );
+    // printf( "on_close( ... code: %d, reason: '%.*s', len: %lu )\n", code, (int) len, reason, len );
 
     if (__on_close_goal) {
         CU_ASSERT(NULL != handle);
@@ -196,14 +195,14 @@ static int on_ping(void *data, CWS *handle, const void *buffer, size_t len)
 {
     (void) data;
 
-    //printf( "on_ping( ... buffer: 0x%p, len: %ld )\n", buffer, len );
+    // printf( "on_ping( ... buffer: 0x%p, len: %ld )\n", buffer, len );
 
     if (__on_ping_goal) {
         CU_ASSERT(NULL != handle);
         CU_ASSERT(__on_ping_goal->len == len);
         if (NULL != __on_ping_goal->data) {
             for (size_t i = 0; i < len; i++) {
-                CU_ASSERT(((uint8_t*)__on_ping_goal->data)[i] == ((uint8_t*)buffer)[i]);
+                CU_ASSERT(((uint8_t *) __on_ping_goal->data)[i] == ((uint8_t *) buffer)[i]);
             }
         }
         __on_ping_goal->seen++;
@@ -230,14 +229,14 @@ static int on_pong(void *data, CWS *handle, const void *buffer, size_t len)
 {
     (void) data;
 
-    //printf( "on_pong( ... buffer: 0x%p, len: %ld )\n", buffer, len );
+    // printf( "on_pong( ... buffer: 0x%p, len: %ld )\n", buffer, len );
 
     if (__on_pong_goal) {
         CU_ASSERT(NULL != handle);
         CU_ASSERT(__on_pong_goal->len == len);
         if (NULL != __on_pong_goal->data) {
             for (size_t i = 0; i < len; i++) {
-                CU_ASSERT(((uint8_t*)__on_pong_goal->data)[i] == ((uint8_t*)buffer)[i]);
+                CU_ASSERT(((uint8_t *) __on_pong_goal->data)[i] == ((uint8_t *) buffer)[i]);
             }
         }
         __on_pong_goal->seen++;
@@ -269,7 +268,7 @@ struct test_vector {
 };
 
 
-void run_test( struct test_vector *v )
+void run_test(struct test_vector *v)
 {
     CWS priv;
     const char *p;
@@ -282,17 +281,17 @@ void run_test( struct test_vector *v )
 
     receive_init(&priv);
     priv.cb.on_fragment_fn = on_fragment;
-    priv.cb.on_close_fn = on_close;
-    priv.cb.on_ping_fn = on_ping;
-    priv.cb.on_pong_fn = on_pong;
+    priv.cb.on_close_fn    = on_close;
+    priv.cb.on_ping_fn     = on_ping;
+    priv.cb.on_pong_fn     = on_pong;
 
-    priv.cfg.follow_redirects = v->follow_redirects;
+    priv.cfg.follow_redirects     = v->follow_redirects;
     priv.header_state.redirection = v->redirection;
 
-    __on_ping_goal = v->ping;
-    __on_pong_goal = v->pong;
+    __on_ping_goal     = v->ping;
+    __on_pong_goal     = v->pong;
     __on_fragment_goal = v->stream;
-    __on_close_goal = v->close;
+    __on_close_goal    = v->close;
 
     p = v->in;
     for (size_t i = 0; i < v->block_count; i++) {
@@ -310,7 +309,7 @@ void run_test( struct test_vector *v )
     ping = v->ping;
     while (ping) {
         CU_ASSERT_FATAL(1 == ping->seen);
-        ping->seen = 0;    /* reset the test */
+        ping->seen = 0; /* reset the test */
         if (ping->more) {
             ping = &ping[1];
         } else {
@@ -321,7 +320,7 @@ void run_test( struct test_vector *v )
     pong = v->pong;
     while (pong) {
         CU_ASSERT_FATAL(1 == pong->seen);
-        pong->seen = 0;    /* reset the test */
+        pong->seen = 0; /* reset the test */
         if (pong->more) {
             pong = &pong[1];
         } else {
@@ -332,7 +331,7 @@ void run_test( struct test_vector *v )
     stream = v->stream;
     while (stream) {
         CU_ASSERT_FATAL(1 == stream->seen);
-        stream->seen = 0;    /* reset the test */
+        stream->seen = 0; /* reset the test */
         if (stream->more) {
             stream = &stream[1];
         } else {
@@ -343,7 +342,7 @@ void run_test( struct test_vector *v )
     close = v->close;
     while (close) {
         CU_ASSERT_FATAL(1 == close->seen);
-        close->seen = 0;    /* reset the test */
+        close->seen = 0; /* reset the test */
         if (close->more) {
             close = &close[1];
         } else {
@@ -355,6 +354,7 @@ void run_test( struct test_vector *v )
 
 void test_null_in()
 {
+    // clang-format off
     struct test_vector tests[] = {
         {
             .test_name = "Test null block, zero len",
@@ -402,15 +402,17 @@ void test_null_in()
             .close = NULL,
         },
     };
+    // clang-format on
 
-    run_test( &tests[0] );
-    run_test( &tests[1] );
-    run_test( &tests[2] );
+    run_test(&tests[0]);
+    run_test(&tests[1]);
+    run_test(&tests[2]);
 }
 
 
 void test_redirection()
 {
+    // clang-format off
     struct test_vector tests[] = {
         {
             .test_name = "Test 1",
@@ -449,14 +451,16 @@ void test_redirection()
             .close = NULL,
         },
     };
+    // clang-format on
 
-    run_test( &tests[0] );
-    run_test( &tests[1] );
+    run_test(&tests[0]);
+    run_test(&tests[1]);
 }
 
 
 void test_simple()
 {
+    // clang-format off
     struct test_vector test = {
         .test_name = "Test 1",
         .in = "\x01\x00"                /* TEXT with no payload. */
@@ -506,12 +510,14 @@ void test_simple()
         },
         .close = NULL,
     };
+    // clang-format on
 
-    run_test( &test );
+    run_test(&test);
 }
 
 void test_more_complex()
 {
+    // clang-format off
     struct test_vector test = {
         .test_name = "Test 2",
         .in = "\x01\x00"                /* TEXT with no payload. */
@@ -574,55 +580,56 @@ void test_more_complex()
         },
         .close = NULL,
     };
+    // clang-format on
 
-    run_test( &test );
+    run_test(&test);
 }
 
-void add_suites( CU_pSuite *suite )
+void add_suites(CU_pSuite *suite)
 {
     struct {
         const char *label;
         void (*fn)(void);
     } tests[] = {
-        { .label = "simple Tests",       .fn = test_simple        },
-        { .label = "more complex Tests ", .fn = test_more_complex },
-        { .label = "invalid input Tests", .fn = test_null_in      },
-        { .label = "redirection Tests  ", .fn = test_redirection  },
-        { .label = NULL, .fn = NULL }
+        {       .label = "simple Tests",       .fn = test_simple},
+        {.label = "more complex Tests ", .fn = test_more_complex},
+        {.label = "invalid input Tests",      .fn = test_null_in},
+        {.label = "redirection Tests  ",  .fn = test_redirection},
+        {                 .label = NULL,              .fn = NULL}
     };
     int i;
 
-    *suite = CU_add_suite( "curlws.c tests", NULL, NULL );
+    *suite = CU_add_suite("curlws.c tests", NULL, NULL);
 
     for (i = 0; NULL != tests[i].fn; i++) {
-        CU_add_test( *suite, tests[i].label, tests[i].fn );
+        CU_add_test(*suite, tests[i].label, tests[i].fn);
     }
 }
 
 /*----------------------------------------------------------------------------*/
 /*                             External Functions                             */
 /*----------------------------------------------------------------------------*/
-int main( void )
+int main(void)
 {
-    unsigned rv = 1;
+    unsigned rv     = 1;
     CU_pSuite suite = NULL;
 
-    if( CUE_SUCCESS == CU_initialize_registry() ) {
-        add_suites( &suite );
+    if (CUE_SUCCESS == CU_initialize_registry()) {
+        add_suites(&suite);
 
-        if( NULL != suite ) {
-            CU_basic_set_mode( CU_BRM_VERBOSE );
+        if (NULL != suite) {
+            CU_basic_set_mode(CU_BRM_VERBOSE);
             CU_basic_run_tests();
-            printf( "\n" );
-            CU_basic_show_failures( CU_get_failure_list() );
-            printf( "\n\n" );
+            printf("\n");
+            CU_basic_show_failures(CU_get_failure_list());
+            printf("\n\n");
             rv = CU_get_number_of_tests_failed();
         }
 
         CU_cleanup_registry();
     }
 
-    if( 0 != rv ) {
+    if (0 != rv) {
         return 1;
     }
     return 0;

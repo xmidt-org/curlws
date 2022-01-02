@@ -1,14 +1,14 @@
 /*
  * SPDX-FileCopyrightText: 2016 Gustavo Sverzut Barbieri
- * SPDX-FileCopyrightText: 2021 Comcast Cable Communications Management, LLC
+ * SPDX-FileCopyrightText: 2021-2022 Comcast Cable Communications Management, LLC
  *
  * SPDX-License-Identifier: MIT
  */
 #ifndef __FRAME_H__
 #define __FRAME_H__
 
-#include <stdint.h>
 #include <stddef.h>
+#include <stdint.h>
 
 #include <curlws/curlws.h>
 
@@ -16,22 +16,22 @@
 
 
 typedef enum {
-    FRAME_DIR_C2S,  /* Client to server */
-    FRAME_DIR_S2C   /* Server to client */
+    FRAME_DIR_C2S, /* Client to server */
+    FRAME_DIR_S2C  /* Server to client */
 } frame_dir;
 
 
 struct cws_frame {
-    uint8_t fin        : 1; /* 0/1 FIN bit from rfc6455, page 28 */
-    uint8_t mask       : 1; /* 0/1 Mask bit from rfc6455, page 29 */
+    uint8_t fin : 1;        /* 0/1 FIN bit from rfc6455, page 28 */
+    uint8_t mask : 1;       /* 0/1 Mask bit from rfc6455, page 29 */
     uint8_t is_control : 1; /* 1 if the opcode is control, 0 otherwise */
-    uint8_t is_urgent  : 1; /* 1 if the opcode is an urgent frame */
-    uint8_t opcode     : 4; /* 0-15 opcode from rfc6455, page 29 */
+    uint8_t is_urgent : 1;  /* 1 if the opcode is an urgent frame */
+    uint8_t opcode : 4;     /* 0-15 opcode from rfc6455, page 29 */
 
     uint8_t masking_key[4]; /* The 4 byte masking key to use on upstream msgs */
 
-    uint64_t payload_len;   /* The payload length pointed to by payload */
-    const void *payload;    /* The payload (may be NULL) */
+    uint64_t payload_len; /* The payload length pointed to by payload */
+    const void *payload;  /* The payload (may be NULL) */
 };
 
 
@@ -98,6 +98,5 @@ size_t frame_encode(const struct cws_frame *f, void *buf, size_t len);
  *
  * @return a string with the opcode type represented
  */
-const char* frame_opcode_to_string(const struct cws_frame *f);
+const char *frame_opcode_to_string(const struct cws_frame *f);
 #endif
-

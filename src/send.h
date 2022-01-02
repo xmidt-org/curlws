@@ -1,6 +1,6 @@
 /*
  * SPDX-FileCopyrightText: 2016 Gustavo Sverzut Barbieri
- * SPDX-FileCopyrightText: 2021 Comcast Cable Communications Management, LLC
+ * SPDX-FileCopyrightText: 2021-2022 Comcast Cable Communications Management, LLC
  *
  * SPDX-License-Identifier: MIT
  */
@@ -51,4 +51,3 @@ size_t send_get_memory_needed(size_t payload_size);
 CWScode send_frame(CWS *priv, const struct cws_frame *f);
 
 #endif
-

@@ -1,6 +1,6 @@
 /*
  * SPDX-FileCopyrightText: 2016 Gustavo Sverzut Barbieri
- * SPDX-FileCopyrightText: 2021 Comcast Cable Communications Management, LLC
+ * SPDX-FileCopyrightText: 2021-2022 Comcast Cable Communications Management, LLC
  *
  * SPDX-License-Identifier: MIT
  */
@@ -47,14 +47,14 @@ void verbose_close(CWS *priv)
 {
     if (!priv->close_state) {
         verbose(priv, "[ websocket connection state: active ]\n");
-    } else if ((CLOSED|CLOSE_SENT|CLOSE_QUEUED|CLOSE_RECEIVED) == priv->close_state) {
+    } else if ((CLOSED | CLOSE_SENT | CLOSE_QUEUED | CLOSE_RECEIVED) == priv->close_state) {
         verbose(priv, "[ websocket connection state: (closed)   closed  sent  queued  received ]\n");
     } else {
         verbose(priv, "[ websocket connection state: (closing) %cclosed %csent %cqueued %creceived ]\n",
-                (CLOSED         & priv->close_state) ? ' ' : '!',
-                (CLOSE_SENT     & priv->close_state) ? ' ' : '!',
-                (CLOSE_QUEUED   & priv->close_state) ? ' ' : '!',
-                (CLOSE_RECEIVED & priv->close_state) ? ' ' : '!' );
+                (CLOSED & priv->close_state) ? ' ' : '!',
+                (CLOSE_SENT & priv->close_state) ? ' ' : '!',
+                (CLOSE_QUEUED & priv->close_state) ? ' ' : '!',
+                (CLOSE_RECEIVED & priv->close_state) ? ' ' : '!');
     }
 }
 
@@ -62,4 +62,3 @@ void verbose_close(CWS *priv)
 /*                             Internal functions                             */
 /*----------------------------------------------------------------------------*/
 /* none */
-

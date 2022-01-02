@@ -1,6 +1,6 @@
 /*
  * SPDX-FileCopyrightText: 2016 Gustavo Sverzut Barbieri
- * SPDX-FileCopyrightText: 2021 Comcast Cable Communications Management, LLC
+ * SPDX-FileCopyrightText: 2021-2022 Comcast Cable Communications Management, LLC
  *
  * SPDX-License-Identifier: MIT
  */
@@ -29,7 +29,7 @@
 /*----------------------------------------------------------------------------*/
 /*                             Function Prototypes                            */
 /*----------------------------------------------------------------------------*/
-static void __process_rv(CWS*, int);
+static void __process_rv(CWS *, int);
 
 /*----------------------------------------------------------------------------*/
 /*                             External Functions                             */
@@ -58,7 +58,7 @@ void cb_on_text(CWS *priv, const char *text, size_t len)
         truncated = 40;
         if (len <= (size_t) truncated) {
             truncated = (int) len;
-            dots = "";
+            dots      = "";
         }
         verbose(priv, "< websocket on_text() len: %zd, text: '%.*s%s'\n", len,
                 truncated, text, dots);
@@ -173,4 +173,3 @@ static void __process_rv(CWS *priv, int code)
     }
     cws_close(priv, code, NULL, 0);
 }
-

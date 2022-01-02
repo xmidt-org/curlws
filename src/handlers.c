@@ -1,6 +1,6 @@
 /*
  * SPDX-FileCopyrightText: 2016 Gustavo Sverzut Barbieri
- * SPDX-FileCopyrightText: 2021 Comcast Cable Communications Management, LLC
+ * SPDX-FileCopyrightText: 2021-2022 Comcast Cable Communications Management, LLC
  *
  * SPDX-License-Identifier: MIT
  */
@@ -31,8 +31,8 @@
 /*----------------------------------------------------------------------------*/
 /*                             Function Prototypes                            */
 /*----------------------------------------------------------------------------*/
-static int _default_on_fragment(void*, CWS*, int, const void*, size_t);
-static int _default_on_ping(void*, CWS*, const void*, size_t);
+static int _default_on_fragment(void *, CWS *, int, const void *, size_t);
+static int _default_on_ping(void *, CWS *, const void *, size_t);
 
 /*----------------------------------------------------------------------------*/
 /*                             External Functions                             */
@@ -88,7 +88,7 @@ static int _default_on_fragment(void *user, CWS *priv, int info, const void *buf
     } else {
         size_t prev_len;
         if (CWS_FIRST & info) {
-            priv->stream_type = (CWS_BINARY | CWS_TEXT) & info;
+            priv->stream_type       = (CWS_BINARY | CWS_TEXT) & info;
             priv->stream_buffer_len = 0;
         }
 
@@ -97,7 +97,7 @@ static int _default_on_fragment(void *user, CWS *priv, int info, const void *buf
 
         if (0 < priv->stream_buffer_len) {
             priv->stream_buffer = realloc(priv->stream_buffer, priv->stream_buffer_len);
-            memcpy(&((uint8_t*)priv->stream_buffer)[prev_len], buffer, len);
+            memcpy(&((uint8_t *) priv->stream_buffer)[prev_len], buffer, len);
         }
 
         if (CWS_LAST & info) {
@@ -110,14 +110,13 @@ static int _default_on_fragment(void *user, CWS *priv, int info, const void *buf
             if (NULL != priv->stream_buffer) {
                 free(priv->stream_buffer);
             }
-            priv->stream_buffer = NULL;
+            priv->stream_buffer     = NULL;
             priv->stream_buffer_len = 0;
         }
     }
 
     return 0;
 }
-
 
 
 static int _default_on_ping(void *user, CWS *priv, const void *buffer, size_t len)

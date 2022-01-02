@@ -1,6 +1,6 @@
 /*
  * SPDX-FileCopyrightText: 2016 Gustavo Sverzut Barbieri
- * SPDX-FileCopyrightText: 2021 Comcast Cable Communications Management, LLC
+ * SPDX-FileCopyrightText: 2021-2022 Comcast Cable Communications Management, LLC
  *
  * SPDX-License-Identifier: MIT
  */
@@ -12,7 +12,7 @@
 #include <sys/types.h>
 
 /* The maximum number of bytes needed to make any UTF8 encoded character. */
-#define MAX_UTF_BYTES   4
+#define MAX_UTF_BYTES 4
 
 /**
  * Returns the number of total bytes needed by the UTF8 starting character
@@ -47,9 +47,8 @@ bool utf8_maybe_valid(const char *text, size_t len);
  *               characters (out)
  *
  * @returns 0 if the string is valid assuming more data may come later, or
- *          less than zero indicates an error 
+ *          less than zero indicates an error
  */
 int utf8_validate(const char *text, size_t *len);
 
 #endif
-

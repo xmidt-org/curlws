@@ -1,18 +1,18 @@
 /*
  * SPDX-FileCopyrightText: 2016 Gustavo Sverzut Barbieri
- * SPDX-FileCopyrightText: 2021 Comcast Cable Communications Management, LLC
+ * SPDX-FileCopyrightText: 2021-2022 Comcast Cable Communications Management, LLC
  *
  * SPDX-License-Identifier: MIT
  */
-#define _XOPEN_SOURCE   600
+#define _XOPEN_SOURCE 600
 
 #include <stddef.h>
 #include <stdint.h>
 #include <stdio.h>
-#include <unistd.h>
 #include <stdlib.h>
-#include <time.h>
 #include <sys/random.h>
+#include <time.h>
+#include <unistd.h>
 
 #include "internal.h"
 
@@ -41,7 +41,7 @@
 /*----------------------------------------------------------------------------*/
 void cws_random(CWS *priv, void *buffer, size_t len)
 {
-    uint8_t *bytes = buffer;
+    uint8_t *bytes    = buffer;
     static int seeded = 0;
 
     IGNORE_UNUSED(priv);
@@ -50,7 +50,7 @@ void cws_random(CWS *priv, void *buffer, size_t len)
         struct timespec ts;
 
         if (0 == clock_gettime(CLOCK_MONOTONIC, &ts)) {
-            srandom(((int)ts.tv_nsec) ^ ((int)ts.tv_sec));
+            srandom(((int) ts.tv_nsec) ^ ((int) ts.tv_sec));
             seeded = 1;
         }
     }
@@ -61,7 +61,6 @@ void cws_random(CWS *priv, void *buffer, size_t len)
         bytes[i] = (0x0ff & random());
     }
 }
-
 
 
 /*----------------------------------------------------------------------------*/

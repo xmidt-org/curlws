@@ -1,6 +1,6 @@
 /*
  * SPDX-FileCopyrightText: 2016 Gustavo Sverzut Barbieri
- * SPDX-FileCopyrightText: 2021 Comcast Cable Communications Management, LLC
+ * SPDX-FileCopyrightText: 2021-2022 Comcast Cable Communications Management, LLC
  *
  * SPDX-License-Identifier: MIT
  */
@@ -33,7 +33,8 @@ static void main_loop(CURLM *multi);
 /*----------------------------------------------------------------------------*/
 /*                             External Functions                             */
 /*----------------------------------------------------------------------------*/
-int main(int argc, char *argv[]) {
+int main(int argc, char *argv[])
+{
     char url[4096];
     const char *base_url;
     int opt = 1;
@@ -47,8 +48,7 @@ int main(int argc, char *argv[]) {
     for (int i = 1; i < argc; i++) {
         if (argv[i][0] != '-') {
             break;
-        } else if (strcmp(argv[i], "-h") == 0 ||
-                   strcmp(argv[i], "--help") == 0) {
+        } else if (strcmp(argv[i], "-h") == 0 || strcmp(argv[i], "--help") == 0) {
             fprintf(stderr,
                     "Usage:\n"
                     "\t%s <base_url>\n"
@@ -61,10 +61,10 @@ int main(int argc, char *argv[]) {
             return 0;
         } else if (strcmp(argv[i], "-vv") == 0) {
             cfg.verbose = 3;
-            opt = i + 1;
+            opt         = i + 1;
         } else if (strcmp(argv[i], "-v") == 0) {
             cfg.verbose = 1;
-            opt = i + 1;
+            opt         = i + 1;
         }
     }
 
@@ -73,7 +73,7 @@ int main(int argc, char *argv[]) {
     curl_global_init(CURL_GLOBAL_DEFAULT);
 
     snprintf(url, sizeof(url), "%s/updateReports?agent=curlws", base_url);
-    cfg.url = url;
+    cfg.url    = url;
     cfg.expect = 1;
 
     ws = cws_create(&cfg);
@@ -105,20 +105,20 @@ static void main_loop(CURLM *multi)
         fd_set fdread, fdwrite, fdexcep;
         CURLMcode mc;
         int msgs_left, rc;
-        int maxfd = -1;
+        int maxfd       = -1;
         long curl_timeo = -1;
 
         FD_ZERO(&fdread);
         FD_ZERO(&fdwrite);
         FD_ZERO(&fdexcep);
 
-        timeout.tv_sec = 0;
+        timeout.tv_sec  = 0;
         timeout.tv_usec = 200000;
 
         curl_multi_timeout(multi, &curl_timeo);
 
         if (curl_timeo >= 0) {
-            timeout.tv_sec = curl_timeo / 1000;
+            timeout.tv_sec  = curl_timeo / 1000;
             timeout.tv_usec = (curl_timeo % 1000) * 1000;
         }
 
@@ -128,27 +128,27 @@ static void main_loop(CURLM *multi)
         mc = curl_multi_fdset(multi, &fdread, &fdwrite, &fdexcep, &maxfd);
         if (mc != CURLM_OK) {
             fprintf(stderr, "curl_multi_fdset() failed, code %d '%s'.",
-                mc, curl_multi_strerror(mc));
+                    mc, curl_multi_strerror(mc));
             break;
         }
 
         rc = select(maxfd + 1, &fdread, &fdwrite, &fdexcep, &timeout);
 
-        switch(rc) {
-        case -1:
-            /* select error */
-            break;
-        case 0: /* timeout */
-        default: /* action */
-            curl_multi_perform(multi, &still_running);
-            break;
+        switch (rc) {
+            case -1:
+                /* select error */
+                break;
+            case 0:  /* timeout */
+            default: /* action */
+                curl_multi_perform(multi, &still_running);
+                break;
         }
 
         /* See how the transfers went */
         while ((msg = curl_multi_info_read(multi, &msgs_left))) {
             if (msg->msg == CURLMSG_DONE) {
                 fprintf(stderr, "HTTP completed with status %d '%s'",
-                    msg->data.result, curl_easy_strerror(msg->data.result));
+                        msg->data.result, curl_easy_strerror(msg->data.result));
             }
         }
     } while (still_running);

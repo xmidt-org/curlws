@@ -1,6 +1,6 @@
 /*
  * SPDX-FileCopyrightText: 2016 Gustavo Sverzut Barbieri
- * SPDX-FileCopyrightText: 2021 Comcast Cable Communications Management, LLC
+ * SPDX-FileCopyrightText: 2021-2022 Comcast Cable Communications Management, LLC
  *
  * SPDX-License-Identifier: MIT
  */
@@ -38,10 +38,10 @@
 CWScode frame_sender_control(CWS *priv, int options, const void *data, size_t len)
 {
     struct cws_frame f = {
-        .fin = 1,
-        .mask = 1,
+        .fin        = 1,
+        .mask       = 1,
         .is_control = 1,
-        .is_urgent = (CWS_URGENT & options) ? 1 : 0,
+        .is_urgent  = (CWS_URGENT & options) ? 1 : 0,
     };
 
     /* No special labels are allowed for a control message */
@@ -69,10 +69,10 @@ CWScode frame_sender_control(CWS *priv, int options, const void *data, size_t le
 
     if (!data || !len) {
         data = NULL;
-        len = 0;
+        len  = 0;
     }
 
-    f.payload = data;
+    f.payload     = data;
     f.payload_len = len;
 
     if (WS_CTL_PAYLOAD_MAX < len) {
@@ -88,18 +88,18 @@ CWScode frame_sender_control(CWS *priv, int options, const void *data, size_t le
 CWScode frame_sender_data(CWS *priv, int options, const void *data, size_t len)
 {
     struct cws_frame f = {
-        .fin = (CWS_LAST & options) ? 1 : 0,
-        .mask = 1,
+        .fin        = (CWS_LAST & options) ? 1 : 0,
+        .mask       = 1,
         .is_control = 0,
     };
     const int allowed = (CWS_NONCTRL_MASK | CWS_FIRST | CWS_LAST);
-    int lastinfo = priv->last_sent_data_frame_info;
+    int lastinfo      = priv->last_sent_data_frame_info;
 
     if (options != (options & allowed)) {
         return CWSE_INVALID_OPTIONS;
     }
 
-    switch (options & (CWS_CONT|CWS_BINARY|CWS_TEXT)) {
+    switch (options & (CWS_CONT | CWS_BINARY | CWS_TEXT)) {
         case CWS_CONT:
             if (CWS_FIRST & options) {
                 return CWSE_INVALID_OPTIONS;
@@ -137,10 +137,10 @@ CWScode frame_sender_data(CWS *priv, int options, const void *data, size_t len)
 
     if (!data || !len) {
         data = NULL;
-        len = 0;
+        len  = 0;
     }
 
-    f.payload = data;
+    f.payload     = data;
     f.payload_len = len;
 
     cws_random(priv, f.masking_key, 4);
@@ -152,4 +152,3 @@ CWScode frame_sender_data(CWS *priv, int options, const void *data, size_t len)
 /*                             Internal functions                             */
 /*----------------------------------------------------------------------------*/
 /* none */
-

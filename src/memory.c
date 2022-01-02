@@ -1,11 +1,11 @@
 /*
  * SPDX-FileCopyrightText: 2016 Gustavo Sverzut Barbieri
- * SPDX-FileCopyrightText: 2021 Comcast Cable Communications Management, LLC
+ * SPDX-FileCopyrightText: 2021-2022 Comcast Cable Communications Management, LLC
  *
  * SPDX-License-Identifier: MIT
  */
-#include <stdlib.h>
 #include <stdint.h>
+#include <stdlib.h>
 
 #include "memory.h"
 
@@ -45,13 +45,13 @@ struct mem_pool {
 /*----------------------------------------------------------------------------*/
 /*                             Function Prototypes                            */
 /*----------------------------------------------------------------------------*/
-static void* _mem_alloc(struct mem_block_pool*);
+static void *_mem_alloc(struct mem_block_pool *);
 
 
 /*----------------------------------------------------------------------------*/
 /*                             External Functions                             */
 /*----------------------------------------------------------------------------*/
-pool_t* mem_init_pool(const struct mem_pool_config *cfg)
+pool_t *mem_init_pool(const struct mem_pool_config *cfg)
 {
     pool_t *pool;
 
@@ -59,15 +59,15 @@ pool_t* mem_init_pool(const struct mem_pool_config *cfg)
         return NULL;
     }
 
-    pool = (pool_t*) malloc(sizeof(pool_t));
+    pool = (pool_t *) malloc(sizeof(pool_t));
     if (pool) {
         pool->ctrl.block_size = cfg->control_block_size;
-        pool->ctrl.free = NULL;
-        pool->ctrl.active = NULL;
+        pool->ctrl.free       = NULL;
+        pool->ctrl.active     = NULL;
 
         pool->data.block_size = cfg->data_block_size;
-        pool->data.free = NULL;
-        pool->data.active = NULL;
+        pool->data.free       = NULL;
+        pool->data.active     = NULL;
     }
 
     return pool;
@@ -106,13 +106,13 @@ void mem_cleanup_pool(pool_t *pool)
 }
 
 
-void* mem_alloc_ctrl(pool_t *pool)
+void *mem_alloc_ctrl(pool_t *pool)
 {
     return _mem_alloc(&pool->ctrl);
 }
 
 
-void* mem_alloc_data(pool_t *pool)
+void *mem_alloc_data(pool_t *pool)
 {
     return _mem_alloc(&pool->data);
 }
@@ -125,7 +125,7 @@ void mem_free(void *ptr)
 
     /* We return the data pointer so back up from the data field to find the
      * actual struct so we can point there. */
-    p = (struct mem_block*) (((uint8_t*)ptr) - delta);
+    p = (struct mem_block *) (((uint8_t *) ptr) - delta);
 
     /* If this is the head of the free list, don't try to free it again. */
     if (p == p->parent->free) {
@@ -165,7 +165,7 @@ void mem_free(void *ptr)
  *
  * @return the memory or NULL if there was an allocation error
  */
-static void* _mem_alloc(struct mem_block_pool *pool)
+static void *_mem_alloc(struct mem_block_pool *pool)
 {
     struct mem_block *p;
 
@@ -178,12 +178,12 @@ static void* _mem_alloc(struct mem_block_pool *pool)
         }
     } else {
         /* Not enough, make a new node */
-        p = (struct mem_block*) malloc(sizeof(struct mem_block) + pool->block_size);
+        p = (struct mem_block *) malloc(sizeof(struct mem_block) + pool->block_size);
         if (!p) {
             return NULL;
         }
         p->parent = pool;
-        p->next = NULL;
+        p->next   = NULL;
     }
 
     /* Insert the node into the active list */
@@ -194,5 +194,5 @@ static void* _mem_alloc(struct mem_block_pool *pool)
     }
     pool->active = p;
 
-    return (void*) &p->data[0];
+    return (void *) &p->data[0];
 }

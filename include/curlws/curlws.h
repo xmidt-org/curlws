@@ -1,6 +1,6 @@
 /*
  * SPDX-FileCopyrightText: 2016 Gustavo Sverzut Barbieri
- * SPDX-FileCopyrightText: 2021 Comcast Cable Communications Management, LLC
+ * SPDX-FileCopyrightText: 2021-2022 Comcast Cable Communications Management, LLC
  *
  * SPDX-License-Identifier: MIT
  */
@@ -18,12 +18,12 @@ extern "C" {
 #endif
 
 /* Used to define the location in the stream this frame is by (*on_fragment) */
-#define CWS_CONT        0x00000100
-#define CWS_BINARY      0x00000200
-#define CWS_TEXT        0x00000400
+#define CWS_CONT   0x00000100
+#define CWS_BINARY 0x00000200
+#define CWS_TEXT   0x00000400
 
-#define CWS_FIRST       0x01000000
-#define CWS_LAST        0x02000000
+#define CWS_FIRST 0x01000000
+#define CWS_LAST  0x02000000
 
 /* All possible error codes from all the curlws functions. Future versions
  * may return other values.
@@ -33,17 +33,17 @@ extern "C" {
  */
 typedef enum {
     CWSE_OK = 0,
-    CWSE_OUT_OF_MEMORY,                 /*  1 */
-    CWSE_CLOSED_CONNECTION,             /*  2 */
-    CWSE_INVALID_CLOSE_REASON_CODE,     /*  3 */
-    CWSE_APP_DATA_LENGTH_TOO_LONG,      /*  4 */
-    CWSE_UNSUPPORTED_INTEGER_SIZE,      /*  5 */
-    CWSE_INTERNAL_ERROR,                /*  6 */
-    CWSE_INVALID_OPCODE,                /*  7 */
-    CWSE_STREAM_CONTINUITY_ISSUE,       /*  8 */
-    CWSE_INVALID_OPTIONS,               /*  9 */
-    CWSE_INVALID_UTF8,                  /* 10 */
-    CWSE_BAD_FUNCTION_ARGUMENT,         /* 11 */
+    CWSE_OUT_OF_MEMORY,             /*  1 */
+    CWSE_CLOSED_CONNECTION,         /*  2 */
+    CWSE_INVALID_CLOSE_REASON_CODE, /*  3 */
+    CWSE_APP_DATA_LENGTH_TOO_LONG,  /*  4 */
+    CWSE_UNSUPPORTED_INTEGER_SIZE,  /*  5 */
+    CWSE_INTERNAL_ERROR,            /*  6 */
+    CWSE_INVALID_OPCODE,            /*  7 */
+    CWSE_STREAM_CONTINUITY_ISSUE,   /*  8 */
+    CWSE_INVALID_OPTIONS,           /*  9 */
+    CWSE_INVALID_UTF8,              /* 10 */
+    CWSE_BAD_FUNCTION_ARGUMENT,     /* 11 */
 
     CWSE_LAST /* never use! */
 } CWScode;
@@ -108,7 +108,7 @@ struct cws_config {
      * Something like "chat", "superchat", "superchat,chat" ...
      * The default is no special protocols (NULL)
      */
-    const char* websocket_protocols;
+    const char *websocket_protocols;
 
     /* If set to 1, send the 'Expect: 101' header that forces the server to send
      * a 101 vs possibly a 100.  Some server implementations reject this
@@ -528,7 +528,7 @@ CWScode cws_send_blk_text(CWS *handle, const char *s, size_t len);
 /**
  * Send a binary (opcode 0x2) message of a given size.
  *
- * 
+ *
  * @param handle the websocket handle to interact with
  * @param info   information about the frame of date presented.  The type
  *               information is ignored.  Set the CWS_FIRST and/or CWS_LAST to

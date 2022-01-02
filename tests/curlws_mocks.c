@@ -1,27 +1,26 @@
 /*
  * SPDX-FileCopyrightText: 2016 Gustavo Sverzut Barbieri
- * SPDX-FileCopyrightText: 2021 Comcast Cable Communications Management, LLC
+ * SPDX-FileCopyrightText: 2021-2022 Comcast Cable Communications Management, LLC
  *
  * SPDX-License-Identifier: MIT
  */
 #include <stdarg.h>
 #include <stdbool.h>
-#include <stdint.h>
 #include <stddef.h>
+#include <stdint.h>
 #include <string.h>
 
 #include "../src/utils.h"
 
-#define SEEN_AND_NEXT(type)     \
-do {                            \
-    type->seen++;               \
-    if (0 != type->more) {      \
-        type = &type[1];        \
-    } else {                    \
-        type = NULL;            \
-    }                           \
-} while (0)
-
+#define SEEN_AND_NEXT(type)    \
+    do {                       \
+        type->seen++;          \
+        if (0 != type->more) { \
+            type = &type[1];   \
+        } else {               \
+            type = NULL;       \
+        }                      \
+    } while (0)
 
 
 /*----------------------------------------------------------------------------*/
@@ -124,7 +123,6 @@ CWScode frame_sender_control(CWS *priv, int options, const void *data, size_t le
 }
 
 
-
 static struct mock_sender *__frame_sender_data = NULL;
 CWScode frame_sender_data(CWS *priv, int options, const void *data, size_t len)
 {
@@ -174,13 +172,13 @@ void cws_random(CWS *priv, void *buffer, size_t len)
 
 static bool __curl_info_test_value = false;
 static curl_version_info_data __curl_info;
-curl_version_info_data* curl_version_info(CURLversion v)
+curl_version_info_data *curl_version_info(CURLversion v)
 {
     (void) v;
 
     if (!__curl_info_test_value) {
         __curl_info.version_num = 0x073202;
-        __curl_info.version = "7.50.2";
+        __curl_info.version     = "7.50.2";
     }
 
     return &__curl_info;
@@ -193,16 +191,16 @@ struct mock_curl_easy_init {
     int more;
 };
 static struct mock_curl_easy_init *__curl_easy_init = NULL;
-CURL* curl_easy_init()
+CURL *curl_easy_init()
 {
     CURL *rv = NULL;
 
     if (__curl_easy_init) {
-        rv = (CURL*) __curl_easy_init->rv;
+        rv = (CURL *) __curl_easy_init->rv;
         SEEN_AND_NEXT(__curl_easy_init);
     } else {
         /* Really don't care, just not NULL. */
-        rv = (CURL*) 42;
+        rv = (CURL *) 42;
     }
 
     return rv;
@@ -228,11 +226,11 @@ CURLcode curl_easy_pause(CURL *easy, int bitmask)
 
 
 struct curl_slist *__curl_easy_setopt = NULL;
-CURLcode curl_easy_setopt(CURL *easy, CURLoption option, ... )
+CURLcode curl_easy_setopt(CURL *easy, CURLoption option, ...)
 {
     va_list ap;
     char buf[256];
-    int width = 23;
+    int width            = 23;
     struct curl_slist *p = NULL;
 
     CU_ASSERT(NULL != easy);
@@ -242,7 +240,7 @@ CURLcode curl_easy_setopt(CURL *easy, CURLoption option, ... )
     va_start(ap, option);
     switch (option) {
         case CURLOPT_URL:
-            snprintf(buf, sizeof(buf), "%-*s: %s", width, "CURLOPT_URL", va_arg(ap, const char*));
+            snprintf(buf, sizeof(buf), "%-*s: %s", width, "CURLOPT_URL", va_arg(ap, const char *));
             break;
         case CURLOPT_FOLLOWLOCATION:
             snprintf(buf, sizeof(buf), "%-*s: %ld", width, "CURLOPT_FOLLOWLOCATION", va_arg(ap, long));
@@ -254,7 +252,7 @@ CURLcode curl_easy_setopt(CURL *easy, CURLoption option, ... )
             snprintf(buf, sizeof(buf), "%-*s: %ld", width, "CURLOPT_IPRESOLVE", va_arg(ap, long));
             break;
         case CURLOPT_INTERFACE:
-            snprintf(buf, sizeof(buf), "%-*s: %s", width, "CURLOPT_INTERFACE", va_arg(ap, const char*));
+            snprintf(buf, sizeof(buf), "%-*s: %s", width, "CURLOPT_INTERFACE", va_arg(ap, const char *));
             break;
         case CURLOPT_SSLVERSION:
             snprintf(buf, sizeof(buf), "%-*s: %ld", width, "CURLOPT_SSLVERSION", va_arg(ap, long));
@@ -275,7 +273,7 @@ CURLcode curl_easy_setopt(CURL *easy, CURLoption option, ... )
             snprintf(buf, sizeof(buf), "%-*s: %ld", width, "CURLOPT_UPLOAD", va_arg(ap, long));
             break;
         case CURLOPT_CUSTOMREQUEST:
-            snprintf(buf, sizeof(buf), "%-*s: %s", width, "CURLOPT_CUSTOMREQUEST", va_arg(ap, const char*));
+            snprintf(buf, sizeof(buf), "%-*s: %s", width, "CURLOPT_CUSTOMREQUEST", va_arg(ap, const char *));
             break;
         case CURLOPT_FORBID_REUSE:
             snprintf(buf, sizeof(buf), "%-*s: %ld", width, "CURLOPT_FORBID_REUSE", va_arg(ap, long));
@@ -284,10 +282,10 @@ CURLcode curl_easy_setopt(CURL *easy, CURLoption option, ... )
             snprintf(buf, sizeof(buf), "%-*s: %ld", width, "CURLOPT_FRESH_CONNECT", va_arg(ap, long));
             break;
         case CURLOPT_STDERR:
-            snprintf(buf, sizeof(buf), "%-*s: %p", width, "CURLOPT_STDERR", (void*) va_arg(ap, FILE*));
+            snprintf(buf, sizeof(buf), "%-*s: %p", width, "CURLOPT_STDERR", (void *) va_arg(ap, FILE *));
             break;
-        case CURLOPT_HTTPHEADER:        /* pointer to headers */
-            p = va_arg(ap, struct curl_slist*);
+        case CURLOPT_HTTPHEADER: /* pointer to headers */
+            p = va_arg(ap, struct curl_slist *);
             break;
         default:
             snprintf(buf, sizeof(buf), "%-*s: %ld", width, "CURLOPT_unknown", (long) option);
@@ -298,7 +296,7 @@ CURLcode curl_easy_setopt(CURL *easy, CURLoption option, ... )
     if (p) {
         while (p) {
             __curl_easy_setopt = curl_slist_append(__curl_easy_setopt, p->data);
-            p = p->next;
+            p                  = p->next;
         }
     } else {
         __curl_easy_setopt = curl_slist_append(__curl_easy_setopt, buf);
@@ -306,7 +304,6 @@ CURLcode curl_easy_setopt(CURL *easy, CURLoption option, ... )
 
     return CURLE_OK;
 }
-
 
 
 #if 0
@@ -374,7 +371,7 @@ void curl_slist_free_all(struct curl_slist *list)
     while (list) {
         struct curl_slist *tmp;
 
-        tmp = list;
+        tmp  = list;
         list = list->next;
         free(tmp->data);
         free(tmp);
@@ -402,4 +399,3 @@ void curl_slist_compare(struct curl_slist *list, const char *s[])
         s++;
     }
 }
-
