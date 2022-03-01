@@ -84,7 +84,7 @@ jobs:
           ninja test
 
   test-linux-gcc:
-    name: Unit Tests
+    name: Unit Tests (Linux gcc)
     runs-on: [ ubuntu-latest ]
     steps:
       - uses: actions/checkout@v2
