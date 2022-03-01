@@ -149,18 +149,29 @@ CWScode data_block_sender(CWS *priv, int options, const void *data, size_t len)
 void cws_random(CWS *priv, void *buffer, size_t len)
 {
     uint8_t *bytes = buffer;
-    size_t i;
 
     (void) priv;
 
-    /* Always use the same 4 random numebrs */
-    srand(1000);
+    CU_ASSERT(NULL != buffer);
+    CU_ASSERT(16 == len);
 
-    /* Note that this does NOT need to be a crypto level randomization function
-     * but is simply used to prevent intermediary caches from causing issues. */
-    for (i = 0; i < len; i++) {
-        bytes[i] = (0x0ff & rand());
-    }
+    /* Always use the same random number */
+    bytes[0]  = 0xb6;
+    bytes[1]  = 0x5b;
+    bytes[2]  = 0x89;
+    bytes[3]  = 0x9e;
+    bytes[4]  = 0x74;
+    bytes[5]  = 0x25;
+    bytes[6]  = 0xbb;
+    bytes[7]  = 0x72;
+    bytes[8]  = 0xbc;
+    bytes[9]  = 0x7f;
+    bytes[10] = 0x72;
+    bytes[11] = 0xc3;
+    bytes[12] = 0xe2;
+    bytes[13] = 0xfb;
+    bytes[14] = 0x31;
+    bytes[15] = 0x71;
 }
 
 
