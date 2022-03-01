@@ -20,7 +20,70 @@ on:
 # as possible.  We can't re-use that workflow because we need the docker image to
 # be run in the same workflow to get the results.
 jobs:
-  test:
+  test-macos:
+    name: Unit Tests (MacOS)
+    runs-on: [ macos-latest ]
+    steps:
+      - uses: actions/checkout@v2
+
+      - name: Install packages
+        run: |
+          brew install cunit ninja openssl@1.1
+
+      - name: Install Meson
+        run: |
+          pip3 install 'meson>=0.60.3'
+
+      - name: Meson Setup
+        run: |
+          meson setup --warnlevel 3 --werror -Dsha1-provider=internal -Dtest-autobahn=skip build
+
+      - name: Build
+        working-directory: build
+        run: |
+          ninja all
+
+      - name: Run Tests
+        working-directory: build
+        run: |
+          ninja test
+
+  test-linux-clang:
+    name: Unit Tests (Linux clang)
+    runs-on: [ ubuntu-latest ]
+    steps:
+      - uses: actions/checkout@v2
+
+      - name: Update packages
+        run: |
+          sudo apt update
+
+      - name: Install packages
+        run: |
+          sudo apt-get -y install python3 python3-pip python3-setuptools python3-wheel \
+                                  ninja-build valgrind gcovr \
+                                  libcunit1 libcunit1-doc libcunit1-dev \
+                                  jq libcurl4-openssl-dev
+
+      - name: Install Meson
+        run: |
+          pip3 install --user 'meson>=0.60.3'
+
+      - name: Meson Setup
+        run: |
+          CC=clang meson setup --warnlevel 3 --werror build
+
+      - name: Build
+        working-directory: build
+        run: |
+          ninja all
+
+      - name: Run Tests
+        working-directory: build
+        run: |
+          ninja test
+
+  test-linux-gcc:
     name: Unit Tests
     runs-on: [ ubuntu-latest ]
     steps:
@@ -110,7 +173,9 @@ jobs:
 
       - name: Upload SonarCloud
         run: |
-          build/sonar-scanner/bin/sonar-scanner -Dsonar.host.url=https://sonarcloud.io -Dproject.settings=.sonar-project.properties -Dsonar.login=${{ secrets.SONAR_TOKEN }}
+          build/sonar-scanner/bin/sonar-scanner -Dsonar.host.url=https://sonarcloud.io \
+                                                -Dproject.settings=.sonar-project.properties \
+                                                -Dsonar.login=${{ secrets.SONAR_TOKEN }}
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 

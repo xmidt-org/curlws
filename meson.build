@@ -66,8 +66,8 @@ sources = ['src/cb.c',
 
 if 'openssl' == get_option('sha1-provider')
   sha_files = 'src/sha1_openssl.c'
-elif 'internal' == get_option('sha-provider')
-  sha_files += [ 'src/sha1_openssl.c', 'src/sha1/sha1.c' ]
+elif 'internal' == get_option('sha1-provider')
+  sha_files = [ 'src/sha1_internal.c', 'src/sha1/sha1.c' ]
 else
   error('Invalid sha1-provider option.')
 endif
