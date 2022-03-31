@@ -10,6 +10,9 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 
 ## [Unreleased]
 
+## [v1.0.5]
+- Require meson version 0.56+
+
 ## [v1.0.4]
 
 ### Changed

@@ -4,7 +4,8 @@
 # SPDX-License-Identifier: MIT
 
 project('curlws', 'c',
-        version: '1.0.4',
+        version: '1.0.5',
+        meson_version: '>=0.56',
         license: ['Apache-2.0', 'BSD-2-Clause', 'MIT'],
         default_options: ['c_std=c99',
                           'b_coverage=true'])
