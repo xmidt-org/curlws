@@ -4,4 +4,4 @@ SPDX-License-Identifier: MIT
 -->
 Maintainers of this repository:
 
-* Weston Schmidt
+* Weston Schmidt weston_schmidt@alumni.purdue.edu
