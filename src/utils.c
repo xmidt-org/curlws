@@ -68,8 +68,8 @@ bool cws_has_prefix(const char *s, size_t len, const char *prefix)
 
 char *cws_rewrite_url(const char *url)
 {
-    size_t ws_len  = strlen("ws://");
-    size_t wss_len = strlen("wss://");
+    size_t ws_len  = 5;
+    size_t wss_len = 6;
     size_t url_len = strlen(url);
     char *rv;
 
